@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub - Visual</title>
+    <title>Digital Impact Hub v5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,21 +24,19 @@
             <div class="bg-blue-600 w-10 h-10 rounded flex items-center justify-center font-bold text-xl">DC</div>
             <div>
                 <h1 class="font-bold text-lg leading-tight">Digital Impact Hub</h1>
-                <p class="text-xs text-slate-400">OneDrive Connected</p>
+                <p class="text-xs text-slate-400">Strategic Pillars Edition</p>
             </div>
         </div>
         
         <div class="flex items-center bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
             <template x-if="!fileHandle">
                 <div class="flex items-center gap-2 text-amber-400 animate-pulse">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span class="text-xs font-bold uppercase">Not Connected</span>
+                    <i class="fas fa-exclamation-triangle"></i><span class="text-xs font-bold uppercase">Not Connected</span>
                 </div>
             </template>
             <template x-if="fileHandle">
                 <div class="flex items-center gap-2 text-emerald-400">
-                    <i class="fas fa-link"></i>
-                    <span class="text-xs font-bold uppercase">Live Linked: OneDrive</span>
+                    <i class="fas fa-link"></i><span class="text-xs font-bold uppercase">Live Linked</span>
                 </div>
             </template>
         </div>
@@ -46,7 +44,7 @@
         <div>
              <template x-if="!fileHandle">
                 <button @click="openFile()" class="text-sm bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded font-bold shadow transition">
-                    <i class="fas fa-folder-open mr-2"></i> Connect Data File
+                    <i class="fas fa-folder-open mr-2"></i> Connect Data
                 </button>
              </template>
              <template x-if="fileHandle">
@@ -61,103 +59,151 @@
         
         <div x-show="!fileHandle" class="max-w-2xl mx-auto mt-20 text-center">
             <div class="bg-white p-10 rounded-xl shadow-xl border-2 border-slate-200">
-                <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-cloud-upload-alt"></i></div>
-                <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect to OneDrive</h2>
+                <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-network-wired"></i></div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Strategy Data</h2>
                 <p class="text-slate-600 mb-8 leading-relaxed">
-                    Please select your <strong>digital-coach-data.json</strong> file from your OneDrive folder to load your dashboard.
+                    Connect to your <strong>digital-coach-data.json</strong> file.<br>
+                    v5.0 will automatically upgrade your priorities to the new "Strategic Pillars" format.
                 </p>
                 <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition">
-                    Select File
+                    Select File from OneDrive
                 </button>
             </div>
         </div>
 
         <div x-show="fileHandle" x-transition>
             
-            <div class="flex justify-center gap-4 mb-8 border-b border-slate-200 pb-4 no-print">
-                <button @click="switchView('dashboard')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'dashboard'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Dashboard</button>
-                <button @click="switchView('projects')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'projects'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Projects</button>
-                <button @click="switchView('reports')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'reports'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Reports</button>
-                <button @click="switchView('settings')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'settings'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Settings</button>
+            <div class="flex justify-center gap-6 mb-8 border-b border-slate-200 pb-4 no-print">
+                <button @click="switchView('dashboard')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'dashboard'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition">Dashboard</button>
+                <button @click="switchView('strategy')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'strategy'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition"><i class="fas fa-chess mr-1"></i> Strategy Pillars</button>
+                <button @click="switchView('projects')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'projects'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition">Projects & Evidence</button>
+                <button @click="switchView('reports')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'reports'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition">Reporting</button>
             </div>
 
-            <div x-show="view === 'dashboard'" class="max-w-6xl mx-auto">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded shadow border-l-4 border-blue-500">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Active Cases</div>
-                        <div class="text-3xl font-bold" x-text="projects.filter(p=>p.status!=='Completed').length"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded shadow border-l-4 border-amber-500">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Tasks Due</div>
-                        <div class="text-3xl font-bold" x-text="getDueTasks().length"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded shadow border-l-4 border-emerald-500">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Completed</div>
-                        <div class="text-3xl font-bold" x-text="projects.filter(p=>p.status==='Completed').length"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded shadow border-l-4 border-purple-500">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Evidence Links</div>
-                        <div class="text-3xl font-bold" x-text="countEvidence()"></div>
-                    </div>
+            <div x-show="view === 'dashboard'" class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <template x-for="(p, idx) in settings.priorities" :key="p.id">
+                        <div class="bg-white p-6 rounded shadow border-t-4" :class="getBorderColor(idx)">
+                            <h3 class="font-bold text-slate-800 mb-2 truncate" x-text="p.title"></h3>
+                            <div class="text-xs text-slate-500 mb-4 line-clamp-2" x-text="p.details || 'No strategy details defined.'"></div>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                                    <span>Strategic Tasks</span>
+                                    <span x-text="getPriorityProgress(p) + '%'"></span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div class="h-2 rounded-full transition-all duration-500" :class="getBgColor(idx)" :style="`width: ${getPriorityProgress(p)}%`"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded">
+                                <i class="fas fa-link"></i>
+                                <span x-text="countLinkedProjects(p.id) + ' Active Projects Linked'"></span>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     <div class="bg-white p-6 rounded shadow-sm">
-                        <h3 class="font-bold text-slate-700 mb-4">Strategic Focus (Priority Split)</h3>
-                        <div class="h-64">
-                            <canvas id="priorityChart"></canvas>
-                        </div>
+                        <h3 class="font-bold text-slate-700 mb-4">Project Alignment</h3>
+                        <div class="h-64"><canvas id="priorityChart"></canvas></div>
                     </div>
                     <div class="bg-white p-6 rounded shadow-sm">
-                        <h3 class="font-bold text-slate-700 mb-4">Coaching Pipeline Stage</h3>
-                        <div class="h-64">
-                            <canvas id="pipelineChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded p-6 shadow-sm">
-                    <h3 class="font-bold text-lg mb-4 text-slate-800">Immediate Actions</h3>
-                        <template x-if="getDueTasks().length === 0">
-                        <p class="text-slate-400 italic text-sm">No tasks due.</p>
-                    </template>
-                    <div class="space-y-2">
-                            <template x-for="task in getDueTasks()" :key="task.id">
-                            <div class="flex justify-between items-center p-3 bg-amber-50 border border-amber-100 rounded cursor-pointer hover:bg-amber-100" @click="openProject(task.projectId)">
-                                <div>
-                                    <div class="text-sm font-bold text-slate-800" x-text="task.title"></div>
-                                    <div class="text-xs text-slate-500" x-text="task.projectName"></div>
+                        <h3 class="font-bold text-slate-700 mb-4">Immediate Actions Due</h3>
+                        <div class="space-y-2 overflow-y-auto h-64 pr-2">
+                             <template x-for="task in getDueTasks()" :key="task.id">
+                                <div class="flex justify-between items-center p-3 bg-amber-50 border border-amber-100 rounded cursor-pointer hover:bg-amber-100" @click="openProject(task.projectId)">
+                                    <div>
+                                        <div class="text-sm font-bold text-slate-800" x-text="task.title"></div>
+                                        <div class="text-xs text-slate-500" x-text="task.projectName"></div>
+                                    </div>
+                                    <div class="text-xs font-bold text-amber-700" x-text="formatDate(task.dueDate)"></div>
                                 </div>
-                                <div class="text-xs font-bold text-amber-700" x-text="formatDate(task.dueDate)"></div>
-                            </div>
-                        </template>
+                            </template>
+                            <div x-show="getDueTasks().length === 0" class="text-slate-400 italic text-sm text-center mt-10">No urgent tasks.</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div x-show="view === 'projects'" class="max-w-6xl mx-auto">
+            <div x-show="view === 'strategy'" class="max-w-5xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Strategic Pillars</h2>
+                        <p class="text-slate-500 text-sm">Define your 3 Core Priorities and the tasks required to achieve them.</p>
+                    </div>
+                    <button @click="saveToFile()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"><i class="fas fa-save mr-2"></i> Save Strategy</button>
+                </div>
+
+                <div class="space-y-8">
+                    <template x-for="(p, idx) in settings.priorities" :key="p.id">
+                        <div class="bg-white rounded shadow-md border border-slate-200 overflow-hidden">
+                            <div class="p-4 flex justify-between items-center" :class="getHeaderColor(idx)">
+                                <h3 class="font-bold text-lg text-white" x-text="'Priority ' + (idx + 1)"></h3>
+                                <div class="text-white text-sm opacity-90"><i class="fas fa-tasks mr-1"></i> <span x-text="p.tasks.length + ' Core Actions'"></span></div>
+                            </div>
+                            
+                            <div class="p-6">
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Priority Statement</label>
+                                <input x-model="p.title" class="w-full text-lg font-bold border-b-2 border-slate-200 focus:border-blue-500 outline-none mb-4 pb-1 transition" placeholder="Enter Priority Title...">
+                                
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Strategy & Drill-Down Details</label>
+                                <textarea x-model="p.details" class="w-full text-sm p-3 bg-slate-50 border rounded mb-6 h-20 focus:ring-2 focus:ring-blue-100 outline-none" placeholder="Elaborate on the strategy here..."></textarea>
+                                
+                                <div class="bg-slate-50 rounded p-4 border border-slate-200">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-bold text-sm text-slate-700 uppercase">Core Strategic Actions</h4>
+                                        <button @click="addStrategyTask(p)" class="text-xs bg-white border border-slate-300 hover:bg-slate-100 px-2 py-1 rounded shadow-sm text-slate-600"><i class="fas fa-plus mr-1"></i> Add Action</button>
+                                    </div>
+                                    
+                                    <div class="space-y-2">
+                                        <template x-for="(task, tIdx) in p.tasks" :key="tIdx">
+                                            <div class="flex items-center gap-3 bg-white p-2 rounded shadow-sm border border-slate-100">
+                                                <input type="checkbox" x-model="task.completed" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
+                                                <input x-model="task.name" class="flex-1 text-sm bg-transparent border-none outline-none focus:text-blue-700 placeholder-slate-400" placeholder="e.g. Conduct Audit, Draft Policy...">
+                                                <button @click="p.tasks.splice(tIdx, 1)" class="text-slate-300 hover:text-red-400"><i class="fas fa-times"></i></button>
+                                            </div>
+                                        </template>
+                                        <div x-show="p.tasks.length === 0" class="text-center text-xs text-slate-400 italic py-2">No strategic actions defined yet.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div x-show="view === 'projects'" class="max-w-7xl mx-auto">
                 <div class="flex justify-between mb-6">
                     <div class="flex gap-2">
                         <input x-model="searchQuery" placeholder="Search projects..." class="border p-2 rounded w-64 text-sm">
-                        <button @click="startNewProject('coaching')" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"><i class="fas fa-plus mr-1"></i> New Case</button>
+                        <button @click="startNewProject()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 shadow"><i class="fas fa-plus mr-1"></i> New Project</button>
                     </div>
                 </div>
                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <template x-for="project in filteredProjects" :key="project.id">
-                        <div class="bg-white p-4 rounded shadow border hover:shadow-md transition cursor-pointer flex flex-col" @click="editProject(project)">
+                        <div class="bg-white p-4 rounded shadow border hover:shadow-md transition cursor-pointer flex flex-col group" @click="editProject(project)">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="font-bold text-slate-800 truncate pr-2" x-text="project.title"></h3>
+                                <h3 class="font-bold text-slate-800 truncate pr-2 group-hover:text-blue-600 transition" x-text="project.title"></h3>
                                 <span class="text-[10px] bg-slate-100 px-2 py-1 rounded uppercase font-bold tracking-wide" x-text="project.type"></span>
                             </div>
-                            <p class="text-xs text-slate-500 mb-4" x-text="project.contact"></p>
+                            
+                            <div x-show="getProjectStrategyName(project)" class="mb-3">
+                                <span class="text-[10px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded truncate block">
+                                    <i class="fas fa-link mr-1"></i> <span x-text="getProjectStrategyName(project)"></span>
+                                </span>
+                            </div>
+                            
+                            <p class="text-xs text-slate-500 mb-4 line-clamp-2" x-text="project.objective || 'No objective set.'"></p>
                             
                             <div class="mt-auto">
                                 <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2">
                                     <div class="bg-blue-600 h-1.5 rounded-full" :style="`width: ${calculateProgress(project)}%`"></div>
                                 </div>
                                 <div class="flex justify-between text-xs text-slate-400">
-                                    <span x-text="project.priority || 'No Priority'"></span>
-                                    <span x-text="calculateProgress(project) + '%'"></span>
+                                    <span x-text="calculateProgress(project) + '% Complete'"></span>
                                 </div>
                             </div>
                         </div>
@@ -165,51 +211,64 @@
                 </div>
             </div>
 
-            <div x-show="view === 'reports'" class="max-w-4xl mx-auto">
+            <div x-show="view === 'reports'" class="max-w-5xl mx-auto">
                  <div class="bg-white p-6 rounded shadow mb-6 no-print">
-                    <h2 class="font-bold text-lg mb-2">Generate Report</h2>
-                    <div class="flex gap-2">
-                        <button @click="generateReport('all')" class="bg-slate-800 text-white px-4 py-2 rounded">All Projects</button>
-                        <button @click="generateReport('priority')" class="bg-blue-600 text-white px-4 py-2 rounded">By Priority</button>
-                    </div>
+                    <h2 class="font-bold text-lg mb-2">Reporting</h2>
+                    <button @click="generateReport()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-700">Generate Full Report</button>
                 </div>
                 <div id="print-area" x-show="reportData.length > 0" class="bg-white p-10 shadow-lg min-h-screen">
-                    <div class="border-b-2 border-black pb-4 mb-8">
-                        <h1 class="text-3xl font-bold uppercase">Impact Report</h1>
-                        <p class="text-slate-500">Generated: <span x-text="new Date().toLocaleDateString()"></span></p>
+                    <div class="border-b-2 border-black pb-4 mb-8 flex justify-between items-end">
+                        <div>
+                            <h1 class="text-3xl font-bold uppercase">Strategy & Impact Report</h1>
+                            <p class="text-slate-500">Digital Pedagogy Coach</p>
+                        </div>
+                        <div class="text-right text-sm">
+                            <p class="font-bold">Weston College</p>
+                            <p x-text="new Date().toLocaleDateString()"></p>
+                        </div>
                     </div>
-                    <template x-for="grp in reportData" :key="grp.category">
-                        <div class="mb-8 break-inside-avoid">
-                            <h2 class="text-xl font-bold text-blue-800 border-b border-blue-100 mb-4 pb-1" x-text="grp.category"></h2>
-                            <template x-for="p in grp.items">
-                                <div class="mb-6 pl-4 border-l-2 border-slate-200">
-                                    <h3 class="font-bold text-lg" x-text="p.title"></h3>
-                                    <p class="text-sm text-slate-600 italic mb-2" x-text="p.objective"></p>
-                                    <div class="space-y-1">
-                                        <template x-for="m in p.milestones">
-                                            <div x-show="m.completed" class="flex gap-2 text-sm items-center text-slate-700">
-                                                <i class="fas fa-check text-green-500"></i>
-                                                <span x-text="m.title"></span>
-                                                <a x-show="m.evidenceLink" :href="m.evidenceLink" target="_blank" class="text-blue-600 underline text-xs">Evidence</a>
+
+                    <template x-for="p in settings.priorities" :key="p.id">
+                        <div class="mb-10 break-inside-avoid">
+                            <h2 class="text-xl font-bold text-white px-4 py-2 rounded-t" :class="getHeaderColor(p.id - 1)" x-text="p.title"></h2>
+                            <div class="border-l-2 border-r-2 border-b-2 border-slate-100 p-4 rounded-b">
+                                <p class="text-sm text-slate-600 italic mb-4" x-text="p.details"></p>
+                                
+                                <div class="mb-6 bg-slate-50 p-3 rounded">
+                                    <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Strategic Actions Status</h3>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <template x-for="t in p.tasks">
+                                            <div class="flex items-center gap-2 text-sm">
+                                                <i class="fas" :class="t.completed ? 'fa-check-circle text-green-500' : 'fa-circle text-slate-300'"></i>
+                                                <span :class="{'line-through text-slate-400': t.completed}" x-text="t.name"></span>
                                             </div>
                                         </template>
                                     </div>
                                 </div>
-                            </template>
+
+                                <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Linked Projects & Evidence</h3>
+                                <div class="space-y-4">
+                                    <template x-for="proj in getProjectsForPriority(p.id)" :key="proj.id">
+                                        <div class="pl-4 border-l-4 border-blue-100">
+                                            <div class="flex justify-between">
+                                                <span class="font-bold text-sm" x-text="proj.title"></span>
+                                                <span class="text-xs bg-slate-100 px-1 rounded" x-text="proj.status"></span>
+                                            </div>
+                                            <div class="mt-1">
+                                                <template x-for="m in proj.milestones.filter(x => x.completed)">
+                                                    <div class="text-xs text-slate-600 flex items-center gap-1">
+                                                        <i class="fas fa-check text-green-500"></i> <span x-text="m.title"></span>
+                                                        <span x-show="m.evidenceLink" class="text-blue-600">(Has Evidence)</span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div x-show="getProjectsForPriority(p.id).length === 0" class="text-xs text-slate-400">No active projects linked.</div>
+                                </div>
+                            </div>
                         </div>
                     </template>
-                </div>
-            </div>
-
-            <div x-show="view === 'settings'" class="max-w-2xl mx-auto">
-                <div class="bg-white p-6 rounded shadow">
-                    <h2 class="font-bold text-lg mb-4">Core Priorities</h2>
-                    <div class="space-y-2">
-                        <input x-model="settings.priorities[0]" class="w-full border p-2 rounded" placeholder="Priority 1">
-                        <input x-model="settings.priorities[1]" class="w-full border p-2 rounded" placeholder="Priority 2">
-                        <input x-model="settings.priorities[2]" class="w-full border p-2 rounded" placeholder="Priority 3">
-                    </div>
-                    <button @click="saveToFile()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Save Settings</button>
                 </div>
             </div>
 
@@ -218,48 +277,60 @@
     <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" x-cloak>
         <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-lg">Manage Case</h3>
+                <h3 class="font-bold text-lg">Manage Project / Case</h3>
                 <button @click="showModal = false"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-4">
                     <input x-model="currentProject.title" class="w-full border p-2 rounded font-bold" placeholder="Project Name">
+                    
+                    <div class="bg-blue-50 p-3 rounded border border-blue-100">
+                        <label class="block text-xs font-bold uppercase text-blue-800 mb-1">Strategic Alignment</label>
+                        <select x-model="currentProject.priorityId" class="w-full border p-2 rounded text-sm mb-2">
+                            <option value="">-- Select Core Priority --</option>
+                            <template x-for="p in settings.priorities" :key="p.id">
+                                <option :value="p.id" x-text="p.title"></option>
+                            </template>
+                        </select>
+                        
+                        <div x-show="currentProject.priorityId">
+                            <label class="block text-xs font-bold uppercase text-blue-800 mb-1">Linked Core Action (Optional)</label>
+                            <select x-model="currentProject.linkedTaskName" class="w-full border p-2 rounded text-sm bg-white">
+                                <option value="">-- General Link --</option>
+                                <template x-for="t in getTasksForCurrentPriority()" :key="t.name">
+                                    <option :value="t.name" x-text="t.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-2">
+                        <input x-model="currentProject.contact" class="border p-2 rounded text-sm" placeholder="Contact/Dept">
                         <select x-model="currentProject.type" class="border p-2 rounded text-sm"><option value="coaching">Coaching</option><option value="project">Project</option></select>
-                        <select x-model="currentProject.priority" class="border p-2 rounded text-sm"><option value="">No Priority</option><template x-for="p in settings.priorities"><option :value="p" x-text="p"></option></template></select>
                     </div>
                     <textarea x-model="currentProject.objective" class="w-full border p-2 rounded h-20 text-sm" placeholder="Objective"></textarea>
                     
-                    <div class="border-t pt-4">
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Linked MS Form (Iframe)</label>
-                        <input x-model="currentProject.formEmbedUrl" placeholder="Paste Form Embed URL here..." class="w-full border p-2 rounded text-xs mb-2">
-                        
-                        <div x-show="currentProject.formEmbedUrl" class="w-full h-64 border rounded bg-slate-100 overflow-hidden">
-                            <iframe :src="currentProject.formEmbedUrl" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
-                        </div>
-                        <p x-show="!currentProject.formEmbedUrl" class="text-xs text-slate-400 italic">No form linked. Paste an Embed URL to view form here.</p>
+                    <div class="border-t pt-2">
+                         <input x-model="currentProject.formEmbedUrl" placeholder="Paste MS Forms Embed URL..." class="w-full border p-2 rounded text-xs">
                     </div>
                 </div>
 
                 <div class="border-l pl-6">
                     <div class="flex justify-between mb-2">
                         <h4 class="font-bold text-sm uppercase text-slate-500">Milestones</h4>
-                        <button @click="addMilestone()" class="text-xs bg-slate-200 px-2 py-1 rounded">Add Task</button>
+                        <button @click="addMilestone()" class="text-xs bg-slate-200 px-2 py-1 rounded">Add</button>
                     </div>
                     <div class="space-y-2 max-h-[500px] overflow-y-auto">
                         <template x-for="(m, idx) in currentProject.milestones" :key="idx">
-                            <div class="bg-slate-50 p-2 rounded border group">
+                            <div class="bg-slate-50 p-2 rounded border">
                                 <div class="flex gap-2 items-start">
                                     <input type="checkbox" x-model="m.completed" class="mt-1.5">
                                     <div class="flex-1 space-y-1">
                                         <input x-model="m.title" class="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-sm font-semibold">
                                         <div class="flex gap-2 items-center">
                                             <input type="date" x-model="m.dueDate" class="text-xs bg-transparent w-24">
-                                            <div class="flex-1 flex items-center bg-white px-1 rounded border">
-                                                <i class="fas fa-link text-xs text-slate-400 mr-1"></i>
-                                                <input x-model="m.evidenceLink" placeholder="Paste OneDrive Link..." class="text-xs w-full outline-none text-blue-600">
-                                            </div>
+                                            <input x-model="m.evidenceLink" placeholder="Evidence Link..." class="text-xs w-full text-blue-600 bg-transparent">
                                         </div>
                                     </div>
                                     <button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
@@ -271,7 +342,7 @@
             </div>
             <div class="p-4 border-t flex justify-end gap-2">
                 <button @click="showModal = false" class="px-4 py-2 text-slate-500">Cancel</button>
-                <button @click="saveProject()" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
+                <button @click="saveProject()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Project</button>
             </div>
         </div>
     </div>
@@ -283,21 +354,25 @@
                 fileHandle: null,
                 showModal: false,
                 searchQuery: '',
-                filterPriority: '',
                 projects: [],
-                activityLog: [],
                 reportData: [],
-                settings: { priorities: ['Foundations', 'Assessment', 'Modelling'] },
+                // v5 Data Structure: Priorities are Objects
+                settings: { 
+                    priorities: [
+                        { id: 1, title: 'Teams environments – accessible, inclusive with a solid foundation', details: 'Focus on Teams Health Check and basic accessibility standards.', tasks: [] },
+                        { id: 2, title: 'Use of AI for impactful strategies and time efficiencies', details: 'Rollout of Co-Pilot and AI assessment tools.', tasks: [] },
+                        { id: 3, title: 'Modelling', details: 'Screen recording, Digital Champions and 21st Century design.', tasks: [] }
+                    ] 
+                },
                 currentProject: {},
-                charts: {}, // Store chart instances
+                chart: null,
 
-                async init() { },
+                async init() {},
 
                 async openFile() {
                     try {
                         const [handle] = await window.showOpenFilePicker({
-                            types: [{ description: 'JSON Data', accept: { 'application/json': ['.json'] } }],
-                            multiple: false
+                            types: [{ description: 'JSON Data', accept: { 'application/json': ['.json'] } }], multiple: false
                         });
                         this.fileHandle = handle;
                         const file = await handle.getFile();
@@ -305,13 +380,22 @@
                         if (text.trim()) {
                             const data = JSON.parse(text);
                             this.projects = data.projects || [];
-                            this.settings = data.settings || this.settings;
-                            this.activityLog = data.log || [];
                             
-                            // Initialize Charts after data load
-                            this.$nextTick(() => {
-                                this.initCharts();
-                            });
+                            // MIGRATION LOGIC: Check if old "String" priorities exist
+                            if (data.settings && data.settings.priorities && typeof data.settings.priorities[0] === 'string') {
+                                alert("Upgrading data to Version 5.0 structure...");
+                                // Keep the user's old titles, but wrap them in objects
+                                this.settings.priorities = data.settings.priorities.map((title, idx) => ({
+                                    id: idx + 1,
+                                    title: title,
+                                    details: 'Migrated from v4',
+                                    tasks: []
+                                }));
+                            } else if (data.settings && data.settings.priorities) {
+                                this.settings = data.settings;
+                            }
+                            
+                            this.$nextTick(() => this.initChart());
                         }
                     } catch (err) { console.error(err); }
                 },
@@ -320,92 +404,59 @@
                     if (!this.fileHandle) return;
                     try {
                         const writable = await this.fileHandle.createWritable();
-                        const data = { projects: this.projects, settings: this.settings, log: this.activityLog };
+                        const data = { projects: this.projects, settings: this.settings };
                         await writable.write(JSON.stringify(data, null, 2));
                         await writable.close();
-                        this.updateCharts(); // Refresh charts on save
+                        this.updateChart();
+                        // Visual feedback
+                        const btn = document.querySelector('.fa-save');
+                        if(btn) { btn.parentElement.classList.add('bg-green-700'); setTimeout(()=>btn.parentElement.classList.remove('bg-green-700'), 500); }
                     } catch (err) { alert('Save failed: ' + err.message); }
                 },
 
-                // --- CHARTING LOGIC ---
-                initCharts() {
-                    // Priority Chart (Doughnut)
-                    const pCtx = document.getElementById('priorityChart').getContext('2d');
-                    this.charts.priority = new Chart(pCtx, {
-                        type: 'doughnut',
-                        data: this.getPriorityData(),
-                        options: { responsive: true, maintainAspectRatio: false }
-                    });
-
-                    // Pipeline Chart (Bar)
-                    const pipeCtx = document.getElementById('pipelineChart').getContext('2d');
-                    this.charts.pipeline = new Chart(pipeCtx, {
-                        type: 'bar',
-                        data: this.getPipelineData(),
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false,
-                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-                        }
-                    });
+                // --- STRATEGY HELPERS ---
+                addStrategyTask(priority) {
+                    if (!priority.tasks) priority.tasks = [];
+                    priority.tasks.push({ name: 'New Action', completed: false });
+                },
+                
+                getPriorityProgress(priority) {
+                    if (!priority.tasks || priority.tasks.length === 0) return 0;
+                    const c = priority.tasks.filter(t => t.completed).length;
+                    return Math.round((c / priority.tasks.length) * 100);
                 },
 
-                updateCharts() {
-                    if(this.charts.priority) {
-                        this.charts.priority.data = this.getPriorityData();
-                        this.charts.priority.update();
-                    }
-                    if(this.charts.pipeline) {
-                        this.charts.pipeline.data = this.getPipelineData();
-                        this.charts.pipeline.update();
-                    }
+                countLinkedProjects(pId) {
+                    return this.projects.filter(p => p.priorityId == pId).length;
                 },
 
-                getPriorityData() {
-                    const counts = this.settings.priorities.map(p => 
-                        this.projects.filter(proj => proj.priority === p).length
-                    );
-                    return {
-                        labels: this.settings.priorities,
-                        datasets: [{
-                            data: counts,
-                            backgroundColor: ['#3b82f6', '#f59e0b', '#10b981'], // Blue, Amber, Emerald
-                            borderWidth: 0
-                        }]
-                    };
+                getProjectsForPriority(pId) {
+                    return this.projects.filter(p => p.priorityId == pId);
                 },
 
-                getPipelineData() {
-                    // Simple logic: "Active" vs "Completed" for now, or use custom stages
-                    const active = this.projects.filter(p => p.status !== 'Completed').length;
-                    const completed = this.projects.filter(p => p.status === 'Completed').length;
-                    return {
-                        labels: ['Active Cases', 'Completed Cases'],
-                        datasets: [{
-                            label: 'Projects',
-                            data: [active, completed],
-                            backgroundColor: ['#3b82f6', '#10b981']
-                        }]
-                    };
+                getTasksForCurrentPriority() {
+                    if (!this.currentProject.priorityId) return [];
+                    const p = this.settings.priorities.find(x => x.id == this.currentProject.priorityId);
+                    return p ? p.tasks : [];
+                },
+                
+                getProjectStrategyName(p) {
+                    if (!p.priorityId) return null;
+                    const prio = this.settings.priorities.find(x => x.id == p.priorityId);
+                    if (!prio) return null;
+                    if (p.linkedTaskName) return p.linkedTaskName; // Return specific task if linked
+                    return prio.title; // Fallback to Priority title
                 },
 
-                switchView(v) {
-                    this.view = v;
-                    if(v === 'dashboard') {
-                        // Small delay to let canvas render before updating charts
-                        setTimeout(() => this.updateCharts(), 100);
-                    }
-                },
+                // --- UI COLORS ---
+                getHeaderColor(idx) { const colors = ['bg-blue-600', 'bg-amber-500', 'bg-emerald-600']; return colors[idx % 3]; },
+                getBorderColor(idx) { const colors = ['border-blue-500', 'border-amber-500', 'border-emerald-500']; return colors[idx % 3]; },
+                getBgColor(idx) { const colors = ['bg-blue-600', 'bg-amber-500', 'bg-emerald-600']; return colors[idx % 3]; },
 
-                // --- APP LOGIC (Simplified for brevity) ---
-                startNewProject(type) {
-                    this.currentProject = {
-                        id: Date.now(), title: '', contact: '', type: type, priority: '', objective: '', status: 'Active',
-                        formEmbedUrl: '', // New field for MS Forms
-                        lastUpdated: new Date().toISOString(),
-                        milestones: []
-                    };
-                    if(type === 'coaching') this.currentProject.milestones = [{title:'Discovery', completed:false}, {title:'Training', completed:false}, {title:'L2 Impact', completed:false}, {title:'L3 Impact', completed:false}];
+                // --- STANDARD LOGIC ---
+                switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateChart(),100); },
+                startNewProject() {
+                    this.currentProject = { id: Date.now(), title: '', priorityId: '', linkedTaskName: '', type: 'coaching', milestones: [], status: 'Active' };
                     this.showModal = true;
                 },
                 editProject(p) { this.currentProject = JSON.parse(JSON.stringify(p)); this.showModal = true; },
@@ -414,25 +465,40 @@
                     if(idx === -1) this.projects.push(this.currentProject); else this.projects[idx] = this.currentProject;
                     this.saveToFile(); this.showModal = false; 
                 },
-                addMilestone() { this.currentProject.milestones.push({title:'New Task', completed:false, evidenceLink:''}); },
-                get filteredProjects() { return this.projects.filter(p => p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) && (this.filterPriority==='' || p.priority===this.filterPriority)); },
-                calculateProgress(p) { return !p.milestones.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
-                getDueTasks() { return this.projects.flatMap(p => p.milestones.filter(m => !m.completed && m.dueDate).map(m => ({id:Math.random(), projectId:p.id, projectName:p.title, title:m.title, dueDate:m.dueDate}))).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)); },
+                addMilestone() { if(!this.currentProject.milestones) this.currentProject.milestones=[]; this.currentProject.milestones.push({title:'New Task', completed:false}); },
+                get filteredProjects() { return this.projects.filter(p => p.title.toLowerCase().includes(this.searchQuery.toLowerCase())); },
+                calculateProgress(p) { return !p.milestones?.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
+                getDueTasks() { return this.projects.flatMap(p => (p.milestones||[]).filter(m => !m.completed && m.dueDate).map(m => ({id:Math.random(), projectId:p.id, projectName:p.title, title:m.title, dueDate:m.dueDate}))).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)); },
                 formatDate(d) { return d ? new Date(d).toLocaleDateString('en-GB') : ''; },
-                countEvidence() { return this.projects.reduce((acc, p) => acc + p.milestones.filter(m => m.evidenceLink).length, 0); },
-                generateReport(mode) { /* Same as before */ 
-                     if (mode === 'all') {
-                        this.reportData = [{ category: 'All Projects', items: this.projects }];
-                    } else if (mode === 'priority') {
-                        const groups = {};
-                        this.projects.forEach(p => {
-                            const key = p.priority || 'Uncategorized';
-                            if (!groups[key]) groups[key] = [];
-                            groups[key].push(p);
-                        });
-                        this.reportData = Object.keys(groups).map(k => ({ category: k, items: groups[k] }));
+                
+                generateReport() { 
+                    this.reportData = this.settings.priorities; // Just a trigger
+                    setTimeout(() => document.getElementById('print-area').scrollIntoView({behavior:'smooth'}), 100); 
+                },
+
+                // --- CHART ---
+                initChart() {
+                    const ctx = document.getElementById('priorityChart').getContext('2d');
+                    this.chart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: this.getChartData(),
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                },
+                updateChart() {
+                    if (this.chart) {
+                        this.chart.data = this.getChartData();
+                        this.chart.update();
                     }
-                    setTimeout(() => document.getElementById('print-area').scrollIntoView({behavior:'smooth'}), 100);
+                },
+                getChartData() {
+                    return {
+                        labels: this.settings.priorities.map(p => p.title.substring(0, 20) + '...'),
+                        datasets: [{
+                            data: this.settings.priorities.map(p => this.projects.filter(proj => proj.priorityId == p.id).length),
+                            backgroundColor: ['#2563eb', '#f59e0b', '#059669']
+                        }]
+                    };
                 }
             }
         }
