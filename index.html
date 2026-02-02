@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub - Live Sync</title>
+    <title>Digital Impact Hub - Visual</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         [x-cloak] { display: none !important; }
@@ -29,7 +30,7 @@
         
         <div class="flex items-center bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
             <template x-if="!fileHandle">
-                <div class="flex items-center gap-2 text-amber-400">
+                <div class="flex items-center gap-2 text-amber-400 animate-pulse">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span class="text-xs font-bold uppercase">Not Connected</span>
                 </div>
@@ -44,7 +45,7 @@
 
         <div>
              <template x-if="!fileHandle">
-                <button @click="openFile()" class="text-sm bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded font-bold shadow transition animate-pulse">
+                <button @click="openFile()" class="text-sm bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded font-bold shadow transition">
                     <i class="fas fa-folder-open mr-2"></i> Connect Data File
                 </button>
              </template>
@@ -63,104 +64,109 @@
                 <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-cloud-upload-alt"></i></div>
                 <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect to OneDrive</h2>
                 <p class="text-slate-600 mb-8 leading-relaxed">
-                    To ensure your data is secure and backed up, this app connects directly to a file on your computer.<br>
-                    Please select your <strong>digital-coach-data.json</strong> file from your OneDrive folder.
+                    Please select your <strong>digital-coach-data.json</strong> file from your OneDrive folder to load your dashboard.
                 </p>
-                <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-1">
-                    Select File from OneDrive
+                <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition">
+                    Select File
                 </button>
-                <p class="text-xs text-slate-400 mt-6">
-                    <i class="fas fa-lock"></i> Your data stays on your device. It is not uploaded to GitHub.
-                </p>
             </div>
         </div>
 
         <div x-show="fileHandle" x-transition>
             
             <div class="flex justify-center gap-4 mb-8 border-b border-slate-200 pb-4 no-print">
-                <button @click="view = 'dashboard'" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'dashboard'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Dashboard</button>
-                <button @click="view = 'projects'" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'projects'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Projects</button>
-                <button @click="view = 'reports'" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'reports'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Reports</button>
-                <button @click="view = 'settings'" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'settings'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Settings</button>
+                <button @click="switchView('dashboard')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'dashboard'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Dashboard</button>
+                <button @click="switchView('projects')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'projects'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Projects</button>
+                <button @click="switchView('reports')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'reports'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Reports</button>
+                <button @click="switchView('settings')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'settings'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600">Settings</button>
             </div>
 
             <div x-show="view === 'dashboard'" class="max-w-6xl mx-auto">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div class="bg-white p-6 rounded shadow border-l-4 border-blue-500">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Total Active</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Active Cases</div>
                         <div class="text-3xl font-bold" x-text="projects.filter(p=>p.status!=='Completed').length"></div>
                     </div>
                     <div class="bg-white p-6 rounded shadow border-l-4 border-amber-500">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Actions Due</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Tasks Due</div>
                         <div class="text-3xl font-bold" x-text="getDueTasks().length"></div>
                     </div>
                     <div class="bg-white p-6 rounded shadow border-l-4 border-emerald-500">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Impact Logged</div>
-                        <div class="text-3xl font-bold" x-text="activityLog.length"></div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Completed</div>
+                        <div class="text-3xl font-bold" x-text="projects.filter(p=>p.status==='Completed').length"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded shadow border-l-4 border-purple-500">
+                        <div class="text-xs font-bold text-slate-400 uppercase">Evidence Links</div>
+                        <div class="text-3xl font-bold" x-text="countEvidence()"></div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white rounded p-6 shadow-sm">
-                        <h3 class="font-bold text-lg mb-4">Immediate Actions</h3>
-                         <template x-if="getDueTasks().length === 0">
-                            <p class="text-slate-400 italic text-sm">No tasks due.</p>
-                        </template>
-                        <div class="space-y-2">
-                             <template x-for="task in getDueTasks()" :key="task.id">
-                                <div class="flex justify-between items-center p-3 bg-amber-50 border border-amber-100 rounded cursor-pointer hover:bg-amber-100" @click="openProject(task.projectId)">
-                                    <div>
-                                        <div class="text-sm font-bold text-slate-800" x-text="task.title"></div>
-                                        <div class="text-xs text-slate-500" x-text="task.projectName"></div>
-                                    </div>
-                                    <div class="text-xs font-bold text-amber-700" x-text="formatDate(task.dueDate)"></div>
-                                </div>
-                            </template>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white p-6 rounded shadow-sm">
+                        <h3 class="font-bold text-slate-700 mb-4">Strategic Focus (Priority Split)</h3>
+                        <div class="h-64">
+                            <canvas id="priorityChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-indigo-50 rounded p-6 shadow-sm border border-indigo-100">
-                        <h3 class="font-bold text-indigo-900 mb-4">Create New</h3>
-                        <button @click="startNewProject('coaching')" class="w-full text-left bg-white p-4 rounded shadow-sm mb-3 hover:bg-indigo-100 font-bold text-indigo-800 flex items-center justify-between">
-                            <span><i class="fas fa-user-friends mr-2"></i> Coaching Case</span>
-                            <i class="fas fa-chevron-right text-xs"></i>
-                        </button>
-                        <button @click="startNewProject('project')" class="w-full text-left bg-white p-4 rounded shadow-sm hover:bg-indigo-100 font-bold text-indigo-800 flex items-center justify-between">
-                            <span><i class="fas fa-project-diagram mr-2"></i> Strategic Project</span>
-                            <i class="fas fa-chevron-right text-xs"></i>
-                        </button>
+                    <div class="bg-white p-6 rounded shadow-sm">
+                        <h3 class="font-bold text-slate-700 mb-4">Coaching Pipeline Stage</h3>
+                        <div class="h-64">
+                            <canvas id="pipelineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded p-6 shadow-sm">
+                    <h3 class="font-bold text-lg mb-4 text-slate-800">Immediate Actions</h3>
+                        <template x-if="getDueTasks().length === 0">
+                        <p class="text-slate-400 italic text-sm">No tasks due.</p>
+                    </template>
+                    <div class="space-y-2">
+                            <template x-for="task in getDueTasks()" :key="task.id">
+                            <div class="flex justify-between items-center p-3 bg-amber-50 border border-amber-100 rounded cursor-pointer hover:bg-amber-100" @click="openProject(task.projectId)">
+                                <div>
+                                    <div class="text-sm font-bold text-slate-800" x-text="task.title"></div>
+                                    <div class="text-xs text-slate-500" x-text="task.projectName"></div>
+                                </div>
+                                <div class="text-xs font-bold text-amber-700" x-text="formatDate(task.dueDate)"></div>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
 
             <div x-show="view === 'projects'" class="max-w-6xl mx-auto">
-                <div class="flex justify-between mb-4">
-                    <input x-model="searchQuery" placeholder="Search projects..." class="border p-2 rounded w-64">
-                    <select x-model="filterPriority" class="border p-2 rounded">
-                        <option value="">All Priorities</option>
-                        <template x-for="p in settings.priorities">
-                            <option :value="p" x-text="p"></option>
-                        </template>
-                    </select>
+                <div class="flex justify-between mb-6">
+                    <div class="flex gap-2">
+                        <input x-model="searchQuery" placeholder="Search projects..." class="border p-2 rounded w-64 text-sm">
+                        <button @click="startNewProject('coaching')" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"><i class="fas fa-plus mr-1"></i> New Case</button>
+                    </div>
                 </div>
                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <template x-for="project in filteredProjects" :key="project.id">
-                        <div class="bg-white p-4 rounded shadow border hover:shadow-md transition cursor-pointer" @click="editProject(project)">
+                        <div class="bg-white p-4 rounded shadow border hover:shadow-md transition cursor-pointer flex flex-col" @click="editProject(project)">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="font-bold text-slate-800" x-text="project.title"></h3>
-                                <span class="text-xs bg-slate-100 px-2 py-1 rounded" x-text="project.type"></span>
+                                <h3 class="font-bold text-slate-800 truncate pr-2" x-text="project.title"></h3>
+                                <span class="text-[10px] bg-slate-100 px-2 py-1 rounded uppercase font-bold tracking-wide" x-text="project.type"></span>
                             </div>
                             <p class="text-xs text-slate-500 mb-4" x-text="project.contact"></p>
-                            <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2">
-                                <div class="bg-blue-600 h-1.5 rounded-full" :style="`width: ${calculateProgress(project)}%`"></div>
+                            
+                            <div class="mt-auto">
+                                <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2">
+                                    <div class="bg-blue-600 h-1.5 rounded-full" :style="`width: ${calculateProgress(project)}%`"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-400">
+                                    <span x-text="project.priority || 'No Priority'"></span>
+                                    <span x-text="calculateProgress(project) + '%'"></span>
+                                </div>
                             </div>
-                            <div class="text-xs text-slate-400 text-right" x-text="calculateProgress(project) + '%'"></div>
                         </div>
                     </template>
                 </div>
             </div>
 
             <div x-show="view === 'reports'" class="max-w-4xl mx-auto">
-                <div class="bg-white p-6 rounded shadow mb-6 no-print">
+                 <div class="bg-white p-6 rounded shadow mb-6 no-print">
                     <h2 class="font-bold text-lg mb-2">Generate Report</h2>
                     <div class="flex gap-2">
                         <button @click="generateReport('all')" class="bg-slate-800 text-white px-4 py-2 rounded">All Projects</button>
@@ -173,14 +179,11 @@
                         <p class="text-slate-500">Generated: <span x-text="new Date().toLocaleDateString()"></span></p>
                     </div>
                     <template x-for="grp in reportData" :key="grp.category">
-                        <div class="mb-8">
+                        <div class="mb-8 break-inside-avoid">
                             <h2 class="text-xl font-bold text-blue-800 border-b border-blue-100 mb-4 pb-1" x-text="grp.category"></h2>
                             <template x-for="p in grp.items">
                                 <div class="mb-6 pl-4 border-l-2 border-slate-200">
-                                    <div class="flex justify-between">
-                                        <h3 class="font-bold text-lg" x-text="p.title"></h3>
-                                        <span class="text-sm bg-slate-100 px-2 rounded" x-text="p.status"></span>
-                                    </div>
+                                    <h3 class="font-bold text-lg" x-text="p.title"></h3>
                                     <p class="text-sm text-slate-600 italic mb-2" x-text="p.objective"></p>
                                     <div class="space-y-1">
                                         <template x-for="m in p.milestones">
@@ -198,7 +201,7 @@
                 </div>
             </div>
 
-             <div x-show="view === 'settings'" class="max-w-2xl mx-auto">
+            <div x-show="view === 'settings'" class="max-w-2xl mx-auto">
                 <div class="bg-white p-6 rounded shadow">
                     <h2 class="font-bold text-lg mb-4">Core Priorities</h2>
                     <div class="space-y-2">
@@ -213,43 +216,54 @@
         </div> </main>
 
     <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" x-cloak>
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div class="p-4 border-b flex justify-between items-center bg-slate-50">
                 <h3 class="font-bold text-lg">Manage Case</h3>
                 <button @click="showModal = false"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-6 space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <input x-model="currentProject.title" class="border p-2 rounded font-bold" placeholder="Project/Staff Name">
-                    <input x-model="currentProject.contact" class="border p-2 rounded" placeholder="Dept / Contact">
-                    <select x-model="currentProject.type" class="border p-2 rounded">
-                        <option value="coaching">Coaching Case</option>
-                        <option value="project">Strategic Project</option>
-                    </select>
-                    <select x-model="currentProject.priority" class="border p-2 rounded">
-                        <option value="">No Priority</option>
-                        <template x-for="p in settings.priorities"><option :value="p" x-text="p"></option></template>
-                    </select>
+            
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <input x-model="currentProject.title" class="w-full border p-2 rounded font-bold" placeholder="Project Name">
+                    <div class="grid grid-cols-2 gap-2">
+                        <select x-model="currentProject.type" class="border p-2 rounded text-sm"><option value="coaching">Coaching</option><option value="project">Project</option></select>
+                        <select x-model="currentProject.priority" class="border p-2 rounded text-sm"><option value="">No Priority</option><template x-for="p in settings.priorities"><option :value="p" x-text="p"></option></template></select>
+                    </div>
+                    <textarea x-model="currentProject.objective" class="w-full border p-2 rounded h-20 text-sm" placeholder="Objective"></textarea>
+                    
+                    <div class="border-t pt-4">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Linked MS Form (Iframe)</label>
+                        <input x-model="currentProject.formEmbedUrl" placeholder="Paste Form Embed URL here..." class="w-full border p-2 rounded text-xs mb-2">
+                        
+                        <div x-show="currentProject.formEmbedUrl" class="w-full h-64 border rounded bg-slate-100 overflow-hidden">
+                            <iframe :src="currentProject.formEmbedUrl" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
+                        </div>
+                        <p x-show="!currentProject.formEmbedUrl" class="text-xs text-slate-400 italic">No form linked. Paste an Embed URL to view form here.</p>
+                    </div>
                 </div>
-                <textarea x-model="currentProject.objective" class="w-full border p-2 rounded h-20" placeholder="Objective"></textarea>
-                
-                <div class="border-t pt-4">
+
+                <div class="border-l pl-6">
                     <div class="flex justify-between mb-2">
                         <h4 class="font-bold text-sm uppercase text-slate-500">Milestones</h4>
                         <button @click="addMilestone()" class="text-xs bg-slate-200 px-2 py-1 rounded">Add Task</button>
                     </div>
-                    <div class="space-y-2 max-h-60 overflow-y-auto">
+                    <div class="space-y-2 max-h-[500px] overflow-y-auto">
                         <template x-for="(m, idx) in currentProject.milestones" :key="idx">
-                            <div class="flex gap-2 items-start bg-slate-50 p-2 rounded border">
-                                <input type="checkbox" x-model="m.completed" class="mt-1.5">
-                                <div class="flex-1 space-y-1">
-                                    <input x-model="m.title" class="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-sm font-semibold">
-                                    <div class="flex gap-2">
-                                        <input type="date" x-model="m.dueDate" class="text-xs bg-transparent">
-                                        <input x-model="m.evidenceLink" placeholder="Evidence Link..." class="text-xs w-full bg-transparent text-blue-600">
+                            <div class="bg-slate-50 p-2 rounded border group">
+                                <div class="flex gap-2 items-start">
+                                    <input type="checkbox" x-model="m.completed" class="mt-1.5">
+                                    <div class="flex-1 space-y-1">
+                                        <input x-model="m.title" class="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-sm font-semibold">
+                                        <div class="flex gap-2 items-center">
+                                            <input type="date" x-model="m.dueDate" class="text-xs bg-transparent w-24">
+                                            <div class="flex-1 flex items-center bg-white px-1 rounded border">
+                                                <i class="fas fa-link text-xs text-slate-400 mr-1"></i>
+                                                <input x-model="m.evidenceLink" placeholder="Paste OneDrive Link..." class="text-xs w-full outline-none text-blue-600">
+                                            </div>
+                                        </div>
                                     </div>
+                                    <button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
                                 </div>
-                                <button @click="currentProject.milestones.splice(idx, 1)" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
                             </div>
                         </template>
                     </div>
@@ -266,7 +280,7 @@
         function appData() {
             return {
                 view: 'dashboard',
-                fileHandle: null, // The magic connection
+                fileHandle: null,
                 showModal: false,
                 searchQuery: '',
                 filterPriority: '',
@@ -275,13 +289,10 @@
                 reportData: [],
                 settings: { priorities: ['Foundations', 'Assessment', 'Modelling'] },
                 currentProject: {},
+                charts: {}, // Store chart instances
 
-                async init() {
-                    // We don't load from localStorage automatically anymore
-                    // We wait for the user to connect the file
-                },
+                async init() { },
 
-                // --- FILE SYSTEM API ---
                 async openFile() {
                     try {
                         const [handle] = await window.showOpenFilePicker({
@@ -289,107 +300,127 @@
                             multiple: false
                         });
                         this.fileHandle = handle;
-                        
-                        // Read file
                         const file = await handle.getFile();
                         const text = await file.text();
-                        
                         if (text.trim()) {
                             const data = JSON.parse(text);
                             this.projects = data.projects || [];
                             this.settings = data.settings || this.settings;
                             this.activityLog = data.log || [];
+                            
+                            // Initialize Charts after data load
+                            this.$nextTick(() => {
+                                this.initCharts();
+                            });
                         }
-                    } catch (err) {
-                        console.error('File open failed', err);
-                    }
+                    } catch (err) { console.error(err); }
                 },
 
                 async saveToFile() {
                     if (!this.fileHandle) return;
                     try {
                         const writable = await this.fileHandle.createWritable();
-                        const data = {
-                            projects: this.projects,
-                            settings: this.settings,
-                            log: this.activityLog
-                        };
+                        const data = { projects: this.projects, settings: this.settings, log: this.activityLog };
                         await writable.write(JSON.stringify(data, null, 2));
                         await writable.close();
-                        
-                        // Visual feedback could go here
-                        const btn = document.querySelector('button i.fa-save');
-                        if(btn) { btn.parentElement.classList.add('bg-green-700'); setTimeout(()=>btn.parentElement.classList.remove('bg-green-700'), 500); }
-                        
-                    } catch (err) {
-                        alert('Failed to save to file. ' + err.message);
+                        this.updateCharts(); // Refresh charts on save
+                    } catch (err) { alert('Save failed: ' + err.message); }
+                },
+
+                // --- CHARTING LOGIC ---
+                initCharts() {
+                    // Priority Chart (Doughnut)
+                    const pCtx = document.getElementById('priorityChart').getContext('2d');
+                    this.charts.priority = new Chart(pCtx, {
+                        type: 'doughnut',
+                        data: this.getPriorityData(),
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+
+                    // Pipeline Chart (Bar)
+                    const pipeCtx = document.getElementById('pipelineChart').getContext('2d');
+                    this.charts.pipeline = new Chart(pipeCtx, {
+                        type: 'bar',
+                        data: this.getPipelineData(),
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                        }
+                    });
+                },
+
+                updateCharts() {
+                    if(this.charts.priority) {
+                        this.charts.priority.data = this.getPriorityData();
+                        this.charts.priority.update();
+                    }
+                    if(this.charts.pipeline) {
+                        this.charts.pipeline.data = this.getPipelineData();
+                        this.charts.pipeline.update();
                     }
                 },
 
-                // --- APP LOGIC ---
+                getPriorityData() {
+                    const counts = this.settings.priorities.map(p => 
+                        this.projects.filter(proj => proj.priority === p).length
+                    );
+                    return {
+                        labels: this.settings.priorities,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: ['#3b82f6', '#f59e0b', '#10b981'], // Blue, Amber, Emerald
+                            borderWidth: 0
+                        }]
+                    };
+                },
+
+                getPipelineData() {
+                    // Simple logic: "Active" vs "Completed" for now, or use custom stages
+                    const active = this.projects.filter(p => p.status !== 'Completed').length;
+                    const completed = this.projects.filter(p => p.status === 'Completed').length;
+                    return {
+                        labels: ['Active Cases', 'Completed Cases'],
+                        datasets: [{
+                            label: 'Projects',
+                            data: [active, completed],
+                            backgroundColor: ['#3b82f6', '#10b981']
+                        }]
+                    };
+                },
+
+                switchView(v) {
+                    this.view = v;
+                    if(v === 'dashboard') {
+                        // Small delay to let canvas render before updating charts
+                        setTimeout(() => this.updateCharts(), 100);
+                    }
+                },
+
+                // --- APP LOGIC (Simplified for brevity) ---
                 startNewProject(type) {
                     this.currentProject = {
-                        id: Date.now(),
-                        title: '', contact: '', type: type, priority: '', objective: '', status: 'Active',
+                        id: Date.now(), title: '', contact: '', type: type, priority: '', objective: '', status: 'Active',
+                        formEmbedUrl: '', // New field for MS Forms
                         lastUpdated: new Date().toISOString(),
                         milestones: []
                     };
-                    if(type === 'coaching') {
-                         this.currentProject.milestones = [
-                            { title: 'Discovery', completed: false, dueDate: '', evidenceLink: '' },
-                            { title: 'Training', completed: false, dueDate: '', evidenceLink: '' },
-                            { title: 'L2 Impact', completed: false, dueDate: '', evidenceLink: '' },
-                            { title: 'L3 Impact', completed: false, dueDate: '', evidenceLink: '' }
-                        ];
-                    }
+                    if(type === 'coaching') this.currentProject.milestones = [{title:'Discovery', completed:false}, {title:'Training', completed:false}, {title:'L2 Impact', completed:false}, {title:'L3 Impact', completed:false}];
                     this.showModal = true;
                 },
-                
-                editProject(p) {
-                    this.currentProject = JSON.parse(JSON.stringify(p));
-                    this.showModal = true;
-                },
-
-                saveProject() {
+                editProject(p) { this.currentProject = JSON.parse(JSON.stringify(p)); this.showModal = true; },
+                saveProject() { 
                     const idx = this.projects.findIndex(x => x.id === this.currentProject.id);
-                    if (idx === -1) this.projects.push(this.currentProject);
-                    else this.projects[idx] = this.currentProject;
-                    
-                    this.saveToFile(); // Auto save to OneDrive
-                    this.showModal = false;
+                    if(idx === -1) this.projects.push(this.currentProject); else this.projects[idx] = this.currentProject;
+                    this.saveToFile(); this.showModal = false; 
                 },
-
-                addMilestone() {
-                    this.currentProject.milestones.push({title:'New Task', completed:false, dueDate:'', evidenceLink:''});
-                },
-
-                // --- HELPERS ---
-                get filteredProjects() {
-                    return this.projects.filter(p => {
-                        const s = this.searchQuery.toLowerCase();
-                        return (p.title.toLowerCase().includes(s) || p.contact.toLowerCase().includes(s)) &&
-                               (this.filterPriority === '' || p.priority === this.filterPriority);
-                    });
-                },
-                
-                calculateProgress(p) {
-                    if(!p.milestones.length) return 0;
-                    return Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length) * 100);
-                },
-
-                getDueTasks() {
-                    let tasks = [];
-                    this.projects.forEach(p => {
-                        p.milestones.forEach(m => {
-                            if (!m.completed && m.dueDate) tasks.push({id: Math.random(), projectId: p.id, projectName: p.title, title: m.title, dueDate: m.dueDate});
-                        });
-                    });
-                    return tasks.sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
-                },
-                
+                addMilestone() { this.currentProject.milestones.push({title:'New Task', completed:false, evidenceLink:''}); },
+                get filteredProjects() { return this.projects.filter(p => p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) && (this.filterPriority==='' || p.priority===this.filterPriority)); },
+                calculateProgress(p) { return !p.milestones.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
+                getDueTasks() { return this.projects.flatMap(p => p.milestones.filter(m => !m.completed && m.dueDate).map(m => ({id:Math.random(), projectId:p.id, projectName:p.title, title:m.title, dueDate:m.dueDate}))).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)); },
                 formatDate(d) { return d ? new Date(d).toLocaleDateString('en-GB') : ''; },
-
-                generateReport(mode) {
+                countEvidence() { return this.projects.reduce((acc, p) => acc + p.milestones.filter(m => m.evidenceLink).length, 0); },
+                generateReport(mode) { /* Same as before */ 
                      if (mode === 'all') {
                         this.reportData = [{ category: 'All Projects', items: this.projects }];
                     } else if (mode === 'priority') {
