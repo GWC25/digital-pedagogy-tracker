@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Impact Hub - Weston College</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; }
+            .page-break { page-break-before: always; }
+            /* Hide scrollbars in print */
+            ::-webkit-scrollbar { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col" x-data="appData()" x-init="init()">
+
+    <header class="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md no-print">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 w-10 h-10 rounded flex items-center justify-center font-bold text-xl">DC</div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">Digital Impact Hub</h1>
+                <p class="text-xs text-slate-400">Pedagogy & Strategy Tracker</p>
+            </div>
+        </div>
+        <div class="flex gap-4">
+            <button @click="view = 'dashboard'" :class="{'text-blue-400': view === 'dashboard'}" class="hover:text-blue-300 font-semibold"><i class="fas fa-home mr-1"></i> Dashboard</button>
+            <button @click="view = 'projects'" :class="{'text-blue-400': view === 'projects'}" class="hover:text-blue-300 font-semibold"><i class="fas fa-folder-open mr-1"></i> Projects</button>
+            <button @click="view = 'reports'" :class="{'text-blue-400': view === 'reports'}" class="hover:text-blue-300 font-semibold"><i class="fas fa-file-alt mr-1"></i> Reports</button>
+            <button @click="view = 'settings'" :class="{'text-blue-400': view === 'settings'}" class="hover:text-blue-300 font-semibold"><i class="fas fa-sliders-h mr-1"></i> Strategy</button>
+        </div>
+        <div>
+             <button @click="saveToDisk()" class="text-xs bg-emerald-700 hover:bg-emerald-600 px-3 py-1 rounded transition border border-emerald-500"><i class="fas fa-download mr-1"></i> Backup to JSON</button>
+             <label class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded transition border border-slate-500 cursor-pointer ml-2">
+                <i class="fas fa-upload mr-1"></i> Restore
+                <input type="file" @change="importData($event)" class="hidden">
+            </label>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6 relative">
+        
+        <div x-show="view === 'dashboard'" x-transition class="max-w-6xl mx-auto">
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-blue-600 mb-8">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Core Priorities</h2>
+                        <p class="text-slate-500 text-sm">Aligning activity to "1-3 Core Priorities" (Meeting Goal: 5th Feb)</p>
+                    </div>
+                    <button @click="view = 'settings'" class="text-xs text-blue-600 hover:underline">Edit Priorities</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <template x-for="(p, index) in settings.priorities" :key="index">
+                        <div class="bg-slate-50 p-3 rounded border border-slate-200 flex items-center gap-3">
+                            <div class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center font-bold" x-text="index + 1"></div>
+                            <span class="font-semibold text-slate-700" x-text="p || 'Set Priority in Settings'"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="font-bold text-lg mb-4 text-slate-700"><i class="fas fa-exclamation-circle text-amber-500 mr-2"></i> Action Required</h3>
+                        <div class="space-y-2">
+                            <template x-if="getDueTasks().length === 0">
+                                <p class="text-slate-400 italic text-sm">No immediate actions due.</p>
+                            </template>
+                            <template x-for="task in getDueTasks()" :key="task.id">
+                                <div class="flex justify-between items-center p-3 bg-amber-50 border border-amber-100 rounded hover:bg-amber-100 transition cursor-pointer" @click="openProject(task.projectId)">
+                                    <div>
+                                        <div class="text-sm font-bold text-slate-800" x-text="task.title"></div>
+                                        <div class="text-xs text-slate-500" x-text="task.projectName"></div>
+                                    </div>
+                                    <div class="text-xs font-bold text-amber-700 whitespace-nowrap" x-text="formatDate(task.dueDate)"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="font-bold text-lg mb-4 text-slate-700"><i class="fas fa-history text-blue-500 mr-2"></i> Recent Activity Log</h3>
+                        <div class="max-h-48 overflow-y-auto space-y-2 text-sm">
+                            <template x-for="log in activityLog" :key="log.timestamp">
+                                <div class="flex gap-3 border-b border-slate-100 pb-2">
+                                    <span class="text-xs text-slate-400 w-24 shrink-0" x-text="formatDateTime(log.timestamp)"></span>
+                                    <span x-text="log.message"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-indigo-50 p-6 rounded-lg border border-indigo-100">
+                        <h3 class="font-bold text-indigo-900 mb-2">Quick Actions</h3>
+                        <button @click="startNewProject('coaching')" class="w-full text-left bg-white p-3 rounded shadow-sm mb-2 hover:bg-indigo-100 text-sm font-semibold text-indigo-800 transition">
+                            <i class="fas fa-user-friends mr-2"></i> New Coaching Case
+                        </button>
+                        <button @click="startNewProject('project')" class="w-full text-left bg-white p-3 rounded shadow-sm hover:bg-indigo-100 text-sm font-semibold text-indigo-800 transition">
+                            <i class="fas fa-project-diagram mr-2"></i> New Strategic Project
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="font-bold text-slate-700 mb-3">College Tools</h3>
+                        <div class="space-y-2 text-sm">
+                            <a href="https://forms.office.com" target="_blank" class="block p-2 rounded hover:bg-slate-50 text-slate-600 transition"><i class="fas fa-poll-h mr-2 text-green-600"></i> MS Forms</a>
+                            <a href="https://outlook.office.com/bookings" target="_blank" class="block p-2 rounded hover:bg-slate-50 text-slate-600 transition"><i class="fas fa-calendar-check mr-2 text-blue-600"></i> MS Bookings</a>
+                            <div class="border-t pt-2 mt-2">
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Evidence Storage</p>
+                                <p class="text-xs text-slate-500 mb-2">Keep sensitive docs on OneDrive. Paste links into this app.</p>
+                                <a href="https://weston-my.sharepoint.com" target="_blank" class="block text-center w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2 rounded transition">Open OneDrive</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="view === 'projects'" x-cloak class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Active Projects & Coaching</h2>
+                <div class="flex gap-2">
+                    <input x-model="searchQuery" type="text" placeholder="Search..." class="p-2 border rounded text-sm w-64">
+                    <select x-model="filterPriority" class="p-2 border rounded text-sm">
+                        <option value="">All Priorities</option>
+                        <template x-for="p in settings.priorities">
+                            <option :value="p" x-text="p"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="project in filteredProjects" :key="project.id">
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col hover:shadow-md transition">
+                        <div class="p-4 border-b border-slate-100 relative">
+                            <div class="absolute top-4 right-4 text-xs font-bold px-2 py-1 rounded" 
+                                 :class="project.type === 'coaching' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'"
+                                 x-text="project.type === 'coaching' ? 'Coaching' : 'Project'">
+                            </div>
+                            <h3 class="font-bold text-lg text-slate-800 pr-16" x-text="project.title"></h3>
+                            <p class="text-xs text-slate-500 mt-1" x-text="project.contact"></p>
+                            <div class="mt-2 flex flex-wrap gap-1">
+                                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded" x-text="project.priority || 'No Priority'"></span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 flex-1">
+                            <div class="w-full bg-slate-100 rounded-full h-2 mb-4">
+                                <div class="bg-blue-600 h-2 rounded-full" :style="`width: ${calculateProgress(project)}%`"></div>
+                            </div>
+                            
+                            <div class="text-sm">
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Next Step</p>
+                                <div x-text="getNextTask(project) || 'All tasks complete'" class="truncate text-slate-700 font-medium"></div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-between">
+                            <span class="text-xs text-slate-400 self-center" x-text="'Updated: ' + formatDate(project.lastUpdated)"></span>
+                            <button @click="editProject(project)" class="text-sm text-blue-600 hover:text-blue-800 font-semibold">Manage <i class="fas fa-arrow-right ml-1"></i></button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="view === 'reports'" x-cloak class="max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold mb-6">Impact Reporting</h2>
+            
+            <div class="bg-white p-6 rounded shadow-sm mb-6 no-print border border-slate-200">
+                <h3 class="font-bold mb-2 text-lg">Generate Report</h3>
+                <p class="text-sm text-slate-500 mb-4">Select projects to include in your weekly summary or evidence pack.</p>
+                <div class="flex gap-4 mb-4">
+                    <button @click="generateReport('all')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition">All Active Projects</button>
+                    <button @click="generateReport('priority')" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded text-sm transition">Group by Priority</button>
+                </div>
+            </div>
+
+            <div class="bg-white shadow-lg p-10 min-h-[800px]" id="print-area" x-show="reportData.length > 0">
+                <div class="flex justify-between border-b-2 border-slate-800 pb-4 mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold uppercase text-slate-800">Digital Pedagogy Impact</h1>
+                        <p class="text-lg text-slate-600">Status Update & Evidence Log</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold" x-text="formatDate(new Date())"></p>
+                        <p class="text-sm text-slate-500">Weston College</p>
+                    </div>
+                </div>
+
+                <template x-for="grp in reportData" :key="grp.category">
+                    <div class="mb-8 break-inside-avoid">
+                        <h2 class="text-xl font-bold text-white bg-slate-800 px-3 py-1 mb-4 inline-block rounded-sm" x-text="grp.category"></h2>
+                        
+                        <div class="space-y-6">
+                            <template x-for="p in grp.items" :key="p.id">
+                                <div class="pl-4 border-l-4 border-slate-200">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-bold text-lg text-slate-800" x-text="p.title"></h3>
+                                            <p class="text-sm text-slate-600 mb-2" x-text="p.objective"></p>
+                                        </div>
+                                        <span class="text-xs bg-slate-100 px-2 py-1 rounded border border-slate-300" x-text="p.status"></span>
+                                    </div>
+                                    
+                                    <div class="mt-2 space-y-1 bg-slate-50 p-3 rounded">
+                                        <template x-for="m in p.milestones" :key="m.id">
+                                            <div x-show="m.completed" class="flex items-start gap-2 text-sm">
+                                                <i class="fas fa-check-square text-green-600 mt-1"></i>
+                                                <div>
+                                                    <span class="text-slate-700 font-medium" x-text="m.title"></span>
+                                                    <div x-show="m.evidenceLink" class="text-xs mt-0.5">
+                                                        <a :href="m.evidenceLink" target="_blank" class="text-blue-600 underline hover:text-blue-800"><i class="fas fa-link mr-1"></i> Evidence Link (SharePoint)</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <div x-show="!p.milestones.some(m => m.completed)" class="text-xs text-slate-400 italic">No milestones completed yet.</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="view === 'settings'" x-cloak class="max-w-2xl mx-auto">
+            <h2 class="text-2xl font-bold mb-6">Strategy Configuration</h2>
+            <div class="bg-white p-6 rounded shadow-sm border border-slate-200">
+                <h3 class="font-bold mb-4">Core Priorities (1-3)</h3>
+                <p class="text-sm text-slate-500 mb-4">Update these based on your strategy meetings. These tags organize your reports.</p>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-slate-400">1</span>
+                        <input x-model="settings.priorities[0]" class="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Priority 1">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-slate-400">2</span>
+                        <input x-model="settings.priorities[1]" class="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Priority 2">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-slate-400">3</span>
+                        <input x-model="settings.priorities[2]" class="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Priority 3">
+                    </div>
+                </div>
+                <button @click="saveSettings()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">Save Settings</button>
+            </div>
+            
+             <div class="bg-red-50 p-6 rounded shadow-sm border border-red-100 mt-8">
+                <h3 class="font-bold text-red-800 mb-2">Danger Zone</h3>
+                <button @click="clearAllData()" class="text-sm bg-white border border-red-300 text-red-600 hover:bg-red-50 px-3 py-1 rounded">Reset All Data</button>
+            </div>
+        </div>
+
+    </main>
+
+    <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" x-cloak>
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b bg-slate-50 flex justify-between items-center sticky top-0 z-10">
+                <h3 class="font-bold text-lg" x-text="currentProject.id ? 'Edit Case/Project' : 'New Case/Project'"></h3>
+                <button @click="showModal = false" class="text-slate-400 hover:text-slate-600 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-1 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Title / Staff Name</label>
+                        <input x-model="currentProject.title" class="w-full p-2 border rounded text-sm font-bold focus:ring-2 focus:ring-blue-200 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Contact / Dept</label>
+                        <input x-model="currentProject.contact" class="w-full p-2 border rounded text-sm focus:ring-2 focus:ring-blue-200 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Type</label>
+                        <select x-model="currentProject.type" class="w-full p-2 border rounded text-sm bg-slate-50 focus:ring-2 focus:ring-blue-200 outline-none">
+                            <option value="coaching">Coaching Case</option>
+                            <option value="project">Strategic Project</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Aligned Priority</label>
+                        <select x-model="currentProject.priority" class="w-full p-2 border rounded text-sm focus:ring-2 focus:ring-blue-200 outline-none">
+                            <option value="">-- None --</option>
+                            <template x-for="p in settings.priorities">
+                                <option :value="p" x-text="p"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Objective</label>
+                        <textarea x-model="currentProject.objective" class="w-full p-2 border rounded text-sm h-24 focus:ring-2 focus:ring-blue-200 outline-none" placeholder="What is the goal?"></textarea>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-bold uppercase text-slate-500">Milestones & Tasks</label>
+                        <button @click="addMilestone()" class="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded transition"><i class="fas fa-plus mr-1"></i> Add Task</button>
+                    </div>
+
+                    <div class="space-y-3 bg-slate-50 p-4 rounded border border-slate-200 max-h-[500px] overflow-y-auto">
+                        <template x-for="(m, idx) in currentProject.milestones" :key="idx">
+                            <div class="bg-white p-3 rounded shadow-sm border border-slate-100 group">
+                                <div class="flex items-start gap-3">
+                                    <input type="checkbox" x-model="m.completed" @change="logActivity(currentProject.title, m.title)" class="mt-1.5 w-4 h-4 text-blue-600 rounded cursor-pointer">
+                                    <div class="flex-1 space-y-2">
+                                        <input x-model="m.title" class="w-full text-sm font-semibold border-b border-transparent hover:border-slate-300 focus:border-blue-300 outline-none transition" placeholder="Task Name">
+                                        
+                                        <div class="flex gap-2 text-xs">
+                                            <div class="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded">
+                                                <i class="far fa-calendar text-slate-400"></i>
+                                                <input x-model="m.dueDate" type="date" class="bg-transparent outline-none w-24 text-slate-600 cursor-pointer">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex gap-2 items-center bg-slate-50 p-1 rounded border border-transparent focus-within:border-blue-200">
+                                            <i class="fas fa-link text-xs text-slate-400"></i>
+                                            <input x-model="m.evidenceLink" type="text" placeholder="Paste SharePoint/Forms Link here..." class="w-full text-xs bg-transparent outline-none text-blue-600">
+                                        </div>
+                                    </div>
+                                    <button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="currentProject.milestones.length === 0" class="text-center text-slate-400 text-sm py-4">No tasks yet. Click 'Add Task' above.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t bg-slate-50 flex justify-end gap-2 sticky bottom-0">
+                <button @click="showModal = false" class="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded transition">Cancel</button>
+                <button @click="saveProject()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition shadow">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function appData() {
+            return {
+                view: 'dashboard',
+                showModal: false,
+                searchQuery: '',
+                filterPriority: '',
+                reportData: [],
+                
+                settings: {
+                    priorities: ['Foundations & Accessibility', 'Assessment Tracking & AI', 'Staff Capability & Modelling']
+                },
+                
+                activityLog: [],
+                projects: [],
+                
+                currentProject: {},
+
+                init() {
+                    this.loadData();
+                    if (this.projects.length === 0 && this.activityLog.length === 0) {
+                        this.logActivity('System', 'Welcome to Digital Impact Hub v2.1');
+                    }
+                },
+
+                // --- DATA MANAGEMENT ---
+                loadData() {
+                    const p = localStorage.getItem('dih_projects');
+                    const s = localStorage.getItem('dih_settings');
+                    const l = localStorage.getItem('dih_log');
+                    
+                    if (p) this.projects = JSON.parse(p);
+                    if (s) this.settings = JSON.parse(s);
+                    if (l) this.activityLog = JSON.parse(l);
+                },
+
+                saveData() {
+                    localStorage.setItem('dih_projects', JSON.stringify(this.projects));
+                    localStorage.setItem('dih_settings', JSON.stringify(this.settings));
+                    localStorage.setItem('dih_log', JSON.stringify(this.activityLog));
+                },
+                
+                saveSettings() {
+                    localStorage.setItem('dih_settings', JSON.stringify(this.settings));
+                    alert('Settings updated.');
+                },
+
+                logActivity(projName, taskName) {
+                    this.activityLog.unshift({
+                        timestamp: new Date().toISOString(),
+                        message: `Completed: "${taskName}" in ${projName}`
+                    });
+                    if(this.activityLog.length > 50) this.activityLog.pop(); // Keep last 50
+                    this.saveData(); 
+                },
+
+                saveToDisk() {
+                    const data = {
+                        projects: this.projects,
+                        settings: this.settings,
+                        log: this.activityLog
+                    };
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+                    const dl = document.createElement('a');
+                    dl.setAttribute("href", dataStr);
+                    dl.setAttribute("download", "digital_coach_backup_" + new Date().toISOString().slice(0,10) + ".json");
+                    document.body.appendChild(dl);
+                    dl.click();
+                    dl.remove();
+                },
+
+                importData(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if(data.projects) this.projects = data.projects;
+                            if(data.settings) this.settings = data.settings;
+                            if(data.log) this.activityLog = data.log;
+                            this.saveData();
+                            alert('Data restored successfully!');
+                        } catch (err) {
+                            alert('Error reading file. Ensure it is a valid backup JSON.');
+                        }
+                    };
+                    reader.readAsText(file);
+                },
+
+                clearAllData() {
+                    if(confirm('Are you sure? This will delete all local projects. Make sure you have a backup.')) {
+                        localStorage.clear();
+                        location.reload();
+                    }
+                },
+
+                // --- PROJECT LOGIC ---
+                startNewProject(type) {
+                    this.currentProject = {
+                        id: null,
+                        title: '',
+                        contact: '',
+                        type: type,
+                        priority: '',
+                        objective: '',
+                        status: 'Active',
+                        lastUpdated: new Date().toISOString(),
+                        milestones: []
+                    };
+                    
+                    if (type === 'coaching') {
+                        this.currentProject.milestones = [
+                            { title: 'Initial Consultation / Discovery', completed: false, dueDate: '', evidenceLink: '' },
+                            { title: 'Training / Intervention Delivered', completed: false, dueDate: '', evidenceLink: '' },
+                            { title: 'L1: Immediate Reaction (Form)', completed: false, dueDate: '', evidenceLink: '' },
+                            { title: 'L2: Implementation Check (2 Weeks)', completed: false, dueDate: '', evidenceLink: '' },
+                            { title: 'L3: Impact Review (2 Months)', completed: false, dueDate: '', evidenceLink: '' }
+                        ];
+                    } else {
+                        this.currentProject.milestones = [
+                            { title: 'Project Scoping', completed: false, dueDate: '', evidenceLink: '' },
+                            { title: 'Stakeholder Meeting', completed: false, dueDate: '', evidenceLink: '' },
+                            { title: 'Delivery / Launch', completed: false, dueDate: '', evidenceLink: '' }
+                        ];
+                    }
+                    
+                    this.showModal = true;
+                },
+
+                editProject(p) {
+                    this.currentProject = JSON.parse(JSON.stringify(p));
+                    this.showModal = true;
+                },
+
+                saveProject() {
+                    this.currentProject.lastUpdated = new Date().toISOString();
+                    if (!this.currentProject.id) {
+                        this.currentProject.id = Date.now();
+                        this.projects.push(this.currentProject);
+                    } else {
+                        const idx = this.projects.findIndex(x => x.id === this.currentProject.id);
+                        this.projects[idx] = this.currentProject;
+                    }
+                    this.saveData();
+                    this.showModal = false;
+                },
+                
+                openProject(id) {
+                    const p = this.projects.find(x => x.id === id);
+                    if (p) this.editProject(p);
+                },
+
+                addMilestone() {
+                    this.currentProject.milestones.push({
+                        title: 'New Task',
+                        completed: false,
+                        dueDate: '',
+                        evidenceLink: ''
+                    });
+                },
+
+                // --- DASHBOARD HELPERS ---
+                get filteredProjects() {
+                    return this.projects.filter(p => {
+                        const matchSearch = p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+                                            p.contact.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        const matchPrio = this.filterPriority === '' || p.priority === this.filterPriority;
+                        return matchSearch && matchPrio;
+                    });
+                },
+
+                calculateProgress(p) {
+                    if (!p.milestones || p.milestones.length === 0) return 0;
+                    const c = p.milestones.filter(m => m.completed).length;
+                    return Math.round((c / p.milestones.length) * 100);
+                },
+
+                getNextTask(p) {
+                    const t = p.milestones.find(m => !m.completed);
+                    return t ? t.title : null;
+                },
+
+                getDueTasks() {
+                    let tasks = [];
+                    this.projects.forEach(p => {
+                        p.milestones.forEach(m => {
+                            if (!m.completed && m.dueDate) {
+                                tasks.push({
+                                    id: Math.random(),
+                                    projectId: p.id,
+                                    projectName: p.title,
+                                    title: m.title,
+                                    dueDate: m.dueDate
+                                });
+                            }
+                        });
+                    });
+                    return tasks.sort((a,b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5);
+                },
+
+                formatDate(iso) {
+                    if (!iso) return '';
+                    return new Date(iso).toLocaleDateString('en-GB');
+                },
+                
+                formatDateTime(iso) {
+                     if (!iso) return '';
+                     const d = new Date(iso);
+                     return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+                },
+
+                // --- REPORTING ---
+                generateReport(mode) {
+                    if (mode === 'all') {
+                        this.reportData = [{ category: 'All Active Projects', items: this.projects }];
+                    } else if (mode === 'priority') {
+                        const groups = {};
+                        this.projects.forEach(p => {
+                            const key = p.priority || 'Uncategorized';
+                            if (!groups[key]) groups[key] = [];
+                            groups[key].push(p);
+                        });
+                        this.reportData = Object.keys(groups).map(k => ({ category: k, items: groups[k] }));
+                    }
+                    setTimeout(() => {
+                        document.getElementById('print-area').scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
