@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v17 (RAG & Alerts)</title>
+    <title>Digital Impact Hub v18 (Detailed Updates)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -83,10 +83,10 @@
                 <div class="text-7xl text-slate-300 mb-6"><i class="fas fa-cubes"></i></div>
                 <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Your Hub</h2>
                 <p class="text-slate-600 mb-8 leading-relaxed">
-                    <strong>v17.0 Update:</strong><br>
-                    - RAG Ratings (Red/Amber/Green) Borders<br>
-                    - Heartbeat Animations for Overdue Tasks<br>
-                    - Critical Alerts on Dashboard
+                    <strong>v18.0 Update:</strong><br>
+                    - Expanded "Updates" area for detailed meeting notes.<br>
+                    - RAG Ratings & Alerts.<br>
+                    - Full Strategic Linking.
                 </p>
                 <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-1">
                     Select File from OneDrive
@@ -442,23 +442,26 @@
                     </div>
 
                     <div x-show="modalTab==='updates'" class="flex-1 flex flex-col">
-                        <div class="flex gap-2 mb-2">
-                            <input x-model="newUpdateText" @keydown.enter="addUpdate()" placeholder="Type update..." class="flex-1 border p-2 rounded text-xs">
-                            <button @click="addUpdate()" class="bg-emerald-600 text-white px-3 rounded text-xs">Add</button>
+                        <div class="mb-2">
+                            <textarea x-model="newUpdateText" placeholder="Type detailed update or evidence notes..." class="w-full border p-2 rounded text-xs h-20 mb-1 focus:border-emerald-500 outline-none resize-none"></textarea>
+                            <div class="flex justify-between items-center">
+                                <input x-model="newUpdateLink" placeholder="Link (Optional)..." class="flex-1 border p-2 rounded text-xs mr-2 bg-slate-50">
+                                <button @click="addUpdate()" class="bg-emerald-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-emerald-700">Add Update</button>
+                            </div>
                         </div>
-                        <input x-model="newUpdateLink" placeholder="Link (Optional)..." class="w-full border p-2 rounded text-xs mb-2 bg-slate-50">
                         
-                        <div class="space-y-2 overflow-y-auto max-h-[350px] flex-1 bg-slate-50 p-2 rounded border">
+                        <div class="space-y-2 overflow-y-auto max-h-[300px] flex-1 bg-slate-50 p-2 rounded border">
                             <template x-for="(u, idx) in currentProject.updates" :key="idx">
                                 <div class="bg-white p-2 rounded shadow-sm border border-slate-100 text-xs">
                                     <div class="flex justify-between text-slate-400 text-[10px] mb-1">
                                         <span x-text="formatDate(u.date)"></span>
                                         <button @click="currentProject.updates.splice(idx, 1)" class="hover:text-red-500"><i class="fas fa-times"></i></button>
                                     </div>
-                                    <div x-text="u.text" class="font-medium text-slate-700 mb-1"></div>
+                                    <div x-text="u.text" class="font-medium text-slate-700 mb-1 whitespace-pre-wrap"></div>
                                     <a x-show="u.link" :href="u.link" target="_blank" class="text-blue-600 underline truncate block"><i class="fas fa-link mr-1"></i> Evidence</a>
                                 </div>
                             </template>
+                            <div x-show="!currentProject.updates || currentProject.updates.length === 0" class="text-center text-slate-400 italic">No updates logged.</div>
                         </div>
                     </div>
 
@@ -546,6 +549,7 @@
                 },
 
                 createProjectFromAction(priority, milestone) {
+                    // Smart Auto-Fill
                     const defaultTitle = milestone.title;
                     const name = prompt("Enter Name for this Core Action / Project:", defaultTitle);
                     if(!name) return;
