@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v9 (Final Fix)</title>
+    <title>Digital Impact Hub v11 (TLAM Edition)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -59,11 +59,11 @@
         
         <div x-show="!fileHandle" class="max-w-2xl mx-auto mt-20 text-center">
             <div class="bg-white p-10 rounded-xl shadow-xl border-2 border-slate-200">
-                <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-database"></i></div>
+                <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-users-cog"></i></div>
                 <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Data File</h2>
                 <p class="text-slate-600 mb-8 leading-relaxed">
-                    Connect to your <strong>digital-coach-data.json</strong> file.<br>
-                    v9.0 includes an auto-repair tool to fix console errors from previous versions.
+                    v11.0 adds support for <strong>TLAM Allocation</strong> and <strong>Department Codes</strong>.<br>
+                    Previous data will be automatically upgraded to support these new fields.
                 </p>
                 <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition">
                     Select File from OneDrive
@@ -142,7 +142,7 @@
                 </div>
 
                 <div class="space-y-8">
-                    <template x-for="(p, idx) in settings.priorities" :key="p.id || idx">
+                    <template x-for="(p, idx) in settings.priorities" :key="p.id">
                         <div class="bg-white rounded shadow-md border border-slate-200 overflow-hidden">
                             <div class="p-4 flex justify-between items-center" :class="getHeaderColor(idx)">
                                 <h3 class="font-bold text-lg text-white" x-text="'Priority ' + (idx + 1)"></h3>
@@ -157,7 +157,6 @@
                                 <textarea x-model="p.details" class="w-full text-sm p-3 bg-slate-50 border rounded mb-6 h-24 focus:ring-2 focus:ring-blue-100 outline-none" placeholder="Elaborate on the strategy here..."></textarea>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    
                                     <div class="bg-purple-50 rounded p-4 border border-purple-100">
                                         <div class="flex justify-between items-center mb-3">
                                             <h4 class="font-bold text-sm text-purple-900 uppercase">Strategic Milestones</h4>
@@ -225,12 +224,23 @@
                                 <h3 class="font-bold text-slate-800 truncate pr-2 group-hover:text-blue-600 transition" x-text="project.title"></h3>
                                 <span class="text-[10px] bg-slate-100 px-2 py-1 rounded uppercase font-bold tracking-wide" x-text="project.type"></span>
                             </div>
+                            
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <span x-show="project.deptCode" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200" x-text="project.deptCode"></span>
+                                <span x-show="project.tlam" class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded border border-indigo-100" x-text="project.tlam"></span>
+                            </div>
+
                             <div x-show="getProjectStrategyName(project)" class="mb-3">
                                 <span class="text-[10px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded truncate block">
                                     <i class="fas fa-link mr-1"></i> <span x-text="getProjectStrategyName(project)"></span>
                                 </span>
                             </div>
                             <p class="text-xs text-slate-500 mb-4 line-clamp-2" x-text="project.objective || 'No objective set.'"></p>
+                            
+                            <div x-show="project.updates && project.updates.length > 0" class="mb-2">
+                                <span class="text-[10px] text-emerald-600 font-bold"><i class="fas fa-history mr-1"></i> <span x-text="project.updates.length"></span> Updates Logged</span>
+                            </div>
+
                             <div class="mt-auto">
                                 <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2">
                                     <div class="bg-blue-600 h-1.5 rounded-full" :style="`width: ${calculateProgress(project)}%`"></div>
@@ -295,9 +305,24 @@
                                 <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Linked Evidence (Projects)</h3>
                                 <div class="space-y-2">
                                     <template x-for="proj in getProjectsForPriority(p.id)" :key="proj.id">
-                                        <div class="bg-slate-50 p-2 rounded flex justify-between items-center">
-                                            <div><span class="font-bold text-sm" x-text="proj.title"></span><span class="text-xs text-slate-500 ml-2" x-text="proj.objective"></span></div>
-                                            <div class="text-xs"><span x-text="calculateProgress(proj) + '%'"></span></div>
+                                        <div class="bg-slate-50 p-3 rounded">
+                                            <div class="flex justify-between items-center mb-2">
+                                                <div>
+                                                    <span class="font-bold text-sm" x-text="proj.title"></span>
+                                                    <span class="text-[10px] bg-gray-200 px-1 rounded ml-2" x-text="proj.deptCode"></span>
+                                                    <span class="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded ml-1" x-text="proj.tlam"></span>
+                                                </div>
+                                                <div class="text-xs"><span x-text="calculateProgress(proj) + '%'"></span></div>
+                                            </div>
+                                            <div x-show="proj.updates && proj.updates.length > 0" class="ml-4 border-l-2 border-emerald-200 pl-2 mt-2">
+                                                <template x-for="u in proj.updates">
+                                                    <div class="text-xs mb-1">
+                                                        <span class="font-bold text-slate-500" x-text="formatDate(u.date) + ':'"></span>
+                                                        <span x-text="u.text"></span>
+                                                        <span x-show="u.link" class="text-blue-600">[Link]</span>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
                                     </template>
                                     <div x-show="getProjectsForPriority(p.id).length === 0" class="text-xs text-slate-400 italic">No projects linked yet.</div>
@@ -326,7 +351,6 @@
                             <option value="">-- Select Core Priority --</option>
                             <template x-for="p in settings.priorities" :key="p.id"><option :value="p.id" x-text="p.title"></option></template>
                         </select>
-                        
                         <div x-show="currentProject.priorityId">
                             <label class="block text-xs font-bold uppercase text-blue-800 mb-1">Supports Specific Action:</label>
                             <select x-model="currentProject.linkedTaskName" class="w-full border p-2 rounded text-sm bg-white">
@@ -339,13 +363,48 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
-                        <input x-model="currentProject.contact" class="border p-2 rounded text-sm" placeholder="Contact/Dept">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Dept Code</label>
+                            <input x-model="currentProject.deptCode" list="deptCodes" class="w-full border p-2 rounded text-sm" placeholder="e.g. HAC">
+                            <datalist id="deptCodes">
+                                <option value="AGF"><option value="AHE"><option value="ANM"><option value="BUI"><option value="BUS"><option value="CED"><option value="CON"><option value="DCI"><option value="EEY"><option value="EFE"><option value="EGL"><option value="EHE"><option value="EMV"><option value="ENG"><option value="ESO"><option value="EXT"><option value="FAU"><option value="FCO"><option value="FEH"><option value="FPLFIP"><option value="GMA"><option value="HAC"><option value="HBH"><option value="MAT"><option value="PAP"><option value="PRA"><option value="PRE"><option value="PRS"><option value="PSF"><option value="QUA"><option value="SKB"><option value="SMS"><option value="SMX"><option value="SPO">
+                            </datalist>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Lead TLAM</label>
+                            <select x-model="currentProject.tlam" class="w-full border p-2 rounded text-sm">
+                                <option value="">-- None --</option>
+                                <option>Megan Brookes</option><option>Steve Brawley</option><option>Emily Green</option><option>Matt Filer</option><option>Rachel Lane</option><option>Neil Davies</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <input x-model="currentProject.contact" class="border p-2 rounded text-sm" placeholder="Main Contact">
                         <select x-model="currentProject.type" class="border p-2 rounded text-sm"><option value="coaching">Coaching</option><option value="project">Project</option></select>
                     </div>
                     <textarea x-model="currentProject.objective" class="w-full border p-2 rounded h-20 text-sm" placeholder="Objective"></textarea>
-                    <div class="border-t pt-2">
-                         <input x-model="currentProject.formEmbedUrl" placeholder="Paste MS Forms Embed URL..." class="w-full border p-2 rounded text-xs">
+                    
+                    <div class="border-t pt-2 mt-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold uppercase text-emerald-600">Updates / Evidence</label>
+                            <button @click="addUpdate()" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded"><i class="fas fa-plus"></i> Add</button>
+                        </div>
+                        <div class="space-y-2 bg-slate-50 p-2 rounded max-h-40 overflow-y-auto border border-slate-200">
+                            <template x-for="(u, uIdx) in currentProject.updates" :key="uIdx">
+                                <div class="bg-white p-2 rounded border border-slate-100 text-sm">
+                                    <div class="flex gap-2 mb-1">
+                                        <input type="date" x-model="u.date" class="text-xs bg-transparent border-b">
+                                        <input x-model="u.text" class="flex-1 text-xs outline-none" placeholder="Update details...">
+                                        <button @click="currentProject.updates.splice(uIdx, 1)" class="text-red-400"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <input x-model="u.link" class="w-full text-xs text-blue-600 bg-slate-50 p-1 rounded" placeholder="Paste Evidence Link here...">
+                                </div>
+                            </template>
+                            <div x-show="!currentProject.updates || currentProject.updates.length === 0" class="text-center text-xs text-slate-400 italic">No updates logged.</div>
+                        </div>
                     </div>
+
                 </div>
                 <div class="border-l pl-6">
                     <div class="flex justify-between mb-2"><h4 class="font-bold text-sm uppercase text-slate-500">Milestones</h4><button @click="addMilestone()" class="text-xs bg-slate-200 px-2 py-1 rounded">Add</button></div>
@@ -353,6 +412,9 @@
                         <template x-for="(m, idx) in currentProject.milestones" :key="idx">
                             <div class="bg-slate-50 p-2 rounded border"><div class="flex gap-2 items-start"><input type="checkbox" x-model="m.completed" class="mt-1.5"><div class="flex-1 space-y-1"><input x-model="m.title" class="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-sm font-semibold"><div class="flex gap-2 items-center"><input type="date" x-model="m.dueDate" class="text-xs bg-transparent w-24"><input x-model="m.evidenceLink" placeholder="Evidence Link..." class="text-xs w-full text-blue-600 bg-transparent"></div></div><button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button></div></div>
                         </template>
+                    </div>
+                     <div class="mt-4 pt-2 border-t">
+                         <input x-model="currentProject.formEmbedUrl" placeholder="Paste MS Forms Embed URL..." class="w-full border p-2 rounded text-xs bg-slate-50">
                     </div>
                 </div>
             </div>
@@ -369,11 +431,7 @@
                 searchQuery: '',
                 projects: [],
                 reportData: [],
-                settings: { priorities: [
-                    { id: 1, title: 'Teams Foundations & Accessibility', details: 'Teams Health Check, Accessibility Toolkit & Digital Champions.', tasks: [], strategicMilestones: [] },
-                    { id: 2, title: 'AI & Assessment Efficiency', details: 'Co-Pilot Rollout, AI Strategy & Formative Assessment.', tasks: [], strategicMilestones: [] },
-                    { id: 3, title: 'Modelling & TLA', details: 'Screen recording, Pedagogy First & Modelling best practice.', tasks: [], strategicMilestones: [] }
-                ]},
+                settings: { priorities: [] },
                 currentProject: {},
                 charts: {}, 
 
@@ -387,26 +445,39 @@
                         const text = await file.text();
                         if (text.trim()) {
                             const data = JSON.parse(text);
-                            // --- AUTO REPAIR & MIGRATION SCRIPT ---
-                            if (data.projects) this.projects = data.projects;
+                            
+                            // --- V11 DATA REPAIR ---
+                            this.projects = (data.projects || []).map(p => ({
+                                ...p,
+                                updates: p.updates || [],
+                                deptCode: p.deptCode || '', // Ensure field exists
+                                tlam: p.tlam || ''          // Ensure field exists
+                            }));
+
                             if (data.settings && data.settings.priorities) {
-                                // Fix the "Duplicate Key" and "Substring" errors by ensuring objects exist
                                 this.settings.priorities = data.settings.priorities.map((p, index) => {
-                                    // Handle Old String Format
-                                    if (typeof p === 'string') return { id: index + 1, title: p, details: '', tasks: [], strategicMilestones: [] };
-                                    // Handle Missing Arrays in Objects
+                                    if (typeof p === 'string') {
+                                        return { id: index + 1, title: p, details: '', tasks: [], strategicMilestones: [] };
+                                    }
                                     return {
-                                        id: p.id || (index + 1), // Ensure ID exists
-                                        title: p.title || 'Untitled Priority', // Ensure Title exists
+                                        id: p.id || (index + 1),
+                                        title: p.title || 'Untitled Priority',
                                         details: p.details || '',
                                         tasks: p.tasks || [],
                                         strategicMilestones: p.strategicMilestones || []
                                     };
                                 });
+                            } else {
+                                this.settings.priorities = [
+                                    { id: 1, title: 'Teams Foundations', details: '', tasks: [], strategicMilestones: [] },
+                                    { id: 2, title: 'AI Efficiency', details: '', tasks: [], strategicMilestones: [] },
+                                    { id: 3, title: 'Modelling', details: '', tasks: [], strategicMilestones: [] }
+                                ];
                             }
+                            
                             this.$nextTick(() => this.initCharts());
                         }
-                    } catch (err) { console.error(err); alert("Error connecting to file. Check console."); }
+                    } catch (err) { console.error(err); alert("Error connecting. Ensure file is valid JSON."); }
                 },
 
                 async saveToFile() {
@@ -421,25 +492,18 @@
                     } catch (err) { alert('Save failed: ' + err.message); }
                 },
 
-                // --- CHARTS (WITH SAFEGUARDS) ---
+                // --- CHARTS ---
                 initCharts() {
-                    // Safety check: ensure canvas exists and data is ready
-                    const pCanvas = document.getElementById('priorityChart');
-                    const pipeCanvas = document.getElementById('pipelineChart');
-                    if(!pCanvas || !pipeCanvas) return;
-
-                    const pCtx = pCanvas.getContext('2d');
-                    this.charts.priority = new Chart(pCtx, { type: 'doughnut', data: this.getPriorityData(), options: { responsive: true, maintainAspectRatio: false } });
-                    
-                    const pipeCtx = pipeCanvas.getContext('2d');
-                    this.charts.pipeline = new Chart(pipeCtx, { type: 'bar', data: this.getPipelineData(), options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+                    const pCtx = document.getElementById('priorityChart')?.getContext('2d');
+                    const pipeCtx = document.getElementById('pipelineChart')?.getContext('2d');
+                    if(pCtx) this.charts.priority = new Chart(pCtx, { type: 'doughnut', data: this.getPriorityData(), options: { responsive: true, maintainAspectRatio: false } });
+                    if(pipeCtx) this.charts.pipeline = new Chart(pipeCtx, { type: 'bar', data: this.getPipelineData(), options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
                 },
                 updateCharts() { 
                     if(this.charts.priority) { this.charts.priority.data = this.getPriorityData(); this.charts.priority.update(); } 
                     if(this.charts.pipeline) { this.charts.pipeline.data = this.getPipelineData(); this.charts.pipeline.update(); } 
                 },
                 getPriorityData() { 
-                    // Safeguard against undefined priorities
                     if (!this.settings.priorities) return { labels: [], datasets: [] };
                     return { labels: this.settings.priorities.map(p => (p.title || 'Untitled').substring(0, 15)+'...'), datasets: [{ data: this.settings.priorities.map(p => this.projects.filter(proj => proj.priorityId == p.id).length), backgroundColor: ['#2563eb', '#f59e0b', '#059669', '#7c3aed', '#db2777'], borderWidth: 0 }] }; 
                 },
@@ -449,7 +513,12 @@
                 addStrategyTask(priority) { if (!priority.tasks) priority.tasks = []; priority.tasks.push({ name: 'New Action', completed: false, dueDate: '' }); },
                 addStratMilestone(priority) { if(!priority.strategicMilestones) priority.strategicMilestones = []; priority.strategicMilestones.push({ title: 'New Phase', targetDate: '', status: 'Planned' }); },
                 
-                // Generates list for Modal dropdown (Combines Milestones + Actions)
+                // Update Logic
+                addUpdate() {
+                    if(!this.currentProject.updates) this.currentProject.updates = [];
+                    this.currentProject.updates.push({ date: new Date().toISOString().split('T')[0], text: '', link: '' });
+                },
+
                 getAvailableLinks() {
                     if (!this.currentProject.priorityId) return [];
                     const p = this.settings.priorities.find(x => x.id == this.currentProject.priorityId);
@@ -467,15 +536,16 @@
                 },
 
                 isOverdue(dateStr) { return new Date(dateStr) < new Date(new Date().setHours(0,0,0,0)); },
-                countEvidence() { return this.projects.reduce((acc, p) => acc + (p.milestones||[]).filter(m => m.evidenceLink).length, 0); },
-                getTasksForCurrentPriority() { const p = this.settings.priorities.find(x => x.id == this.currentProject.priorityId); return p ? p.tasks : []; },
+                countEvidence() { return this.projects.reduce((acc, p) => acc + (p.milestones||[]).filter(m => m.evidenceLink).length + (p.updates||[]).filter(u => u.link).length, 0); },
+                
+                getProjectsForPriority(pId) { return this.projects.filter(p => p.priorityId == pId); },
                 getProjectStrategyName(p) { if (!p.priorityId) return null; const prio = this.settings.priorities.find(x => x.id == p.priorityId); if (!prio) return null; return p.linkedTaskName ? p.linkedTaskName : prio.title; },
 
                 // --- UI ---
                 getHeaderColor(idx) { return ['bg-blue-600', 'bg-amber-500', 'bg-emerald-600', 'bg-purple-600', 'bg-pink-600'][idx % 5]; },
                 formatDate(d) { return d ? new Date(d).toLocaleDateString('en-GB') : ''; },
                 switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateCharts(),100); },
-                startNewProject() { this.currentProject = { id: Date.now(), title: '', priorityId: '', linkedTaskName: '', type: 'coaching', milestones: [], status: 'Active' }; this.showModal = true; },
+                startNewProject() { this.currentProject = { id: Date.now(), title: '', priorityId: '', linkedTaskName: '', type: 'coaching', milestones: [], updates: [], status: 'Active', deptCode: '', tlam: '' }; this.showModal = true; },
                 editProject(p) { this.currentProject = JSON.parse(JSON.stringify(p)); this.showModal = true; },
                 saveProject() { 
                     const idx = this.projects.findIndex(x => x.id === this.currentProject.id);
