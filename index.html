@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v7</title>
+    <title>Digital Impact Hub v8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,7 +24,7 @@
             <div class="bg-blue-600 w-10 h-10 rounded flex items-center justify-center font-bold text-xl">DC</div>
             <div>
                 <h1 class="font-bold text-lg leading-tight">Digital Impact Hub</h1>
-                <p class="text-xs text-slate-400">Dashboard & Strategy Edition</p>
+                <p class="text-xs text-slate-400">Strategy & Dashboard</p>
             </div>
         </div>
         
@@ -59,11 +59,11 @@
         
         <div x-show="!fileHandle" class="max-w-2xl mx-auto mt-20 text-center">
             <div class="bg-white p-10 rounded-xl shadow-xl border-2 border-slate-200">
-                <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-chart-line"></i></div>
+                <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-layer-group"></i></div>
                 <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Data File</h2>
                 <p class="text-slate-600 mb-8 leading-relaxed">
                     Connect to your <strong>digital-coach-data.json</strong> file.<br>
-                    Restoring Visual Dashboard & Pipeline Charts.
+                    Restoring V5 Strategy Builder + V4 Visual Dashboard.
                 </p>
                 <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition">
                     Select File from OneDrive
@@ -87,7 +87,7 @@
                         <div class="text-3xl font-bold" x-text="projects.filter(p=>p.status!=='Completed').length"></div>
                     </div>
                     <div class="bg-white p-6 rounded shadow border-l-4 border-amber-500">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Deadlines (30 Days)</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Tasks Due</div>
                         <div class="text-3xl font-bold" x-text="getAllDueTasks().length"></div>
                     </div>
                     <div class="bg-white p-6 rounded shadow border-l-4 border-emerald-500">
@@ -112,7 +112,7 @@
                 </div>
 
                 <div class="bg-white rounded p-6 shadow-sm">
-                    <h3 class="font-bold text-lg mb-4 text-slate-800">Action Required: Next 30 Days</h3>
+                    <h3 class="font-bold text-lg mb-4 text-slate-800">Immediate Actions & Deadlines</h3>
                     <div class="space-y-2 overflow-y-auto max-h-60 pr-2">
                             <template x-for="task in getAllDueTasks()" :key="task.id">
                             <div class="flex justify-between items-center p-3 border-l-4 rounded shadow-sm hover:shadow transition cursor-pointer bg-white border-gray-200"
@@ -120,14 +120,14 @@
                                 <div>
                                     <div class="text-sm font-bold text-slate-800" x-text="task.title"></div>
                                     <div class="text-xs text-slate-500">
-                                        <span x-show="task.isStrategy" class="text-purple-700 font-bold uppercase text-[10px] mr-1">Strategy Action</span>
+                                        <span x-show="task.isStrategy" class="text-purple-700 font-bold uppercase text-[10px] mr-1">Strategy</span>
                                         <span x-text="task.context"></span>
                                     </div>
                                 </div>
                                 <div class="text-xs font-bold" :class="isOverdue(task.dueDate) ? 'text-red-600' : 'text-slate-600'" x-text="formatDate(task.dueDate)"></div>
                             </div>
                         </template>
-                        <div x-show="getAllDueTasks().length === 0" class="text-slate-400 italic text-sm text-center py-4">No urgent tasks. Good job!</div>
+                        <div x-show="getAllDueTasks().length === 0" class="text-slate-400 italic text-sm text-center py-4">No urgent tasks.</div>
                     </div>
                 </div>
             </div>
@@ -136,9 +136,9 @@
                 <div class="flex justify-between items-center mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Strategic Pillars</h2>
-                        <p class="text-slate-500 text-sm">Define Goals, High-Level Milestones, and Core Actions.</p>
+                        <p class="text-slate-500 text-sm">Define your 3 Core Priorities, Milestones, and Actions.</p>
                     </div>
-                    <button @click="saveToFile()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"><i class="fas fa-save mr-2"></i> Save Strategy</button>
+                    <button @click="saveToFile()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow"><i class="fas fa-save mr-2"></i> Save Strategy</button>
                 </div>
 
                 <div class="space-y-8">
@@ -146,57 +146,64 @@
                         <div class="bg-white rounded shadow-md border border-slate-200 overflow-hidden">
                             <div class="p-4 flex justify-between items-center" :class="getHeaderColor(idx)">
                                 <h3 class="font-bold text-lg text-white" x-text="'Priority ' + (idx + 1)"></h3>
-                                <div class="text-white text-sm opacity-90 font-mono">ID: <span x-text="p.id"></span></div>
+                                <div class="text-white text-sm opacity-90"><i class="fas fa-layer-group"></i></div>
                             </div>
                             
                             <div class="p-6">
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Priority Statement</label>
                                 <input x-model="p.title" class="w-full text-lg font-bold border-b-2 border-slate-200 focus:border-blue-500 outline-none mb-4 pb-1 transition" placeholder="Enter Priority Title...">
                                 
-                                <textarea x-model="p.details" class="w-full text-sm p-3 bg-slate-50 border rounded mb-6 h-20 focus:ring-2 focus:ring-blue-100 outline-none" placeholder="Strategy Description..."></textarea>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Strategy & Drill-Down Details</label>
+                                <textarea x-model="p.details" class="w-full text-sm p-3 bg-slate-50 border rounded mb-6 h-24 focus:ring-2 focus:ring-blue-100 outline-none" placeholder="Elaborate on the strategy here..."></textarea>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    
                                     <div class="bg-purple-50 rounded p-4 border border-purple-100">
                                         <div class="flex justify-between items-center mb-3">
-                                            <h4 class="font-bold text-sm text-purple-900 uppercase">Strategic Milestones (Phases)</h4>
-                                            <button @click="addStratMilestone(p)" class="text-xs bg-white border px-2 py-1 rounded text-purple-700 hover:bg-purple-100"><i class="fas fa-plus"></i> Add</button>
+                                            <h4 class="font-bold text-sm text-purple-900 uppercase">Strategic Milestones</h4>
+                                            <button @click="addStratMilestone(p)" class="text-xs bg-white border border-purple-200 px-3 py-1 rounded text-purple-700 hover:bg-purple-100 font-bold shadow-sm"><i class="fas fa-plus mr-1"></i> Add Phase</button>
                                         </div>
                                         <div class="space-y-2">
                                             <template x-for="(sm, smIdx) in p.strategicMilestones" :key="smIdx">
-                                                <div class="bg-white p-2 rounded shadow-sm border border-purple-100">
-                                                    <input x-model="sm.title" class="w-full text-sm font-bold border-b border-transparent focus:border-purple-300 outline-none mb-1" placeholder="Phase Name (e.g. Audit)">
-                                                    <div class="flex justify-between items-center">
-                                                        <input type="date" x-model="sm.targetDate" class="text-xs bg-transparent text-slate-500">
-                                                        <select x-model="sm.status" class="text-[10px] border rounded bg-slate-50"><option>Planned</option><option>In Progress</option><option>Complete</option></select>
-                                                        <button @click="p.strategicMilestones.splice(smIdx, 1)" class="text-slate-300 hover:text-red-400 ml-2"><i class="fas fa-times"></i></button>
+                                                <div class="bg-white p-3 rounded shadow-sm border border-purple-100">
+                                                    <input x-model="sm.title" class="w-full text-sm font-bold border-b border-transparent focus:border-purple-300 outline-none mb-2" placeholder="Phase Name (e.g. Audit)">
+                                                    <div class="flex justify-between items-center gap-2">
+                                                        <div class="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded border">
+                                                            <i class="far fa-calendar text-xs text-slate-400"></i>
+                                                            <input type="date" x-model="sm.targetDate" class="text-xs bg-transparent outline-none text-slate-600">
+                                                        </div>
+                                                        <select x-model="sm.status" class="text-[10px] border rounded bg-slate-50 p-1"><option>Planned</option><option>In Progress</option><option>Complete</option></select>
+                                                        <button @click="p.strategicMilestones.splice(smIdx, 1)" class="text-slate-300 hover:text-red-400 ml-1"><i class="fas fa-times"></i></button>
                                                     </div>
                                                 </div>
                                             </template>
-                                            <div x-show="!p.strategicMilestones || p.strategicMilestones.length === 0" class="text-center text-xs text-purple-400 italic py-2">No phases defined.</div>
+                                            <div x-show="!p.strategicMilestones || p.strategicMilestones.length === 0" class="text-center text-xs text-purple-400 italic py-4">No milestones defined.</div>
                                         </div>
                                     </div>
 
                                     <div class="bg-slate-50 rounded p-4 border border-slate-200">
                                         <div class="flex justify-between items-center mb-3">
                                             <h4 class="font-bold text-sm text-slate-700 uppercase">Core Strategic Actions</h4>
-                                            <button @click="addStrategyTask(p)" class="text-xs bg-white border px-2 py-1 rounded text-slate-600 hover:bg-slate-100"><i class="fas fa-plus"></i> Add Action</button>
+                                            <button @click="addStrategyTask(p)" class="text-xs bg-white border border-slate-300 px-3 py-1 rounded text-slate-700 hover:bg-slate-100 font-bold shadow-sm"><i class="fas fa-plus mr-1"></i> Add Action</button>
                                         </div>
                                         <div class="space-y-2">
                                             <template x-for="(task, tIdx) in p.tasks" :key="tIdx">
-                                                <div class="flex flex-col gap-1 bg-white p-2 rounded shadow-sm border border-slate-100">
-                                                    <div class="flex items-center gap-2">
+                                                <div class="bg-white p-2 rounded shadow-sm border border-slate-100">
+                                                    <div class="flex items-center gap-2 mb-1">
                                                         <input type="checkbox" x-model="task.completed" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-                                                        <input x-model="task.name" class="flex-1 text-sm bg-transparent border-none outline-none focus:text-blue-700 placeholder-slate-400" placeholder="Action Name...">
+                                                        <input x-model="task.name" class="flex-1 text-sm bg-transparent border-none outline-none focus:text-blue-700 font-medium" placeholder="Action Name...">
                                                         <button @click="p.tasks.splice(tIdx, 1)" class="text-slate-300 hover:text-red-400"><i class="fas fa-times"></i></button>
                                                     </div>
                                                     <div class="flex items-center gap-2 ml-6">
-                                                        <span class="text-[10px] text-slate-400 uppercase font-bold">Deadline:</span>
-                                                        <input type="date" x-model="task.dueDate" class="text-xs bg-transparent border-b border-slate-200 text-slate-600 focus:border-blue-300 outline-none">
+                                                        <span class="text-[10px] text-slate-400 uppercase font-bold">Due:</span>
+                                                        <input type="date" x-model="task.dueDate" class="text-xs bg-transparent border-b border-slate-100 focus:border-blue-300 outline-none text-slate-600">
                                                     </div>
                                                 </div>
                                             </template>
-                                            <div x-show="p.tasks.length === 0" class="text-center text-xs text-slate-400 italic py-2">No actions defined.</div>
+                                            <div x-show="p.tasks.length === 0" class="text-center text-xs text-slate-400 italic py-4">No actions defined.</div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -262,22 +269,18 @@
                                 
                                 <div class="grid grid-cols-2 gap-6 mb-6">
                                     <div>
-                                        <h3 class="text-xs font-bold uppercase text-purple-800 mb-2 border-b border-purple-200 pb-1">Milestone Timeline</h3>
-                                        <div class="space-y-2">
+                                        <h3 class="text-xs font-bold uppercase text-purple-800 mb-2 border-b border-purple-200 pb-1">Milestones</h3>
+                                        <div class="space-y-1">
                                             <template x-for="sm in p.strategicMilestones">
                                                 <div class="flex justify-between text-xs">
                                                     <span class="font-bold text-slate-700" x-text="sm.title"></span>
-                                                    <span>
-                                                        <span x-text="formatDate(sm.targetDate)" class="text-slate-500 mr-2"></span>
-                                                        <span class="px-1 rounded bg-slate-100" x-text="sm.status"></span>
-                                                    </span>
+                                                    <span><span x-text="formatDate(sm.targetDate)" class="text-slate-500 mr-2"></span><span class="px-1 rounded bg-slate-100" x-text="sm.status"></span></span>
                                                 </div>
                                             </template>
-                                             <div x-show="!p.strategicMilestones || p.strategicMilestones.length === 0" class="text-xs text-slate-400">No milestones set.</div>
                                         </div>
                                     </div>
                                     <div>
-                                        <h3 class="text-xs font-bold uppercase text-blue-800 mb-2 border-b border-blue-200 pb-1">Core Actions</h3>
+                                        <h3 class="text-xs font-bold uppercase text-blue-800 mb-2 border-b border-blue-200 pb-1">Actions</h3>
                                         <div class="space-y-1">
                                             <template x-for="t in p.tasks">
                                                 <div class="flex justify-between text-xs">
@@ -293,13 +296,8 @@
                                 <div class="space-y-2">
                                     <template x-for="proj in getProjectsForPriority(p.id)" :key="proj.id">
                                         <div class="bg-slate-50 p-2 rounded flex justify-between items-center">
-                                            <div>
-                                                <span class="font-bold text-sm" x-text="proj.title"></span>
-                                                <span class="text-xs text-slate-500 ml-2" x-text="proj.objective"></span>
-                                            </div>
-                                            <div class="text-xs">
-                                                <span x-text="calculateProgress(proj) + '%'"></span>
-                                            </div>
+                                            <div><span class="font-bold text-sm" x-text="proj.title"></span><span class="text-xs text-slate-500 ml-2" x-text="proj.objective"></span></div>
+                                            <div class="text-xs"><span x-text="calculateProgress(proj) + '%'"></span></div>
                                         </div>
                                     </template>
                                 </div>
@@ -371,7 +369,7 @@
                     { id: 3, title: 'Modelling & TLA', details: 'Screen recording, Pedagogy First & Modelling best practice.', tasks: [], strategicMilestones: [] }
                 ]},
                 currentProject: {},
-                charts: {}, // Stores Chart Instances
+                charts: {}, 
 
                 async init() {},
 
@@ -407,51 +405,16 @@
                     } catch (err) { alert('Save failed: ' + err.message); }
                 },
 
-                // --- CHARTS (RESTORED FROM V4) ---
+                // --- CHARTS (RESTORED) ---
                 initCharts() {
-                    // Priority Chart (Doughnut)
                     const pCtx = document.getElementById('priorityChart').getContext('2d');
-                    this.charts.priority = new Chart(pCtx, {
-                        type: 'doughnut',
-                        data: this.getPriorityData(),
-                        options: { responsive: true, maintainAspectRatio: false }
-                    });
-
-                    // Pipeline Chart (Bar)
+                    this.charts.priority = new Chart(pCtx, { type: 'doughnut', data: this.getPriorityData(), options: { responsive: true, maintainAspectRatio: false } });
                     const pipeCtx = document.getElementById('pipelineChart').getContext('2d');
-                    this.charts.pipeline = new Chart(pipeCtx, {
-                        type: 'bar',
-                        data: this.getPipelineData(),
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false,
-                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-                        }
-                    });
+                    this.charts.pipeline = new Chart(pipeCtx, { type: 'bar', data: this.getPipelineData(), options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
                 },
-
-                updateCharts() {
-                    if(this.charts.priority) { this.charts.priority.data = this.getPriorityData(); this.charts.priority.update(); }
-                    if(this.charts.pipeline) { this.charts.pipeline.data = this.getPipelineData(); this.charts.pipeline.update(); }
-                },
-
-                getPriorityData() {
-                    const counts = this.settings.priorities.map(p => this.projects.filter(proj => proj.priorityId == p.id).length);
-                    return {
-                        labels: this.settings.priorities.map(p => p.title.substring(0, 15)+'...'),
-                        datasets: [{ data: counts, backgroundColor: ['#2563eb', '#f59e0b', '#059669'], borderWidth: 0 }]
-                    };
-                },
-
-                getPipelineData() {
-                    // Count by Status
-                    const active = this.projects.filter(p => p.status !== 'Completed').length;
-                    const completed = this.projects.filter(p => p.status === 'Completed').length;
-                    return {
-                        labels: ['Active Cases', 'Completed Cases'],
-                        datasets: [{ label: 'Projects', data: [active, completed], backgroundColor: ['#3b82f6', '#10b981'] }]
-                    };
-                },
+                updateCharts() { if(this.charts.priority) { this.charts.priority.data = this.getPriorityData(); this.charts.priority.update(); } if(this.charts.pipeline) { this.charts.pipeline.data = this.getPipelineData(); this.charts.pipeline.update(); } },
+                getPriorityData() { return { labels: this.settings.priorities.map(p => p.title.substring(0, 15)+'...'), datasets: [{ data: this.settings.priorities.map(p => this.projects.filter(proj => proj.priorityId == p.id).length), backgroundColor: ['#2563eb', '#f59e0b', '#059669'], borderWidth: 0 }] }; },
+                getPipelineData() { return { labels: ['Active Cases', 'Completed Cases'], datasets: [{ label: 'Projects', data: [this.projects.filter(p => p.status !== 'Completed').length, this.projects.filter(p => p.status === 'Completed').length], backgroundColor: ['#3b82f6', '#10b981'] }] }; },
 
                 // --- HELPERS ---
                 addStrategyTask(priority) { if (!priority.tasks) priority.tasks = []; priority.tasks.push({ name: 'New Action', completed: false, dueDate: '' }); },
@@ -459,31 +422,19 @@
                 
                 getAllDueTasks() {
                     let all = [];
-                    // Project tasks
-                    this.projects.forEach(p => {
-                        (p.milestones||[]).forEach(m => {
-                            if (!m.completed && m.dueDate) all.push({id:Math.random(), projectId:p.id, projectName:p.title, title:m.title, dueDate:m.dueDate, context:'Project Task', isStrategy: false});
-                        });
-                    });
-                    // Strategy tasks
-                    this.settings.priorities.forEach(p => {
-                        (p.tasks||[]).forEach(t => {
-                            if (!t.completed && t.dueDate) all.push({id:Math.random(), projectId:null, projectName:p.title, title:t.name, dueDate:t.dueDate, context:'Core Action', isStrategy: true});
-                        });
-                    });
+                    this.projects.forEach(p => (p.milestones||[]).forEach(m => { if (!m.completed && m.dueDate) all.push({id:Math.random(), projectId:p.id, projectName:p.title, title:m.title, dueDate:m.dueDate, context:'Project Task', isStrategy: false}); }));
+                    this.settings.priorities.forEach(p => (p.tasks||[]).forEach(t => { if (!t.completed && t.dueDate) all.push({id:Math.random(), projectId:null, projectName:p.title, title:t.name, dueDate:t.dueDate, context:'Core Action', isStrategy: true}); }));
                     return all.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0, 30);
                 },
 
                 isOverdue(dateStr) { return new Date(dateStr) < new Date(new Date().setHours(0,0,0,0)); },
                 countEvidence() { return this.projects.reduce((acc, p) => acc + (p.milestones||[]).filter(m => m.evidenceLink).length, 0); },
-                
                 getTasksForCurrentPriority() { const p = this.settings.priorities.find(x => x.id == this.currentProject.priorityId); return p ? p.tasks : []; },
                 getProjectStrategyName(p) { if (!p.priorityId) return null; const prio = this.settings.priorities.find(x => x.id == p.priorityId); if (!prio) return null; return p.linkedTaskName ? p.linkedTaskName : prio.title; },
 
                 // --- UI ---
                 getHeaderColor(idx) { return ['bg-blue-600', 'bg-amber-500', 'bg-emerald-600'][idx % 3]; },
                 formatDate(d) { return d ? new Date(d).toLocaleDateString('en-GB') : ''; },
-
                 switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateCharts(),100); },
                 startNewProject() { this.currentProject = { id: Date.now(), title: '', priorityId: '', linkedTaskName: '', type: 'coaching', milestones: [], status: 'Active' }; this.showModal = true; },
                 editProject(p) { this.currentProject = JSON.parse(JSON.stringify(p)); this.showModal = true; },
@@ -495,7 +446,6 @@
                 addMilestone() { if(!this.currentProject.milestones) this.currentProject.milestones=[]; this.currentProject.milestones.push({title:'New Task', completed:false}); },
                 get filteredProjects() { return this.projects.filter(p => p.title.toLowerCase().includes(this.searchQuery.toLowerCase())); },
                 calculateProgress(p) { return !p.milestones?.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
-                
                 generateReport() { this.reportData = this.settings.priorities; setTimeout(() => document.getElementById('print-area').scrollIntoView({behavior:'smooth'}), 100); },
             }
         }
