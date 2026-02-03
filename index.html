@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v6</title>
+    <title>Digital Impact Hub v7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,7 +24,7 @@
             <div class="bg-blue-600 w-10 h-10 rounded flex items-center justify-center font-bold text-xl">DC</div>
             <div>
                 <h1 class="font-bold text-lg leading-tight">Digital Impact Hub</h1>
-                <p class="text-xs text-slate-400">Strategic Timeline Edition</p>
+                <p class="text-xs text-slate-400">Dashboard & Strategy Edition</p>
             </div>
         </div>
         
@@ -59,11 +59,11 @@
         
         <div x-show="!fileHandle" class="max-w-2xl mx-auto mt-20 text-center">
             <div class="bg-white p-10 rounded-xl shadow-xl border-2 border-slate-200">
-                <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-timeline"></i></div>
-                <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Strategy Data</h2>
+                <div class="text-6xl text-slate-300 mb-6"><i class="fas fa-chart-line"></i></div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Data File</h2>
                 <p class="text-slate-600 mb-8 leading-relaxed">
                     Connect to your <strong>digital-coach-data.json</strong> file.<br>
-                    v6.0 adds support for Strategy Deadlines and Pilot Milestones.
+                    Restoring Visual Dashboard & Pipeline Charts.
                 </p>
                 <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition">
                     Select File from OneDrive
@@ -76,58 +76,58 @@
             <div class="flex justify-center gap-6 mb-8 border-b border-slate-200 pb-4 no-print">
                 <button @click="switchView('dashboard')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'dashboard'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition">Dashboard</button>
                 <button @click="switchView('strategy')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'strategy'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition"><i class="fas fa-chess mr-1"></i> Strategy Pillars</button>
-                <button @click="switchView('projects')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'projects'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition">Projects & Evidence</button>
-                <button @click="switchView('reports')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'reports'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition">Reporting</button>
+                <button @click="switchView('projects')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'projects'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition">Projects</button>
+                <button @click="switchView('reports')" :class="{'text-blue-600 border-b-2 border-blue-600': view === 'reports'}" class="pb-2 font-bold text-slate-500 hover:text-blue-600 transition">Reports</button>
             </div>
 
             <div x-show="view === 'dashboard'" class="max-w-7xl mx-auto">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <template x-for="(p, idx) in settings.priorities" :key="p.id">
-                        <div class="bg-white p-6 rounded shadow border-t-4 flex flex-col h-full" :class="getBorderColor(idx)">
-                            <h3 class="font-bold text-slate-800 mb-2 truncate" x-text="p.title"></h3>
-                            
-                            <div class="bg-slate-50 p-2 rounded mb-4 text-xs">
-                                <span class="font-bold uppercase text-slate-500">Next Milestone:</span>
-                                <div x-text="getNextMilestone(p)" class="font-bold text-slate-700 mt-1"></div>
-                            </div>
-
-                            <div class="mt-auto">
-                                <div class="flex justify-between text-xs font-bold text-slate-500 mb-1">
-                                    <span>Actions Complete</span>
-                                    <span x-text="getPriorityProgress(p) + '%'"></span>
-                                </div>
-                                <div class="w-full bg-slate-100 rounded-full h-2">
-                                    <div class="h-2 rounded-full transition-all duration-500" :class="getBgColor(idx)" :style="`width: ${getPriorityProgress(p)}%`"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded shadow border-l-4 border-blue-500">
+                        <div class="text-xs font-bold text-slate-400 uppercase">Active Cases</div>
+                        <div class="text-3xl font-bold" x-text="projects.filter(p=>p.status!=='Completed').length"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded shadow border-l-4 border-amber-500">
+                        <div class="text-xs font-bold text-slate-400 uppercase">Deadlines (30 Days)</div>
+                        <div class="text-3xl font-bold" x-text="getAllDueTasks().length"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded shadow border-l-4 border-emerald-500">
+                        <div class="text-xs font-bold text-slate-400 uppercase">Completed</div>
+                        <div class="text-3xl font-bold" x-text="projects.filter(p=>p.status==='Completed').length"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded shadow border-l-4 border-purple-500">
+                        <div class="text-xs font-bold text-slate-400 uppercase">Evidence Links</div>
+                        <div class="text-3xl font-bold" x-text="countEvidence()"></div>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     <div class="bg-white p-6 rounded shadow-sm">
-                        <h3 class="font-bold text-slate-700 mb-4">Deadlines: Next 30 Days</h3>
-                        <div class="space-y-2 overflow-y-auto h-64 pr-2">
-                             <template x-for="task in getAllDueTasks()" :key="task.id">
-                                <div class="flex justify-between items-center p-3 border-l-4 rounded shadow-sm hover:shadow transition cursor-pointer bg-white" 
-                                     :class="task.isStrategy ? 'border-purple-500' : 'border-blue-500'">
-                                    <div>
-                                        <div class="text-sm font-bold text-slate-800" x-text="task.title"></div>
-                                        <div class="text-xs text-slate-500">
-                                            <span x-show="task.isStrategy" class="text-purple-600 font-bold uppercase text-[10px] mr-1">Strategy</span>
-                                            <span x-text="task.context"></span>
-                                        </div>
-                                    </div>
-                                    <div class="text-xs font-bold" :class="isOverdue(task.dueDate) ? 'text-red-600' : 'text-slate-600'" x-text="formatDate(task.dueDate)"></div>
-                                </div>
-                            </template>
-                            <div x-show="getAllDueTasks().length === 0" class="text-slate-400 italic text-sm text-center mt-10">No urgent tasks.</div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white p-6 rounded shadow-sm">
-                        <h3 class="font-bold text-slate-700 mb-4">Evidence by Priority</h3>
+                        <h3 class="font-bold text-slate-700 mb-4">Strategic Focus (Priority Split)</h3>
                         <div class="h-64"><canvas id="priorityChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded shadow-sm">
+                        <h3 class="font-bold text-slate-700 mb-4">Coaching Pipeline Stage</h3>
+                        <div class="h-64"><canvas id="pipelineChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded p-6 shadow-sm">
+                    <h3 class="font-bold text-lg mb-4 text-slate-800">Action Required: Next 30 Days</h3>
+                    <div class="space-y-2 overflow-y-auto max-h-60 pr-2">
+                            <template x-for="task in getAllDueTasks()" :key="task.id">
+                            <div class="flex justify-between items-center p-3 border-l-4 rounded shadow-sm hover:shadow transition cursor-pointer bg-white border-gray-200"
+                                 :class="task.isStrategy ? 'border-l-purple-500 bg-purple-50' : 'border-l-blue-500 hover:bg-blue-50'">
+                                <div>
+                                    <div class="text-sm font-bold text-slate-800" x-text="task.title"></div>
+                                    <div class="text-xs text-slate-500">
+                                        <span x-show="task.isStrategy" class="text-purple-700 font-bold uppercase text-[10px] mr-1">Strategy Action</span>
+                                        <span x-text="task.context"></span>
+                                    </div>
+                                </div>
+                                <div class="text-xs font-bold" :class="isOverdue(task.dueDate) ? 'text-red-600' : 'text-slate-600'" x-text="formatDate(task.dueDate)"></div>
+                            </div>
+                        </template>
+                        <div x-show="getAllDueTasks().length === 0" class="text-slate-400 italic text-sm text-center py-4">No urgent tasks. Good job!</div>
                     </div>
                 </div>
             </div>
@@ -371,7 +371,7 @@
                     { id: 3, title: 'Modelling & TLA', details: 'Screen recording, Pedagogy First & Modelling best practice.', tasks: [], strategicMilestones: [] }
                 ]},
                 currentProject: {},
-                chart: null,
+                charts: {}, // Stores Chart Instances
 
                 async init() {},
 
@@ -384,14 +384,13 @@
                         if (text.trim()) {
                             const data = JSON.parse(text);
                             this.projects = data.projects || [];
-                            // UPGRADE LOGIC for v6 (Ensure milestones array exists)
                             if (data.settings && data.settings.priorities) {
                                 this.settings.priorities = data.settings.priorities.map(p => ({
                                     ...p,
-                                    strategicMilestones: p.strategicMilestones || [] // Add missing array
+                                    strategicMilestones: p.strategicMilestones || []
                                 }));
                             }
-                            this.$nextTick(() => this.initChart());
+                            this.$nextTick(() => this.initCharts());
                         }
                     } catch (err) { console.error(err); }
                 },
@@ -402,29 +401,62 @@
                         const writable = await this.fileHandle.createWritable();
                         await writable.write(JSON.stringify({ projects: this.projects, settings: this.settings }, null, 2));
                         await writable.close();
-                        this.updateChart();
+                        this.updateCharts();
                         const btn = document.querySelector('.fa-save');
                         if(btn) { btn.parentElement.classList.add('bg-green-700'); setTimeout(()=>btn.parentElement.classList.remove('bg-green-700'), 500); }
                     } catch (err) { alert('Save failed: ' + err.message); }
+                },
+
+                // --- CHARTS (RESTORED FROM V4) ---
+                initCharts() {
+                    // Priority Chart (Doughnut)
+                    const pCtx = document.getElementById('priorityChart').getContext('2d');
+                    this.charts.priority = new Chart(pCtx, {
+                        type: 'doughnut',
+                        data: this.getPriorityData(),
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+
+                    // Pipeline Chart (Bar)
+                    const pipeCtx = document.getElementById('pipelineChart').getContext('2d');
+                    this.charts.pipeline = new Chart(pipeCtx, {
+                        type: 'bar',
+                        data: this.getPipelineData(),
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                        }
+                    });
+                },
+
+                updateCharts() {
+                    if(this.charts.priority) { this.charts.priority.data = this.getPriorityData(); this.charts.priority.update(); }
+                    if(this.charts.pipeline) { this.charts.pipeline.data = this.getPipelineData(); this.charts.pipeline.update(); }
+                },
+
+                getPriorityData() {
+                    const counts = this.settings.priorities.map(p => this.projects.filter(proj => proj.priorityId == p.id).length);
+                    return {
+                        labels: this.settings.priorities.map(p => p.title.substring(0, 15)+'...'),
+                        datasets: [{ data: counts, backgroundColor: ['#2563eb', '#f59e0b', '#059669'], borderWidth: 0 }]
+                    };
+                },
+
+                getPipelineData() {
+                    // Count by Status
+                    const active = this.projects.filter(p => p.status !== 'Completed').length;
+                    const completed = this.projects.filter(p => p.status === 'Completed').length;
+                    return {
+                        labels: ['Active Cases', 'Completed Cases'],
+                        datasets: [{ label: 'Projects', data: [active, completed], backgroundColor: ['#3b82f6', '#10b981'] }]
+                    };
                 },
 
                 // --- HELPERS ---
                 addStrategyTask(priority) { if (!priority.tasks) priority.tasks = []; priority.tasks.push({ name: 'New Action', completed: false, dueDate: '' }); },
                 addStratMilestone(priority) { if(!priority.strategicMilestones) priority.strategicMilestones = []; priority.strategicMilestones.push({ title: 'New Phase', targetDate: '', status: 'Planned' }); },
                 
-                getPriorityProgress(priority) {
-                    if (!priority.tasks || priority.tasks.length === 0) return 0;
-                    return Math.round((priority.tasks.filter(t => t.completed).length / priority.tasks.length) * 100);
-                },
-                
-                getNextMilestone(priority) {
-                    if(!priority.strategicMilestones || priority.strategicMilestones.length === 0) return 'No milestones set';
-                    // Find first incomplete milestone
-                    const next = priority.strategicMilestones.find(m => m.status !== 'Complete');
-                    if (next) return `${next.title} (${this.formatDate(next.targetDate)})`;
-                    return 'All phases complete';
-                },
-
                 getAllDueTasks() {
                     let all = [];
                     // Project tasks
@@ -439,25 +471,20 @@
                             if (!t.completed && t.dueDate) all.push({id:Math.random(), projectId:null, projectName:p.title, title:t.name, dueDate:t.dueDate, context:'Core Action', isStrategy: true});
                         });
                     });
-                    return all.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0, 10);
+                    return all.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0, 30);
                 },
 
                 isOverdue(dateStr) { return new Date(dateStr) < new Date(new Date().setHours(0,0,0,0)); },
-                countLinkedProjects(pId) { return this.projects.filter(p => p.priorityId == pId).length; },
-                getProjectsForPriority(pId) { return this.projects.filter(p => p.priorityId == pId); },
+                countEvidence() { return this.projects.reduce((acc, p) => acc + (p.milestones||[]).filter(m => m.evidenceLink).length, 0); },
+                
                 getTasksForCurrentPriority() { const p = this.settings.priorities.find(x => x.id == this.currentProject.priorityId); return p ? p.tasks : []; },
-                getProjectStrategyName(p) { 
-                    if (!p.priorityId) return null; const prio = this.settings.priorities.find(x => x.id == p.priorityId); 
-                    if (!prio) return null; return p.linkedTaskName ? p.linkedTaskName : prio.title; 
-                },
+                getProjectStrategyName(p) { if (!p.priorityId) return null; const prio = this.settings.priorities.find(x => x.id == p.priorityId); if (!prio) return null; return p.linkedTaskName ? p.linkedTaskName : prio.title; },
 
                 // --- UI ---
                 getHeaderColor(idx) { return ['bg-blue-600', 'bg-amber-500', 'bg-emerald-600'][idx % 3]; },
-                getBorderColor(idx) { return ['border-blue-500', 'border-amber-500', 'border-emerald-500'][idx % 3]; },
-                getBgColor(idx) { return ['bg-blue-600', 'bg-amber-500', 'bg-emerald-600'][idx % 3]; },
                 formatDate(d) { return d ? new Date(d).toLocaleDateString('en-GB') : ''; },
 
-                switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateChart(),100); },
+                switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateCharts(),100); },
                 startNewProject() { this.currentProject = { id: Date.now(), title: '', priorityId: '', linkedTaskName: '', type: 'coaching', milestones: [], status: 'Active' }; this.showModal = true; },
                 editProject(p) { this.currentProject = JSON.parse(JSON.stringify(p)); this.showModal = true; },
                 saveProject() { 
@@ -470,15 +497,6 @@
                 calculateProgress(p) { return !p.milestones?.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
                 
                 generateReport() { this.reportData = this.settings.priorities; setTimeout(() => document.getElementById('print-area').scrollIntoView({behavior:'smooth'}), 100); },
-
-                initChart() {
-                    const ctx = document.getElementById('priorityChart').getContext('2d');
-                    this.chart = new Chart(ctx, { type: 'doughnut', data: this.getChartData(), options: { responsive: true, maintainAspectRatio: false } });
-                },
-                updateChart() { if (this.chart) { this.chart.data = this.getChartData(); this.chart.update(); } },
-                getChartData() {
-                    return { labels: this.settings.priorities.map(p => p.title.substring(0, 20)+'...'), datasets: [{ data: this.settings.priorities.map(p => this.projects.filter(proj => proj.priorityId == p.id).length), backgroundColor: ['#2563eb', '#f59e0b', '#059669'] }] };
-                }
             }
         }
     </script>
