@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v16 (Smart Auto-Fill)</title>
+    <title>Digital Impact Hub v17 (RAG & Alerts)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,6 +22,20 @@
         .gantt-header { font-size: 0.75rem; font-weight: bold; text-align: center; padding: 4px; background: #f1f5f9; }
         .progress-bar { transition: width 1s ease-in-out; }
         .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        
+        /* RAG ANIMATIONS */
+        @keyframes heartbeat {
+            0% { transform: scale(1); border-color: #ef4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { transform: scale(1.01); border-color: #b91c1c; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); border-color: #ef4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .animate-heartbeat { animation: heartbeat 1.5s infinite; border-width: 2px; }
+        
+        @keyframes slowflash {
+            0%, 100% { border-color: #f87171; background-color: #fef2f2; }
+            50% { border-color: #fee2e2; background-color: #ffffff; }
+        }
+        .animate-flash-slow { animation: slowflash 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; border-width: 2px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen flex flex-col" x-data="appData()" x-init="init()">
@@ -69,10 +83,10 @@
                 <div class="text-7xl text-slate-300 mb-6"><i class="fas fa-cubes"></i></div>
                 <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Your Hub</h2>
                 <p class="text-slate-600 mb-8 leading-relaxed">
-                    <strong>v16.0 Update:</strong><br>
-                    - Smart Auto-Fill for New Actions<br>
-                    - Task-First Project View<br>
-                    - Full Strategic Linking
+                    <strong>v17.0 Update:</strong><br>
+                    - RAG Ratings (Red/Amber/Green) Borders<br>
+                    - Heartbeat Animations for Overdue Tasks<br>
+                    - Critical Alerts on Dashboard
                 </p>
                 <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-1">
                     Select File from OneDrive
@@ -125,7 +139,24 @@
                         <h3 class="font-bold text-lg text-slate-800"><i class="fas fa-check-double text-blue-500 mr-2"></i>Today's Focus</h3>
                         <span class="text-xs text-slate-500" x-text="new Date().toLocaleDateString()"></span>
                     </div>
+                    
+                    <div class="p-4 border-b border-slate-100 bg-slate-50 max-h-60 overflow-y-auto">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Critical Deadlines</h4>
+                        <template x-for="task in getAllDueTasks()" :key="task.id">
+                            <div class="flex justify-between items-center p-2 mb-2 bg-white rounded shadow-sm border transition"
+                                 :class="getRagClass(task.dueDate)">
+                                <div>
+                                    <div class="text-xs font-bold text-slate-800 truncate w-40" x-text="task.title"></div>
+                                    <div class="text-[10px] text-slate-500" x-text="task.context"></div>
+                                </div>
+                                <div class="text-[10px] font-bold" x-text="formatDate(task.dueDate)"></div>
+                            </div>
+                        </template>
+                        <div x-show="getAllDueTasks().length === 0" class="text-center text-[10px] text-slate-400 italic">No critical deadlines.</div>
+                    </div>
+
                     <div class="p-4 flex-1 overflow-y-auto">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">To-Do List</h4>
                         <div class="flex gap-2 mb-4">
                             <input x-model="newTodo" @keydown.enter="addTodo()" placeholder="Add a quick task..." class="flex-1 border p-2 rounded text-sm outline-none focus:border-blue-500">
                             <button @click="addTodo()" class="bg-blue-600 text-white px-3 rounded hover:bg-blue-700"><i class="fas fa-plus"></i></button>
@@ -141,7 +172,6 @@
                                     <button @click="todos.splice(idx, 1); saveToFile()" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times"></i></button>
                                 </div>
                             </template>
-                            <div x-show="todos.length === 0" class="text-center text-slate-400 italic text-sm mt-10">All caught up!</div>
                         </div>
                     </div>
                 </div>
@@ -186,20 +216,22 @@
 
                                             <div class="pl-4 border-l-2 border-slate-200">
                                                 <div class="flex justify-between items-center mb-2">
-                                                    <span class="text-[10px] font-bold uppercase text-slate-400">Assigned Core Actions (Projects)</span>
+                                                    <span class="text-[10px] font-bold uppercase text-slate-400">Assigned Core Actions</span>
                                                     <button @click="createProjectFromAction(p, sm)" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 border border-blue-200"><i class="fas fa-plus mr-1"></i> Add Core Action</button>
                                                 </div>
                                                 
                                                 <div class="space-y-1">
                                                     <template x-for="proj in getProjectsForMilestone(p.id, sm.title)">
-                                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 hover:bg-slate-100 cursor-pointer group" @click="editProject(proj)">
+                                                        <div class="flex justify-between items-center bg-white p-2 rounded border hover:bg-slate-50 cursor-pointer group" 
+                                                             :class="getRagClass(proj.endDate)"
+                                                             @click="editProject(proj)">
                                                             <div class="flex items-center gap-2">
                                                                 <i class="fas fa-project-diagram text-blue-500 text-xs"></i>
                                                                 <span class="text-xs font-bold text-slate-700 group-hover:text-blue-600" x-text="proj.title"></span>
                                                             </div>
                                                             <div class="flex items-center gap-2">
+                                                                <span class="text-[10px] font-mono text-slate-400" x-text="formatDate(proj.endDate)"></span>
                                                                 <div class="w-16 bg-slate-200 rounded-full h-1.5"><div class="bg-blue-500 h-1.5 rounded-full" :style="`width: ${calculateProgress(proj)}%`"></div></div>
-                                                                <i class="fas fa-chevron-right text-xs text-slate-300"></i>
                                                             </div>
                                                         </div>
                                                     </template>
@@ -226,7 +258,9 @@
                 
                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <template x-for="project in filteredProjects" :key="project.id">
-                        <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200 transition card-hover flex flex-col h-full cursor-pointer" @click="editProject(project)">
+                        <div class="bg-white p-5 rounded-lg shadow-sm border transition card-hover flex flex-col h-full cursor-pointer group" 
+                             :class="getRagClass(project.endDate)"
+                             @click="editProject(project)">
                             <div class="flex justify-between items-start mb-3">
                                 <h3 class="font-bold text-slate-800 text-lg truncate pr-2 group-hover:text-blue-600 transition" x-text="project.title"></h3>
                                 <span class="text-[10px] bg-slate-100 px-2 py-1 rounded uppercase font-bold tracking-wide" x-text="project.type"></span>
@@ -245,8 +279,8 @@
                             
                             <div class="flex-1">
                                 <p class="text-xs text-slate-500 mb-2 line-clamp-2" x-text="project.objective || 'No objective set.'"></p>
-                                <div x-show="project.updates && project.updates.length > 0" class="mb-2">
-                                    <span class="text-[10px] text-emerald-600 font-bold"><i class="fas fa-history mr-1"></i> <span x-text="project.updates.length"></span> Updates Logged</span>
+                                <div class="flex justify-between items-center text-[10px] text-slate-400 mb-1">
+                                    <span x-show="project.endDate">Target: <span x-text="formatDate(project.endDate)" class="font-bold text-slate-600"></span></span>
                                 </div>
                             </div>
 
@@ -349,7 +383,7 @@
                     </div>
                     
                     <div class="bg-blue-50 p-4 rounded border border-blue-100">
-                        <label class="block text-xs font-bold uppercase text-blue-800 mb-2">Alignment & Dates (Required for Gantt)</label>
+                        <label class="block text-xs font-bold uppercase text-blue-800 mb-2">Alignment & Dates (Required for Gantt/RAG)</label>
                         <select x-model="currentProject.priorityId" class="w-full border p-2 rounded text-sm mb-2">
                             <option value="">-- Select Strategic Pillar --</option>
                             <template x-for="p in settings.priorities" :key="p.id"><option :value="p.id" x-text="p.title"></option></template>
@@ -360,7 +394,10 @@
                         </select>
                         <div class="grid grid-cols-2 gap-2 mt-2">
                             <div><label class="text-[10px]">Start</label><input type="date" x-model="currentProject.startDate" class="w-full border p-1 rounded text-xs"></div>
-                            <div><label class="text-[10px]">End</label><input type="date" x-model="currentProject.endDate" class="w-full border p-1 rounded text-xs"></div>
+                            <div>
+                                <label class="text-[10px]">Target Deadline</label>
+                                <input type="date" x-model="currentProject.endDate" class="w-full border p-1 rounded text-xs" :class="getRagClass(currentProject.endDate)">
+                            </div>
                         </div>
                     </div>
 
@@ -389,9 +426,13 @@
                         <button @click="addMilestone()" class="text-xs bg-slate-200 px-2 py-2 rounded mb-2 w-full text-slate-700 hover:bg-slate-300 font-bold">+ Add Task</button>
                         <div class="space-y-1 overflow-y-auto max-h-[400px] flex-1">
                             <template x-for="(m, idx) in currentProject.milestones" :key="idx">
-                                <div class="bg-white p-2 rounded border flex gap-2 items-center">
+                                <div class="bg-white p-2 rounded border flex gap-2 items-center"
+                                     :class="getRagClass(m.dueDate)">
                                     <input type="checkbox" x-model="m.completed" @change="toggleTask(m)" class="cursor-pointer w-4 h-4">
-                                    <input x-model="m.title" class="flex-1 text-sm border-none outline-none font-medium" placeholder="Task details...">
+                                    <div class="flex-1">
+                                        <input x-model="m.title" class="w-full text-sm border-none outline-none font-medium bg-transparent" placeholder="Task details...">
+                                        <input type="date" x-model="m.dueDate" class="text-[10px] bg-transparent text-slate-400 border-none p-0 h-4">
+                                    </div>
                                     <button @click="copyToToday(m, currentProject.title)" class="text-slate-300 hover:text-purple-500" title="Add to Today's To-Do"><i class="fas fa-calendar-day"></i></button>
                                     <button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button>
                                 </div>
@@ -465,7 +506,13 @@
                             if (data.settings && data.settings.priorities) {
                                 this.settings.priorities = data.settings.priorities.map((p, index) => {
                                     if (typeof p === 'string') return { id: index + 1, title: p, details: '', tasks: [], strategicMilestones: [] };
-                                    return { id: p.id || (index + 1), title: p.title || 'Untitled', details: p.details || '', strategicMilestones: p.strategicMilestones || [], tasks: [] };
+                                    return {
+                                        id: p.id || (index + 1),
+                                        title: p.title || 'Untitled',
+                                        details: p.details || '',
+                                        strategicMilestones: p.strategicMilestones || [],
+                                        tasks: [] 
+                                    };
                                 });
                             } else { this.settings.priorities = []; }
                             this.$nextTick(() => this.initCharts());
@@ -483,10 +530,23 @@
                     } catch (err) { console.error('Save failed', err); }
                 },
 
-                // --- SMART AUTO-FILL LOGIC ---
+                // --- RAG LOGIC ---
+                getRagClass(dateStr) {
+                    if (!dateStr) return 'border-slate-200';
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const due = new Date(dateStr);
+                    const diffTime = due - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+                    if (diffDays < 0) return 'border-red-600 animate-heartbeat bg-red-50'; // Overdue
+                    if (diffDays <= 2) return 'border-red-500 animate-flash-slow bg-red-50'; // Urgent
+                    if (diffDays <= 7) return 'border-red-500 bg-red-50'; // Warning
+                    if (diffDays <= 14) return 'border-orange-400 bg-orange-50'; // Prepare
+                    return 'border-green-500 bg-green-50'; // Safe
+                },
+
                 createProjectFromAction(priority, milestone) {
-                    // Pre-fill prompt with the milestone title
-                    const defaultTitle = milestone.title; 
+                    const defaultTitle = milestone.title;
                     const name = prompt("Enter Name for this Core Action / Project:", defaultTitle);
                     if(!name) return;
                     
