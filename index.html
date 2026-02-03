@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v15 (Task First)</title>
+    <title>Digital Impact Hub v16 (Smart Auto-Fill)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -69,10 +69,10 @@
                 <div class="text-7xl text-slate-300 mb-6"><i class="fas fa-cubes"></i></div>
                 <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Your Hub</h2>
                 <p class="text-slate-600 mb-8 leading-relaxed">
-                    <strong>v15.0 Update:</strong><br>
-                    - Projects open directly to Micro-Tasks<br>
-                    - Clickable Cards fixed<br>
-                    - "Core Action to Project" linking automated
+                    <strong>v16.0 Update:</strong><br>
+                    - Smart Auto-Fill for New Actions<br>
+                    - Task-First Project View<br>
+                    - Full Strategic Linking
                 </p>
                 <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-1">
                     Select File from OneDrive
@@ -228,7 +228,7 @@
                     <template x-for="project in filteredProjects" :key="project.id">
                         <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200 transition card-hover flex flex-col h-full cursor-pointer" @click="editProject(project)">
                             <div class="flex justify-between items-start mb-3">
-                                <h3 class="font-bold text-slate-800 text-lg truncate pr-2" x-text="project.title"></h3>
+                                <h3 class="font-bold text-slate-800 text-lg truncate pr-2 group-hover:text-blue-600 transition" x-text="project.title"></h3>
                                 <span class="text-[10px] bg-slate-100 px-2 py-1 rounded uppercase font-bold tracking-wide" x-text="project.type"></span>
                             </div>
                             
@@ -245,6 +245,9 @@
                             
                             <div class="flex-1">
                                 <p class="text-xs text-slate-500 mb-2 line-clamp-2" x-text="project.objective || 'No objective set.'"></p>
+                                <div x-show="project.updates && project.updates.length > 0" class="mb-2">
+                                    <span class="text-[10px] text-emerald-600 font-bold"><i class="fas fa-history mr-1"></i> <span x-text="project.updates.length"></span> Updates Logged</span>
+                                </div>
                             </div>
 
                             <div class="mt-4 pt-4 border-t border-slate-100">
@@ -430,7 +433,7 @@
                 view: 'dashboard',
                 fileHandle: null,
                 showModal: false,
-                modalTab: 'tasks', // DEFAULT TAB IS TASKS
+                modalTab: 'tasks',
                 searchQuery: '',
                 newTodo: '',
                 newUpdateText: '', newUpdateLink: '',
@@ -459,20 +462,12 @@
                                 endDate: p.endDate || '' 
                             }));
                             this.todos = data.todos || [];
-                            
                             if (data.settings && data.settings.priorities) {
                                 this.settings.priorities = data.settings.priorities.map((p, index) => {
                                     if (typeof p === 'string') return { id: index + 1, title: p, details: '', tasks: [], strategicMilestones: [] };
-                                    return {
-                                        id: p.id || (index + 1),
-                                        title: p.title || 'Untitled',
-                                        details: p.details || '',
-                                        strategicMilestones: p.strategicMilestones || [],
-                                        tasks: [] 
-                                    };
+                                    return { id: p.id || (index + 1), title: p.title || 'Untitled', details: p.details || '', strategicMilestones: p.strategicMilestones || [], tasks: [] };
                                 });
                             } else { this.settings.priorities = []; }
-                            
                             this.$nextTick(() => this.initCharts());
                         }
                     } catch (err) { console.error(err); alert("Error connecting."); }
@@ -488,8 +483,11 @@
                     } catch (err) { console.error('Save failed', err); }
                 },
 
+                // --- SMART AUTO-FILL LOGIC ---
                 createProjectFromAction(priority, milestone) {
-                    const name = prompt("Enter Name for this Core Action / Project:");
+                    // Pre-fill prompt with the milestone title
+                    const defaultTitle = milestone.title; 
+                    const name = prompt("Enter Name for this Core Action / Project:", defaultTitle);
                     if(!name) return;
                     
                     const newProj = {
@@ -511,17 +509,8 @@
                 },
 
                 addTodo() { if(this.newTodo) { this.todos.push({text: this.newTodo, completed: false, project: ''}); this.newTodo = ''; this.saveToFile(); }},
-                copyToToday(task, projName) {
-                    this.todos.push({text: task.title, completed: false, project: projName});
-                    this.saveToFile();
-                    alert("Added to Today's list on Dashboard.");
-                },
-                addUpdate() {
-                    if(this.newUpdateText) {
-                        this.currentProject.updates.push({ date: new Date().toISOString(), text: this.newUpdateText, link: this.newUpdateLink });
-                        this.newUpdateText = ''; this.newUpdateLink = '';
-                    }
-                },
+                copyToToday(task, projName) { this.todos.push({text: task.title, completed: false, project: projName}); this.saveToFile(); alert("Added to Today's list on Dashboard."); },
+                addUpdate() { if(this.newUpdateText) { this.currentProject.updates.push({ date: new Date().toISOString(), text: this.newUpdateText, link: this.newUpdateLink }); this.newUpdateText = ''; this.newUpdateLink = ''; }},
 
                 getMonthName(m) { const d = new Date(); d.setMonth(m-1); return d.toLocaleString('default', { month: 'short' }); },
                 hasDates(p) { return p.startDate && p.endDate; },
@@ -533,20 +522,13 @@
                     const durationMonths = Math.max(1, (end.getMonth() - start.getMonth()) + 1);
                     return `grid-column: ${startMonth + 1} / span ${durationMonths};`;
                 },
-                getPriorityColor(pId) {
-                    const colors = ['bg-blue-500', 'bg-amber-500', 'bg-emerald-500', 'bg-purple-500'];
-                    return colors[(pId-1) % 4] || 'bg-slate-500';
-                },
+                getPriorityColor(pId) { const colors = ['bg-blue-500', 'bg-amber-500', 'bg-emerald-500', 'bg-purple-500']; return colors[(pId-1) % 4] || 'bg-slate-500'; },
 
                 addStratMilestone(p) { if(!p.strategicMilestones) p.strategicMilestones = []; p.strategicMilestones.push({ title: 'New Phase', targetDate: '', status: 'Planned' }); },
                 getMilestonesForPriority(pId) { const p = this.settings.priorities.find(x => x.id == pId); return p ? p.strategicMilestones : []; },
                 getProjectsForMilestone(pId, mTitle) { return this.projects.filter(p => p.priorityId == pId && p.milestoneLink == mTitle); },
                 
-                getAllDueTasks() {
-                    let all = [];
-                    this.projects.forEach(p => (p.milestones||[]).forEach(m => { if (!m.completed && m.dueDate) all.push({id:Math.random(), projectId:p.id, projectName:p.title, title:m.title, dueDate:m.dueDate, context:'Task', isStrategy: false}); }));
-                    return all.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0, 30);
-                },
+                getAllDueTasks() { let all = []; this.projects.forEach(p => (p.milestones||[]).forEach(m => { if (!m.completed && m.dueDate) all.push({id:Math.random(), projectId:p.id, projectName:p.title, title:m.title, dueDate:m.dueDate, context:'Task', isStrategy: false}); })); return all.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0, 30); },
                 isOverdue(dateStr) { return new Date(dateStr) < new Date(new Date().setHours(0,0,0,0)); },
                 countEvidence() { return this.projects.reduce((acc, p) => acc + (p.milestones||[]).filter(m => m.evidenceLink).length + (p.updates||[]).filter(u => u.link).length, 0); },
                 getProjectsForPriority(pId) { return this.projects.filter(p => p.priorityId == pId); },
@@ -556,20 +538,10 @@
                 switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateCharts(),100); },
                 startNewProject() { this.currentProject = { id: Date.now(), title: '', priorityId: '', milestoneLink: '', type: 'coaching', milestones: [], updates: [], status: 'Active', deptCode: '', tlam: '', startDate: '', endDate: '' }; this.showModal = true; this.modalTab = 'tasks'; },
                 editProject(p) { this.currentProject = p; this.showModal = true; this.modalTab = 'tasks'; }, 
-                saveProject() { 
-                    const idx = this.projects.findIndex(x => x.id === this.currentProject.id);
-                    if(idx === -1) this.projects.push(this.currentProject); 
-                    this.saveToFile(); this.showModal = false; 
-                },
+                saveProject() { const idx = this.projects.findIndex(x => x.id === this.currentProject.id); if(idx === -1) this.projects.push(this.currentProject); this.saveToFile(); this.showModal = false; },
                 addMilestone() { if(!this.currentProject.milestones) this.currentProject.milestones=[]; this.currentProject.milestones.push({title:'New Task', completed:false, completedDate: null}); },
                 toggleTask(task) { task.completed = !task.completed; if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } else { task.completedDate = null; } },
-                get filteredProjects() { 
-                    return this.projects.filter(p => {
-                        const matchesSearch = p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
-                                              (p.linkedTaskName && p.linkedTaskName.toLowerCase().includes(this.searchQuery.toLowerCase()));
-                        return matchesSearch;
-                    }); 
-                },
+                get filteredProjects() { return this.projects.filter(p => { const matchesSearch = p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) || (p.linkedTaskName && p.linkedTaskName.toLowerCase().includes(this.searchQuery.toLowerCase())); return matchesSearch; }); },
                 calculateProgress(p) { return !p.milestones?.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
                 generateReport() { this.reportData = true; setTimeout(() => document.getElementById('print-area').scrollIntoView({behavior:'smooth'}), 100); },
 
