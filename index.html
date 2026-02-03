@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v23 (Sync & Export)</title>
+    <title>Digital Impact Hub v24 (Deep Sync)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,13 +17,10 @@
             body { background: white; color: black; }
             .break-avoid { break-inside: avoid; }
         }
-        /* Gantt */
         .gantt-grid { display: grid; grid-template-columns: 250px repeat(12, 1fr); gap: 1px; overflow-x: auto; }
         .gantt-header { font-size: 0.75rem; font-weight: bold; text-align: center; padding: 4px; background: #f1f5f9; }
         .progress-bar { transition: width 1s ease-in-out; }
         .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        /* Word Export Hack */
-        .word-export-visible { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen flex flex-col" x-data="appData()" x-init="init()">
@@ -66,7 +63,7 @@
             <div class="bg-white p-12 rounded-xl shadow-2xl border border-slate-200">
                 <div class="text-7xl text-slate-300 mb-6"><i class="fas fa-sync-alt"></i></div>
                 <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Your Hub</h2>
-                <p class="text-slate-600 mb-8 leading-relaxed"><strong>v23.0 Features:</strong> Full 2-Way Task Sync, Excel/Word Exports, and Detail-View Gantt.</p>
+                <p class="text-slate-600 mb-8 leading-relaxed"><strong>v24.0 Features:</strong> Deep 2-Way Sync between Dashboard and Projects is now active.</p>
                 <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition">Select File from OneDrive</button>
             </div>
         </div>
@@ -116,7 +113,7 @@
                         <div class="space-y-2">
                             <template x-for="(todo, idx) in todos" :key="idx">
                                 <div class="flex items-start gap-2 p-2 rounded border transition" :class="todo.completed ? 'bg-slate-50 opacity-75' : 'bg-white'">
-                                    <input type="checkbox" x-model="todo.completed" @change="syncTodo(todo)" class="mt-1.5 cursor-pointer">
+                                    <input type="checkbox" x-model="todo.completed" @change="syncFromDashboard(todo)" class="mt-1.5 cursor-pointer">
                                     <div class="flex-1">
                                         <div class="text-sm font-medium" :class="{'line-through text-slate-400': todo.completed}" x-text="todo.text"></div>
                                         <div x-show="todo.projectTitle" class="text-[10px] text-blue-600 bg-blue-50 inline-block px-1 rounded mt-1" x-text="todo.projectTitle"></div>
@@ -288,7 +285,7 @@
                         <div class="space-y-1 overflow-y-auto max-h-[400px] flex-1">
                             <template x-for="(m, idx) in currentProject.milestones" :key="idx">
                                 <div class="bg-white p-2 rounded border flex gap-2 items-center">
-                                    <input type="checkbox" x-model="m.completed" @change="toggleTask(m)" class="cursor-pointer w-4 h-4">
+                                    <input type="checkbox" x-model="m.completed" @change="syncFromProject(m, currentProject)" class="cursor-pointer w-4 h-4">
                                     <div class="flex-1"><input x-model="m.title" class="w-full text-sm border-none outline-none bg-transparent"><input type="date" x-model="m.dueDate" class="text-[10px] bg-transparent text-slate-400 border-none p-0 h-4"></div>
                                     <button @click="copyToToday(m, currentProject)" class="text-slate-300 hover:text-purple-500" title="Add to Today"><i class="fas fa-calendar-day"></i></button>
                                     <button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button>
@@ -320,8 +317,7 @@
                         this.fileHandle = handle; const file = await handle.getFile(); const text = await file.text();
                         if (text.trim()) {
                             const data = JSON.parse(text);
-                            // V23 FIX: Ensure arrays exist
-                            this.projects = (data.projects || []).map(p => ({ ...p, milestones: p.milestones || [], updates: p.updates || [], deptCode: p.deptCode||'', tlam: p.tlam||'' }));
+                            this.projects = (data.projects || []).map(p => ({ ...p, milestones: (p.milestones || []).map(m => ({...m, uuid: m.uuid || Date.now() + Math.random()})), updates: p.updates || [], deptCode: p.deptCode||'', tlam: p.tlam||'' }));
                             this.todos = (data.todos || []).map(t => ({...t, originalId: t.originalId || null})); 
                             this.settings.priorities = (data.settings?.priorities || []).map((p,i) => ({ ...p, id: p.id||(i+1), strategicMilestones: p.strategicMilestones||[], tasks: p.tasks||[] }));
                             this.$nextTick(() => this.initCharts());
@@ -338,29 +334,35 @@
                     } catch (err) { console.error('Save failed', err); }
                 },
 
-                // --- SYNC ENGINE (CORE FIX) ---
+                // --- DEEP SYNC ENGINE ---
                 copyToToday(task, proj) {
-                    // Create a link, not just a copy
-                    const uniqueId = Date.now() + Math.random().toString(16).slice(2);
-                    task.syncId = uniqueId; // Tag the original task
-                    this.todos.push({ text: task.title, completed: task.completed, projectTitle: proj.title, originalId: uniqueId, projectId: proj.id });
+                    if (!task.uuid) task.uuid = Date.now() + Math.random().toString(16).slice(2);
+                    // Check duplicates
+                    if(this.todos.find(t => t.originalId === task.uuid)) return alert("Already in Today's list");
+                    this.todos.push({ text: task.title, completed: task.completed, projectTitle: proj.title, originalId: task.uuid, projectId: proj.id });
                     this.saveToFile();
-                    alert("Added to Dashboard. Status will sync.");
+                    alert("Added to Dashboard.");
                 },
                 
-                syncTodo(todo) {
-                    // Find the original project and task
+                syncFromDashboard(todo) {
                     const proj = this.projects.find(p => p.id === todo.projectId);
                     if(proj) {
-                        const task = proj.milestones.find(m => m.syncId === todo.originalId || m.title === todo.text); // Fallback to title matching
+                        const task = proj.milestones.find(m => m.uuid === todo.originalId);
                         if(task) {
                             task.completed = todo.completed;
-                            if(task.completed) { 
-                                task.completedDate = new Date().toISOString(); 
-                                confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-                            } else { task.completedDate = null; }
+                            if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } else { task.completedDate = null; }
                         }
                     }
+                    this.saveToFile();
+                },
+
+                syncFromProject(task, proj) {
+                    if(!task.uuid) task.uuid = Date.now() + Math.random().toString(16).slice(2); // Ensure ID
+                    if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } else { task.completedDate = null; }
+                    
+                    const todo = this.todos.find(t => t.originalId === task.uuid);
+                    if(todo) todo.completed = task.completed;
+                    
                     this.saveToFile();
                 },
                 
@@ -381,7 +383,7 @@
                     document.body.removeChild(fileDownload);
                 },
 
-                // --- EXPORT TO EXCEL (CSV) ---
+                // --- EXPORT TO EXCEL ---
                 exportToExcel() {
                     let csvContent = "data:text/csv;charset=utf-8,Priority,Project Title,Type,Start Date,End Date,Status,Completion %\n";
                     this.projects.forEach(p => {
@@ -431,7 +433,7 @@
                 startNewProject() { this.currentProject = { id: Date.now(), title: '', priorityId: '', milestoneLink: '', type: 'coaching', milestones: [], updates: [], status: 'Active', deptCode: '', tlam: '', startDate: '', endDate: '' }; this.showModal = true; this.modalTab = 'tasks'; },
                 editProject(p) { this.currentProject = p; this.showModal = true; this.modalTab = 'tasks'; }, 
                 saveProject() { const idx = this.projects.findIndex(x => x.id === this.currentProject.id); if(idx === -1) this.projects.push(this.currentProject); this.saveToFile(); this.showModal = false; },
-                addMilestone() { if(!this.currentProject.milestones) this.currentProject.milestones=[]; this.currentProject.milestones.push({title:'New Task', completed:false, completedDate: null}); },
+                addMilestone() { if(!this.currentProject.milestones) this.currentProject.milestones=[]; this.currentProject.milestones.push({title:'New Task', completed:false, completedDate: null, uuid: Date.now() + Math.random().toString(16).slice(2)}); }, // New tasks get UUID
                 toggleTask(task) { task.completed = !task.completed; if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } else { task.completedDate = null; } },
                 get filteredProjects() { return this.projects.filter(p => { const matchesSearch = p.title.toLowerCase().includes(this.searchQuery.toLowerCase()); if(this.filterRag) { const border = this.getRagBorder(p.endDate); if(!border.includes(this.filterRag)) return false; } if(this.filterType && p.type && p.type.toLowerCase() !== this.filterType.toLowerCase()) return false; return matchesSearch; }); },
                 calculateProgress(p) { return !p.milestones?.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
