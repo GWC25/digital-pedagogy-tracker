@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v25.2 (Timeline Fixed)</title>
+    <title>Digital Impact Hub v25.3 (Gantt Alignment Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -211,11 +211,15 @@
                             <template x-for="(p, idx) in filteredProjects" :key="p.id">
                                 <div class="gantt-row hover:bg-slate-50 transition group border-b border-slate-100">
                                     
-                                    <div class="gantt-sticky-col p-2 text-xs font-bold truncate pr-4 cursor-pointer hover:text-blue-600 group-hover:bg-slate-50" @click="editProject(p)">
+                                    <div class="gantt-sticky-col p-2 text-xs font-bold truncate pr-4 cursor-pointer hover:text-blue-600 group-hover:bg-slate-50" 
+                                         :style="`grid-row: ${idx + 2}; grid-column: 1`" 
+                                         @click="editProject(p)">
                                         <span x-text="p.title" :title="p.title" class="truncate w-60 block"></span>
                                     </div>
 
-                                    <template x-for="c in timelineColumns"><div class="gantt-cell group-hover:bg-slate-50"></div></template>
+                                    <template x-for="c in timelineColumns">
+                                        <div class="gantt-cell group-hover:bg-slate-50" :style="`grid-row: ${idx + 2}`"></div>
+                                    </template>
 
                                     <div x-show="hasDates(p) && isProjectVisibleInTimeline(p)" 
                                          class="rounded text-[9px] text-white flex items-center px-2 shadow-sm cursor-pointer hover:opacity-90 overflow-hidden z-10 h-6" 
