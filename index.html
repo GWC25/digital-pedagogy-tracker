@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v25.3 (Gantt Alignment Fix)</title>
+    <title>Digital Impact Hub v25.4 (Timeline Tabs)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -195,6 +195,14 @@
                         <button @click="exportToExcel()" class="bg-green-600 text-white px-3 py-1 rounded text-xs"><i class="fas fa-file-excel mr-1"></i> Export Data</button>
                     </div>
 
+                    <div class="flex flex-wrap gap-2 mb-4 border-b border-slate-200">
+                        <button @click="timelineTab = 'all'" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="timelineTab === 'all' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'">All Projects</button>
+                        <template x-for="(p, idx) in settings.priorities" :key="idx">
+                            <button @click="timelineTab = p.id" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="timelineTab === p.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'" x-text="p.title"></button>
+                        </template>
+                        <button @click="timelineTab = 'standalone'" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="timelineTab === 'standalone' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'">Stand-alone</button>
+                    </div>
+
                     <div class="gantt-container">
                         <div class="gantt-grid text-sm" :style="getTimelineGridStyle()">
                             
@@ -208,7 +216,7 @@
                                 </template>
                             </div>
 
-                            <template x-for="(p, idx) in filteredProjects" :key="p.id">
+                            <template x-for="(p, idx) in timelineProjects" :key="p.id">
                                 <div class="gantt-row hover:bg-slate-50 transition group border-b border-slate-100">
                                     
                                     <div class="gantt-sticky-col p-2 text-xs font-bold truncate pr-4 cursor-pointer hover:text-blue-600 group-hover:bg-slate-50" 
@@ -230,6 +238,10 @@
                                     </div>
                                 </div>
                             </template>
+
+                            <div x-show="timelineProjects.length === 0" class="p-8 text-center text-slate-400 italic" style="grid-column: 1 / -1; grid-row: 2;">
+                                No projects found in this section.
+                            </div>
 
                         </div>
                     </div>
@@ -319,7 +331,7 @@
     <script>
         function appData() {
             return {
-                view: 'dashboard', fileHandle: null, showModal: false, modalTab: 'tasks', activeStrategyTab: 0, reportTab: 'overview',
+                view: 'dashboard', fileHandle: null, showModal: false, modalTab: 'tasks', activeStrategyTab: 0, reportTab: 'overview', timelineTab: 'all',
                 searchQuery: '', filterRag: '', filterType: '', filterPriority: '', newTodo: '', newUpdateText: '', newUpdateLink: '',
                 timelineMode: 'year',
                 projects: [], todos: [], settings: { priorities: [] }, currentProject: {}, charts: {}, 
@@ -348,34 +360,30 @@
                     } catch (err) { console.error('Save failed', err); }
                 },
 
-                // --- GANTT ENGINE (FIXED) ---
+                // --- GANTT ENGINE ---
                 get timelineColumns() {
                     const today = new Date();
                     const cols = [];
                     
                     if (this.timelineMode === 'year') {
-                        // 12 Months (Jan - Dec)
                         const currentYear = today.getFullYear();
                         for(let i=0; i<12; i++) {
                             const d = new Date(currentYear, i, 1);
                             cols.push({ label: d.toLocaleString('default', {month:'short'}), sub: d.getFullYear(), start: d, end: new Date(currentYear, i+1, 0) });
                         }
                     } else if (this.timelineMode === '6m') {
-                        // Next 6 Months from today
                         for(let i=0; i<6; i++) {
                             const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
                             cols.push({ label: d.toLocaleString('default', {month:'short'}), sub: d.getFullYear(), start: d, end: new Date(d.getFullYear(), d.getMonth()+1, 0) });
                         }
                     } else if (this.timelineMode === '3m') {
-                        // 12 Weeks (approx 3 months)
-                        const start = new Date(today); start.setDate(today.getDate() - today.getDay() + 1); // Monday
+                        const start = new Date(today); start.setDate(today.getDate() - today.getDay() + 1); 
                         for(let i=0; i<12; i++) {
                             const wStart = new Date(start); wStart.setDate(start.getDate() + (i*7));
                             const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
                             cols.push({ label: 'W' + (i+1), sub: wStart.getDate() + '/' + (wStart.getMonth()+1), start: wStart, end: wEnd });
                         }
                     } else if (this.timelineMode === '1m') {
-                        // 30 Days
                         for(let i=0; i<30; i++) {
                             const d = new Date(today); d.setDate(today.getDate() + i);
                             cols.push({ label: d.getDate(), sub: d.toLocaleString('default',{weekday:'short'}), start: new Date(d.setHours(0,0,0,0)), end: new Date(d.setHours(23,59,59,999)) });
@@ -406,7 +414,6 @@
                     const gridStart = Math.max(0, startIndex) + 2; 
                     const span = (Math.min(cols.length - 1, endIndex) - Math.max(0, startIndex)) + 1;
                     
-                    // FIXED: Correctly placing the bar on the specific row index
                     return `grid-column: ${gridStart} / span ${span}; grid-row: ${idx + 2}; align-self: center;`;
                 },
                 isProjectVisibleInTimeline(p) {
@@ -504,6 +511,14 @@
                     return matchesSearch; 
                 }); },
                 
+                // NEW: Timeline specific filter
+                get timelineProjects() {
+                    const all = this.filteredProjects;
+                    if (this.timelineTab === 'all') return all;
+                    if (this.timelineTab === 'standalone') return all.filter(p => !p.priorityId);
+                    return all.filter(p => p.priorityId === this.timelineTab);
+                },
+
                 calculateProgress(p) { return !p.milestones?.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
                 exportToExcel() {
                     let csvContent = "data:text/csv;charset=utf-8,Priority,Project Title,Type,Start Date,End Date,Status,Completion %\n";
