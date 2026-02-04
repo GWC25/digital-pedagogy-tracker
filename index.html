@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v25.5 (Governance & QA)</title>
+    <title>Digital Impact Hub v25.6 (Stability Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -486,9 +486,22 @@
                 getProjectHeaderColor(pId) { if(!pId) return 'bg-slate-500'; const idx = this.settings.priorities.findIndex(p => p.id == pId); return idx !== -1 ? this.getHeaderColor(idx) : 'bg-slate-500'; },
                 getRagBorder(dateStr) { if (!dateStr) return 'border-slate-200'; const today = new Date(); today.setHours(0,0,0,0); const due = new Date(dateStr); const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return 'border-red-600 border-l-4'; if (diffDays <= 7) return 'border-red-500 border-l-4'; if (diffDays <= 14) return 'border-orange-400 border-l-4'; return 'border-green-500 border-l-4'; },
                 switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateCharts(),100); },
-                startNewProject() { this.currentProject = { id: Date.now(), title: '', priorityId: '', milestoneLink: '', type: 'coaching', milestones: [], updates: [], status: 'Active', deptCode: '', tlam: '', startDate: '', endDate: '' }; this.showModal = true; this.modalTab = 'tasks'; },
+                startNewProject() { this.currentProject = { id: Date.now() + Math.random(), title: '', priorityId: '', milestoneLink: '', type: 'coaching', milestones: [], updates: [], status: 'Active', deptCode: '', tlam: '', startDate: '', endDate: '' }; this.showModal = true; this.modalTab = 'tasks'; },
                 editProject(p) { this.currentProject = p; this.showModal = true; this.modalTab = 'tasks'; }, 
-                saveProject() { const idx = this.projects.findIndex(x => x.id === this.currentProject.id); if(idx === -1) this.projects.push(this.currentProject); this.saveToFile(); this.showModal = false; },
+                saveProject() { 
+                    const idx = this.projects.findIndex(x => x.id === this.currentProject.id); 
+                    if(idx === -1) {
+                        // FIX: Spread Syntax forces reactivity update for deep watchers (Timeline)
+                        this.projects = [...this.projects, this.currentProject];
+                    } else {
+                        // For updates, we replace the object entirely to trigger reactivity
+                        const newProjs = [...this.projects];
+                        newProjs[idx] = this.currentProject;
+                        this.projects = newProjs;
+                    }
+                    this.saveToFile(); 
+                    this.showModal = false; 
+                },
                 addMilestone() { if(!this.currentProject.milestones) this.currentProject.milestones=[]; this.currentProject.milestones.push({title:'New Task', completed:false, completedDate: null, uuid: Date.now() + Math.random().toString(16).slice(2)}); },
                 
                 get filteredProjects() { return this.projects.filter(p => { 
