@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v26.0 (Deep Dive & Meetings)</title>
+    <title>Digital Impact Hub v27.0 (Meeting Hub)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -26,6 +26,8 @@
         .gantt-sticky-col { position: sticky; left: 0; z-index: 20; background: white; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; height: 40px; display: flex; align-items: center; }
         .progress-bar { transition: width 1s ease-in-out; }
         .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        /* Meeting Hub Scrollbars */
+        .scroller { overflow-y: auto; scrollbar-width: thin; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen flex flex-col" x-data="appData()" x-init="init()">
@@ -72,17 +74,18 @@
             </div>
         </div>
 
-        <div x-show="fileHandle" x-transition>
+        <div x-show="fileHandle" x-transition class="h-full flex flex-col">
             
-            <div class="flex justify-center gap-8 mb-8 border-b border-slate-200 pb-4 no-print">
+            <div class="flex justify-center gap-8 mb-4 border-b border-slate-200 pb-4 no-print flex-shrink-0">
                 <button @click="switchView('dashboard')" :class="view==='dashboard' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-home"></i> Dashboard</button>
                 <button @click="switchView('strategy')" :class="view==='strategy' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-chess"></i> Strategy Pillars</button>
                 <button @click="switchView('projects')" :class="view==='projects' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-folder-open"></i> Projects</button>
+                <button @click="switchView('meetings')" :class="view==='meetings' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-users"></i> Meeting Hub</button>
                 <button @click="switchView('gantt')" :class="view==='gantt' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-stream"></i> Timeline</button>
                 <button @click="switchView('reports')" :class="view==='reports' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-chart-pie"></i> Impact Reports</button>
             </div>
 
-            <div x-show="view === 'dashboard'" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div x-show="view === 'dashboard'" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
                  <div class="lg:col-span-2 space-y-8">
                     <div class="flex justify-between items-center bg-white p-2 rounded shadow-sm border border-slate-200">
                         <div class="text-sm font-bold text-slate-500 uppercase px-2">View Mode:</div>
@@ -128,7 +131,90 @@
                 </div>
             </div>
 
-            <div x-show="view === 'strategy'" class="max-w-6xl mx-auto">
+            <div x-show="view === 'meetings'" class="max-w-7xl mx-auto w-full h-full flex bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
+                <div class="w-64 bg-slate-50 border-r border-slate-200 flex flex-col">
+                    <div class="p-4 font-bold text-slate-700 uppercase text-xs tracking-wider border-b">Meeting Categories</div>
+                    <div class="flex-1 overflow-y-auto p-2 space-y-1">
+                        <template x-for="cat in settings.meetingCategories" :key="cat">
+                            <button @click="activeMeetingCategory = cat; currentMeeting = null" 
+                                    class="w-full text-left px-3 py-2 rounded text-sm font-medium transition flex justify-between items-center"
+                                    :class="activeMeetingCategory === cat ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'">
+                                <span x-text="cat"></span>
+                                <span class="text-[10px] bg-slate-200 text-slate-500 px-1.5 rounded-full" x-text="meetingNotes.filter(n => n.category === cat).length"></span>
+                            </button>
+                        </template>
+                    </div>
+                    <div class="p-2 border-t">
+                        <button @click="addNewMeetingCategory()" class="w-full text-center text-xs text-blue-600 py-2 hover:bg-blue-50 rounded dashed border border-blue-200">+ New Category</button>
+                    </div>
+                </div>
+
+                <div class="w-80 border-r border-slate-200 flex flex-col bg-white">
+                    <div class="p-3 border-b flex justify-between items-center bg-slate-50">
+                        <span class="font-bold text-sm text-slate-700" x-text="activeMeetingCategory || 'Select Category'"></span>
+                        <button @click="createNewMeeting()" class="bg-blue-600 text-white px-2 py-1 rounded text-xs shadow hover:bg-blue-500"><i class="fas fa-plus"></i> New Note</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-2 space-y-2">
+                        <template x-for="note in filteredMeetings" :key="note.id">
+                            <div @click="currentMeeting = note" 
+                                 class="p-3 rounded border cursor-pointer transition hover:shadow-md"
+                                 :class="currentMeeting && currentMeeting.id === note.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-100 bg-white hover:bg-slate-50'">
+                                <div class="font-bold text-sm text-slate-800 truncate" x-text="note.title || 'Untitled Meeting'"></div>
+                                <div class="text-[10px] text-slate-400 mt-1 flex justify-between">
+                                    <span x-text="formatDate(note.date)"></span>
+                                    <i class="fas fa-chevron-right text-slate-300"></i>
+                                </div>
+                                <div class="text-xs text-slate-500 mt-1 line-clamp-2 h-8" x-text="note.content"></div>
+                            </div>
+                        </template>
+                        <div x-show="filteredMeetings.length === 0" class="text-center text-slate-400 text-xs mt-10">No notes in this category.</div>
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col bg-white relative">
+                    <template x-if="!currentMeeting">
+                        <div class="flex items-center justify-center h-full text-slate-300 flex-col">
+                            <i class="fas fa-book-open text-4xl mb-2"></i>
+                            <span class="text-sm">Select or create a meeting note</span>
+                        </div>
+                    </template>
+                    <template x-if="currentMeeting">
+                        <div class="flex flex-col h-full">
+                            <div class="p-6 border-b border-slate-100 pb-4">
+                                <input x-model="currentMeeting.title" class="text-2xl font-bold text-slate-800 w-full outline-none placeholder-slate-300" placeholder="Meeting Title">
+                                <div class="flex gap-4 mt-2">
+                                    <div class="flex items-center gap-2 text-sm text-slate-500">
+                                        <i class="far fa-calendar"></i>
+                                        <input type="date" x-model="currentMeeting.date" class="border-none bg-transparent outline-none p-0 text-slate-600">
+                                    </div>
+                                    <div class="flex items-center gap-2 text-sm text-slate-500 flex-1">
+                                        <i class="far fa-user"></i>
+                                        <input x-model="currentMeeting.attendees" class="w-full border-none bg-transparent outline-none p-0" placeholder="Attendees...">
+                                    </div>
+                                </div>
+                                <div class="mt-2 flex gap-2">
+                                    <select x-model="currentMeeting.linkedProjectId" class="text-xs border rounded p-1 bg-slate-50 text-slate-600">
+                                        <option value="">- Link to Project (Optional) -</option>
+                                        <template x-for="p in projects" :key="p.id"><option :value="p.id" x-text="p.title"></option></template>
+                                    </select>
+                                    <button @click="saveToFile()" class="text-xs bg-emerald-100 text-emerald-700 px-2 rounded hover:bg-emerald-200">Save Changes</button>
+                                    <button @click="deleteMeeting()" class="text-xs bg-red-50 text-red-400 px-2 rounded hover:bg-red-100 ml-auto">Delete</button>
+                                </div>
+                            </div>
+                            
+                            <textarea x-model="currentMeeting.content" class="flex-1 w-full p-6 outline-none resize-none text-slate-700 leading-relaxed" placeholder="Type meeting notes here..."></textarea>
+                            
+                            <div class="p-2 border-t bg-slate-50 flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-400 uppercase mr-2">Quick Actions:</span>
+                                <input x-model="quickActionText" placeholder="Type action..." class="flex-1 border p-1 rounded text-xs">
+                                <button @click="pushActionToDashboard()" class="bg-purple-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-purple-500">Add to Dashboard</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div x-show="view === 'strategy'" class="max-w-6xl mx-auto w-full">
                 <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-2">
                     <template x-for="(p, idx) in settings.priorities" :key="idx">
                         <button @click="activeStrategyTab = idx" class="px-4 py-2 rounded-t-lg font-bold text-sm transition border-t-4 shadow-sm" :class="activeStrategyTab === idx ? 'bg-slate-900 text-white border-blue-500' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent'"><span x-text="'Priority ' + (idx + 1)"></span></button>
@@ -163,7 +249,7 @@
                 </div>
             </div>
 
-            <div x-show="view === 'projects'" class="max-w-7xl mx-auto">
+            <div x-show="view === 'projects'" class="max-w-7xl mx-auto w-full">
                 <div class="flex flex-col md:flex-row justify-between mb-6 gap-4">
                     <div class="flex gap-2 items-center flex-wrap">
                         <input x-model="searchQuery" placeholder="Search projects..." class="border p-2 rounded w-64 text-sm shadow-inner">
@@ -200,7 +286,7 @@
                 </div>
             </div>
 
-            <div x-show="view === 'gantt'" class="max-w-full mx-auto">
+            <div x-show="view === 'gantt'" class="max-w-full mx-auto w-full">
                 <div class="bg-white p-6 rounded shadow mb-6">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <div class="flex items-center gap-4">
@@ -242,7 +328,7 @@
                 </div>
             </div>
 
-            <div x-show="view === 'reports'" class="max-w-6xl mx-auto h-full flex flex-col">
+            <div x-show="view === 'reports'" class="max-w-6xl mx-auto h-full flex flex-col w-full">
                 <div class="flex justify-between items-center mb-6 no-print">
                     <h2 class="font-bold text-2xl text-slate-800">Impact Reporting</h2>
                     <button @click="window.print()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-700 shadow"><i class="fas fa-print mr-2"></i> Print Report</button>
@@ -281,7 +367,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div x-show="reportDrillDownValue">
                         <h3 class="text-xl font-bold mb-4 text-emerald-900" x-text="'Results for: ' + reportDrillDownValue"></h3>
                         <div class="grid grid-cols-1 gap-4">
@@ -383,30 +468,23 @@
                         <select x-model="currentProject.qaLink" class="w-full border p-2 rounded text-sm mb-2"><option value="">-- QA Mechanism --</option><template x-for="q in settings.qaSources"><option :value="q" x-text="q"></option></template></select>
                         <div class="flex items-center gap-2 mt-2"><input type="checkbox" x-model="currentProject.isQip" class="w-4 h-4"><span class="text-sm font-bold text-slate-700">Linked to Dept QIP?</span></div>
                     </div>
-
                     <div class="grid grid-cols-3 gap-2">
                         <div><label class="text-[10px]">Type</label><select x-model="currentProject.type" class="w-full border p-2 rounded text-sm"><option value="coaching">Coaching</option><option value="project">Project</option><option value="strategy">Strategy</option></select></div>
                         <div><label class="text-[10px]">Dept</label><input x-model="currentProject.deptCode" list="deptCodes" class="w-full border p-2 rounded text-sm"><datalist id="deptCodes"><option value="AGF"><option value="HAC"><option value="MAT"><option value="ENG"><option value="SKB"></datalist></div>
                         <div><label class="text-[10px]">TLAM</label><select x-model="currentProject.tlam" class="w-full border p-2 rounded text-sm"><option value="">-- None --</option><option>Megan Brookes</option><option>Steve Brawley</option><option>Emily Green</option><option>Matt Filer</option><option>Rachel Lane</option><option>Neil Davies</option></select></div>
                     </div>
-                    <div>
-                        <label class="text-[10px] font-bold uppercase">Staff Member / Lead</label>
-                        <input x-model="currentProject.staff" class="w-full border p-2 rounded text-sm" placeholder="e.g. John Smith (for Coaching)">
-                    </div>
+                    <div><label class="text-[10px] font-bold uppercase">Staff Member / Lead</label><input x-model="currentProject.staff" class="w-full border p-2 rounded text-sm" placeholder="e.g. John Smith (for Coaching)"></div>
                     <textarea x-model="currentProject.objective" class="w-full border p-2 rounded h-24 text-sm" placeholder="Description..."></textarea>
                 </div>
                 <div class="flex flex-col h-full">
                     <div class="flex border-b mb-4">
                         <button @click="modalTab='tasks'" :class="modalTab==='tasks'?'border-b-2 border-blue-500 text-blue-600':'text-slate-400'" class="pb-2 px-2 text-xs font-bold flex-1">Tasks</button>
                         <button @click="modalTab='updates'" :class="modalTab==='updates'?'border-b-2 border-blue-500 text-blue-600':'text-slate-400'" class="pb-2 px-2 text-xs font-bold flex-1">Evidence</button>
-                        <button @click="modalTab='meetings'" :class="modalTab==='meetings'?'border-b-2 border-blue-500 text-blue-600':'text-slate-400'" class="pb-2 px-2 text-xs font-bold flex-1">Meetings</button>
-                    </div>
-                    
+                        </div>
                     <div x-show="modalTab==='tasks'" class="flex-1 flex flex-col">
                         <button @click="addMilestone()" class="text-xs bg-slate-200 px-2 py-2 rounded mb-2 w-full font-bold">+ Add Task</button>
                         <div class="space-y-1 overflow-y-auto max-h-[400px] flex-1"><template x-for="(m, idx) in currentProject.milestones" :key="idx"><div class="bg-white p-2 rounded border flex gap-2 items-center"><input type="checkbox" x-model="m.completed" @change="syncFromProject(m, currentProject)" class="cursor-pointer w-4 h-4"><div class="flex-1"><input x-model="m.title" class="w-full text-sm border-none outline-none bg-transparent"><input type="date" x-model="m.dueDate" class="text-[10px] bg-transparent text-slate-400 border-none p-0 h-4"></div><button @click="copyToToday(m, currentProject)" class="text-slate-300 hover:text-purple-500" title="Add to Today"><i class="fas fa-calendar-day"></i></button><button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button></div></template></div>
                     </div>
-
                     <div x-show="modalTab==='updates'" class="flex-1 flex flex-col">
                         <div class="bg-blue-50 p-2 text-[10px] text-blue-800 mb-2 rounded border border-blue-100">Log Evidence here (Files, Links, Outcomes).</div>
                         <div class="mb-2">
@@ -419,34 +497,6 @@
                         </div>
                         <div class="space-y-2 overflow-y-auto max-h-[300px] flex-1 bg-slate-50 p-2 rounded border"><template x-for="(u, idx) in currentProject.updates" :key="idx"><div class="bg-white p-2 rounded shadow-sm border border-slate-100 text-xs"><div class="flex justify-between text-slate-400 text-[10px] mb-1"><span x-text="formatDate(u.date)"></span><span x-text="u.source" class="font-bold text-slate-500"></span><button @click="currentProject.updates.splice(idx, 1)" class="hover:text-red-500"><i class="fas fa-times"></i></button></div><div x-text="u.text" class="font-medium text-slate-700 mb-1 whitespace-pre-wrap"></div><a x-show="u.link" :href="u.link" target="_blank" class="text-blue-600 underline">Evidence Link</a></div></template></div>
                     </div>
-
-                    <div x-show="modalTab==='meetings'" class="flex-1 flex flex-col">
-                        <div class="bg-amber-50 p-2 text-[10px] text-amber-800 mb-2 rounded border border-amber-100">Record meeting notes and decisions.</div>
-                        <div class="mb-2 p-2 bg-slate-50 rounded border">
-                            <input x-model="newMeetingTitle" class="w-full border p-1 rounded text-xs mb-1 font-bold" placeholder="Meeting Title / Attendees">
-                            <select x-model="newMeetingMilestone" class="w-full border p-1 rounded text-xs mb-1 bg-white">
-                                <option value="">- Link to Milestone (Optional) -</option>
-                                <template x-for="m in currentProject.milestones" :key="m.uuid"><option :value="m.title" x-text="m.title"></option></template>
-                            </select>
-                            <textarea x-model="newMeetingNotes" class="w-full border p-2 rounded text-xs h-16 mb-1" placeholder="Discussion points & actions..."></textarea>
-                            <button @click="addMeeting()" class="bg-amber-600 text-white px-4 py-2 rounded text-xs font-bold w-full">Save Note</button>
-                        </div>
-                        <div class="space-y-2 overflow-y-auto max-h-[300px] flex-1 bg-slate-50 p-2 rounded border">
-                            <template x-for="(mtg, idx) in currentProject.meetings" :key="idx">
-                                <div class="bg-white p-2 rounded shadow-sm border border-slate-100 text-xs relative">
-                                    <div class="flex justify-between text-slate-400 text-[10px] mb-1">
-                                        <span x-text="formatDate(mtg.date)"></span>
-                                        <button @click="currentProject.meetings.splice(idx, 1)" class="hover:text-red-500"><i class="fas fa-times"></i></button>
-                                    </div>
-                                    <div class="font-bold text-slate-800" x-text="mtg.title"></div>
-                                    <div x-show="mtg.milestoneLink" class="text-[9px] bg-blue-50 text-blue-600 inline-block px-1 rounded my-1" x-text="'Linked: ' + mtg.milestoneLink"></div>
-                                    <div x-text="mtg.text" class="text-slate-600 whitespace-pre-wrap mt-1"></div>
-                                </div>
-                            </template>
-                            <div x-show="!currentProject.meetings || currentProject.meetings.length === 0" class="text-center text-xs text-slate-400 italic mt-4">No meetings recorded.</div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
             <div class="p-4 border-t flex justify-end gap-2"><button @click="showModal = false" class="px-4 py-2 text-slate-500">Cancel</button><button @click="saveProject()" class="px-4 py-2 bg-blue-600 text-white rounded">Save Project</button></div>
@@ -458,15 +508,19 @@
             return {
                 view: 'dashboard', dashboardMode: 'strategy', fileHandle: null, showModal: false, modalTab: 'tasks', activeStrategyTab: 0, reportTab: 'overview', timelineTab: 'all',
                 searchQuery: '', filterRag: '', filterType: '', filterPriority: '', filterKpi: '',
-                reportDrillDownCategory: '', reportDrillDownValue: '', // NEW: Drill down state
+                reportDrillDownCategory: '', reportDrillDownValue: '',
                 newTodo: '', newUpdateText: '', newUpdateLink: '', newUpdateSource: '',
-                newMeetingTitle: '', newMeetingNotes: '', newMeetingMilestone: '', // NEW: Meeting state
+                quickActionText: '', activeMeetingCategory: '', currentMeeting: null,
                 timelineMode: 'year',
-                projects: [], todos: [], settings: { priorities: [], kpis: [], qaSources: [] }, currentProject: {}, charts: {}, 
+                projects: [], todos: [], meetingNotes: [], 
+                settings: { priorities: [], kpis: [], qaSources: [], meetingCategories: [] }, 
+                currentProject: {}, charts: {}, 
 
                 async init() {
                     this.settings.kpis = ['Teaching Quality Indicators', 'QIP Traction', 'Staff Capability', 'Staff Confidence', 'Student Experience', 'Retention Proxy', 'Value for Money', 'Digital Champions'];
                     this.settings.qaSources = ['Learning Walk Data', 'TLA Profile', 'QIP Review', 'Coaching Record', 'Staff Survey', 'Learner Voice', 'Exit Interview', 'Teams Analytics', 'Other'];
+                    this.settings.meetingCategories = ['1:1 Line Manager (Neil Davies)', 'Wider Leadership', 'Heads of Area (HoA)', 'Digital Lead Meetings', 'Digital Champions', 'TLAMs', 'Quality Team', 'External Stakeholders', 'Other'];
+                    this.activeMeetingCategory = this.settings.meetingCategories[0];
                 },
                 async openFile() {
                     try {
@@ -474,18 +528,19 @@
                         this.fileHandle = handle; const file = await handle.getFile(); const text = await file.text();
                         if (text.trim()) {
                             const data = JSON.parse(text);
-                            // MAP OLD DATA TO NEW STRUCTURE (Add .meetings, .staff)
                             this.projects = (data.projects || []).map(p => ({ 
                                 ...p, 
                                 milestones: (p.milestones || []).map(m => ({...m, uuid: m.uuid || Date.now() + Math.random()})), 
                                 updates: p.updates || [], 
-                                meetings: p.meetings || [], // New Array
+                                meetings: p.meetings || [], 
                                 deptCode: p.deptCode||'', tlam: p.tlam||'', staff: p.staff||'', kpi: p.kpi||'', qaLink: p.qaLink||'', isQip: p.isQip||false 
                             }));
                             this.todos = (data.todos || []).map(t => ({...t, originalId: t.originalId || null})); 
+                            this.meetingNotes = (data.meetingNotes || []).map(n => ({...n, id: n.id || Date.now() + Math.random()}));
                             this.settings.priorities = (data.settings?.priorities || []).map((p,i) => ({ ...p, id: p.id||(i+1), strategicMilestones: p.strategicMilestones||[], tasks: p.tasks||[] }));
                             this.settings.kpis = data.settings?.kpis || this.settings.kpis;
                             this.settings.qaSources = data.settings?.qaSources || this.settings.qaSources;
+                            this.settings.meetingCategories = data.settings?.meetingCategories || this.settings.meetingCategories;
                             
                             this.$nextTick(() => this.initCharts());
                         }
@@ -495,38 +550,57 @@
                     if (!this.fileHandle) return;
                     try {
                         const writable = await this.fileHandle.createWritable();
-                        await writable.write(JSON.stringify({ projects: this.projects, settings: this.settings, todos: this.todos }, null, 2));
+                        await writable.write(JSON.stringify({ projects: this.projects, settings: this.settings, todos: this.todos, meetingNotes: this.meetingNotes }, null, 2));
                         await writable.close();
                         if(this.view === 'dashboard' && document.getElementById('priorityChart')) this.updateCharts();
                     } catch (err) { console.error('Save failed', err); }
                 },
 
-                // --- DRILL DOWN ENGINE (NEW) ---
+                // --- MEETING HUB LOGIC (NEW) ---
+                get filteredMeetings() {
+                    if(!this.activeMeetingCategory) return [];
+                    return this.meetingNotes.filter(n => n.category === this.activeMeetingCategory).sort((a,b) => new Date(b.date) - new Date(a.date));
+                },
+                createNewMeeting() {
+                    const newNote = { id: Date.now(), title: '', date: new Date().toISOString().split('T')[0], category: this.activeMeetingCategory, content: '', attendees: '', linkedProjectId: '' };
+                    this.meetingNotes.unshift(newNote);
+                    this.currentMeeting = newNote;
+                    this.saveToFile();
+                },
+                deleteMeeting() {
+                    if(!this.currentMeeting) return;
+                    if(confirm('Delete this meeting note?')) {
+                        this.meetingNotes = this.meetingNotes.filter(n => n.id !== this.currentMeeting.id);
+                        this.currentMeeting = null;
+                        this.saveToFile();
+                    }
+                },
+                addNewMeetingCategory() {
+                    const name = prompt("New Category Name:");
+                    if(name && !this.settings.meetingCategories.includes(name)) {
+                        this.settings.meetingCategories.push(name);
+                        this.activeMeetingCategory = name;
+                        this.saveToFile();
+                    }
+                },
+                pushActionToDashboard() {
+                    if(!this.quickActionText) return;
+                    this.todos.push({ text: this.quickActionText, completed: false, projectTitle: 'Meeting Action', originalId: null });
+                    this.quickActionText = '';
+                    this.saveToFile();
+                    alert("Action added to Dashboard.");
+                },
+
+                // --- DRILL DOWN ENGINE ---
                 getDrillDownOptions() {
                     if (!this.reportDrillDownCategory) return [];
                     const key = this.reportDrillDownCategory;
-                    // Extract unique values from projects based on category
                     const values = new Set(this.projects.map(p => p[key]).filter(v => v));
                     return Array.from(values).sort();
                 },
                 getDrillDownResults() {
                     if (!this.reportDrillDownCategory || !this.reportDrillDownValue) return [];
                     return this.projects.filter(p => p[this.reportDrillDownCategory] === this.reportDrillDownValue);
-                },
-
-                // --- MEETINGS LOGIC (NEW) ---
-                addMeeting() {
-                    if (!this.newMeetingTitle || !this.newMeetingNotes) return;
-                    if (!this.currentProject.meetings) this.currentProject.meetings = [];
-                    this.currentProject.meetings.push({
-                        date: new Date().toISOString(),
-                        title: this.newMeetingTitle,
-                        text: this.newMeetingNotes,
-                        milestoneLink: this.newMeetingMilestone
-                    });
-                    this.newMeetingTitle = '';
-                    this.newMeetingNotes = '';
-                    this.newMeetingMilestone = '';
                 },
 
                 // --- GANTT ENGINE ---
