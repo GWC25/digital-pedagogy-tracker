@@ -3,966 +3,378 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v31.0</title>
+    <title>Digital Impact Hub OS v31.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         [x-cloak] { display: none !important; }
-        :root {
-            --primary: #1e40af; --accent: #f59e0b; --success: #10b981; --danger: #ef4444;
+        :root { --p1: #2563eb; --p2: #7c3aed; --p3: #059669; --p4: #db2777; }
+        
+        /* Calendar Grid Styling */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(5, 1fr);
+            grid-template-rows: 40px repeat(40, 25px); /* 10 hours * 4 slots/hr */
+            border: 1px solid #e2e8f0;
         }
-        body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-attachment: fixed; }
-        .display-font { font-family: 'Fraunces', serif; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(203, 213, 225, 0.5); border-radius: 4px; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .card-hover { transition: all 0.3s; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); }
-        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 100; }
-        .toast { background: white; border-left: 4px solid var(--primary); padding: 16px 20px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transform: translateX(400px); animation: slideInRight 0.3s forwards; display: flex; gap: 12px; }
-        @keyframes slideInRight { to { transform: translateX(0); } }
-        .gantt-grid { display: grid; gap: 0; font-size: 13px; }
-        .gantt-cell { background: white; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; min-height: 48px; display: flex; align-items: center; padding: 0 8px; }
-        .gantt-header { background: #f8fafc; border-bottom: 2px solid #cbd5e1; font-weight: 600; position: sticky; top: 0; z-index: 10; padding: 12px 4px; text-align: center; }
-        .gantt-sticky-col { position: sticky; left: 0; z-index: 15; background: white; border-right: 2px solid #e2e8f0; font-weight: 500; }
+        .time-label { grid-column: 1; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #f1f5f9; font-size: 10px; color: #94a3b8; text-align: right; padding-right: 4px; }
+        .day-cell { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #f1f5f9; position: relative; }
+        .event-card { position: absolute; left: 2px; right: 2px; border-radius: 4px; padding: 4px; font-size: 11px; overflow: hidden; border-left: 3px solid; z-index: 10; cursor: pointer; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            .print-area { display: block !important; width: 100%; }
+            body { overflow: visible !important; }
+        }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden" x-data="appData()" x-init="init()" x-cloak>
+<body class="text-slate-800 bg-slate-50 h-screen flex flex-col overflow-hidden" x-data="appData()" x-init="init()">
 
-    <!-- Header -->
-    <header class="glass border-b border-neutral-200 h-16 flex justify-between items-center px-6 shadow-sm z-30">
+    <header class="bg-white border-b border-slate-200 h-16 flex justify-between items-center px-6 shadow-sm z-50 no-print">
         <div class="flex items-center gap-3">
-            <div class="bg-gradient-to-br from-blue-600 to-purple-600 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold shadow-md">
-                <i class="fas fa-graduation-cap"></i>
-            </div>
+            <div class="bg-indigo-600 text-white w-10 h-10 rounded-lg flex items-center justify-center shadow-lg"><i class="fas fa-hubspot"></i></div>
             <div>
-                <h1 class="display-font text-xl font-bold text-neutral-900">Digital Impact Hub</h1>
-                <p class="text-[10px] text-neutral-500 uppercase tracking-wider">v31.0 Professional</p>
+                <h1 class="font-bold text-slate-800 leading-none">Digital Impact Hub</h1>
+                <p class="text-[10px] text-indigo-500 uppercase tracking-widest font-bold mt-1">Strategy OS v31.0</p>
             </div>
         </div>
-        <nav class="hidden md:flex gap-1" x-show="fileHandle">
-            <template x-for="item in navItems" :key="item.id">
-                <button @click="switchView(item.id)" :class="view === item.id ? 'bg-white text-blue-600 font-bold shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/50'" class="px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
+        <nav class="hidden lg:flex bg-slate-100 p-1 rounded-xl gap-1">
+            <template x-for="item in navItems">
+                <button @click="view = item.id" :class="view === item.id ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
                     <i :class="item.icon"></i> <span x-text="item.label"></span>
                 </button>
             </template>
         </nav>
         <div class="flex items-center gap-3">
-            <template x-if="!fileHandle">
-                <button @click="openFile()" class="text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 px-5 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2">
-                    <i class="fas fa-plug"></i> Connect Data
-                </button>
-            </template>
-            <template x-if="fileHandle">
-                <div class="flex items-center gap-3">
-                    <span class="text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 font-bold flex items-center gap-2">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> LIVE
-                    </span>
-                    <button @click="saveToFile()" class="text-sm bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-50 px-4 py-2 rounded-lg font-medium transition-all shadow-sm">
-                        <i class="fas fa-save mr-2"></i> Save
-                    </button>
-                </div>
-            </template>
+            <button @click="showDailyUpdate = true" class="bg-amber-500 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-600 shadow-sm"><i class="fas fa-bolt mr-1"></i> Daily Wrap</button>
+            <button @click="openFile()" class="text-xs bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-slate-700 transition"><i class="fas fa-database mr-2"></i> <span x-text="fileHandle ? 'Connected' : 'Connect Data'"></span></button>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto p-6">
-        
-        <!-- Welcome Screen -->
-        <div x-show="!fileHandle" class="h-full flex items-center justify-center">
-            <div class="glass p-12 rounded-2xl shadow-2xl border border-white/50 text-center max-w-xl slide-up">
-                <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl shadow-lg">
-                    <i class="fas fa-rocket"></i>
-                </div>
-                <h2 class="display-font text-3xl font-bold text-neutral-900 mb-3">Welcome to Your Digital Hub</h2>
-                <p class="text-neutral-600 mb-8 leading-relaxed">Connect to your <strong>digital-coach-data.json</strong> file to access your strategic pillars, projects, and workflow.</p>
-                <button @click="openFile()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold px-10 py-4 rounded-xl hover:shadow-xl transition-all w-full">
-                    <i class="fas fa-folder-open mr-2"></i> Select Local File
-                </button>
-                <p class="text-xs text-neutral-500 mt-6">Your data stays on your device. No servers, no cloud.</p>
+    <main class="flex-1 overflow-hidden relative flex flex-col">
+        <div x-show="view === 'strategy'" class="flex-1 overflow-y-auto p-6 space-y-6 animate-fade-in">
+            <div class="flex justify-between items-end">
+                <h2 class="text-2xl font-bold text-slate-800 text-print">Strategic Pillars <span class="text-slate-400 font-light">2026</span></h2>
+                <button @click="exportPDF('strategy')" class="text-xs bg-white border border-slate-300 px-3 py-2 rounded font-bold no-print"><i class="fas fa-file-pdf mr-2 text-red-500"></i> Export Dossier</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <template x-for="prio in settings.priorities" :key="prio.id">
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-5" :style="`background: linear-gradient(135deg, ${prio.color}11, transparent)`">
+                            <div class="flex justify-between items-start mb-4">
+                                <span :style="`background: ${prio.color}; shadow: 0 4px 6px ${prio.color}33`" class="text-[10px] text-white px-3 py-1 rounded-full font-black uppercase tracking-widest" x-text="prio.title"></span>
+                                <div class="text-2xl font-black text-slate-200" x-text="'0' + prio.id"></div>
+                            </div>
+                            <p class="text-xs text-slate-500 italic mb-4" x-text="prio.intent"></p>
+                            
+                            <div class="space-y-3">
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Active Projects</div>
+                                <template x-for="proj in projects.filter(x => x.priorityId == prio.id)">
+                                    <div @click="editProject(proj)" class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-100 hover:border-indigo-300 cursor-pointer shadow-sm group">
+                                        <span class="text-xs font-medium text-slate-700 group-hover:text-indigo-600" x-text="proj.title"></span>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-12 h-1 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500" :style="`width: ${calculateProgress(proj)}%`"></div></div>
+                                            <span class="text-[10px] font-bold text-slate-400" x-text="calculateProgress(proj) + '%'"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
 
-        <!-- Main Views -->
-        <div x-show="fileHandle" x-transition class="h-full flex flex-col gap-6">
-            
-            <!-- DASHBOARD -->
-            <div x-show="view === 'dashboard'" class="fade-in space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="glass p-6 rounded-xl shadow-md border border-white/50 card-hover">
-                        <div class="flex justify-between mb-3">
-                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-                                <i class="fas fa-project-diagram text-xl"></i>
-                            </div>
-                            <span class="text-xs font-bold text-neutral-500 uppercase">Active</span>
-                        </div>
-                        <div class="text-3xl font-bold text-neutral-900 mb-1" x-text="projects.filter(p => p.status !== 'Completed').length"></div>
-                        <div class="text-sm text-neutral-600">Projects Running</div>
-                    </div>
-                    <div class="glass p-6 rounded-xl shadow-md border border-white/50 card-hover">
-                        <div class="flex justify-between mb-3">
-                            <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600">
-                                <i class="fas fa-check-circle text-xl"></i>
-                            </div>
-                            <span class="text-xs font-bold text-neutral-500 uppercase">Progress</span>
-                        </div>
-                        <div class="text-3xl font-bold text-neutral-900 mb-1" x-text="Math.round(getOverallProgress()) + '%'"></div>
-                        <div class="text-sm text-neutral-600">Overall Completion</div>
-                    </div>
-                    <div class="glass p-6 rounded-xl shadow-md border border-white/50 card-hover">
-                        <div class="flex justify-between mb-3">
-                            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
-                                <i class="fas fa-tasks text-xl"></i>
-                            </div>
-                            <span class="text-xs font-bold text-neutral-500 uppercase">Tasks</span>
-                        </div>
-                        <div class="text-3xl font-bold text-neutral-900 mb-1" x-text="getAllOpenTasks().length"></div>
-                        <div class="text-sm text-neutral-600">Action Items Open</div>
-                    </div>
-                    <div class="glass p-6 rounded-xl shadow-md border border-white/50 card-hover">
-                        <div class="flex justify-between mb-3">
-                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
-                                <i class="fas fa-calendar-check text-xl"></i>
-                            </div>
-                            <span class="text-xs font-bold text-neutral-500 uppercase">This Week</span>
-                        </div>
-                        <div class="text-3xl font-bold text-neutral-900 mb-1" x-text="calendarEvents.length"></div>
-                        <div class="text-sm text-neutral-600">Scheduled Events</div>
-                    </div>
+        <div x-show="view === 'planner'" class="flex-1 flex overflow-hidden no-print">
+            <div class="w-80 bg-white border-r border-slate-200 flex flex-col">
+                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-500">Action Hopper</h3>
+                    <button @click="addTodo()" class="text-[10px] bg-indigo-600 text-white px-2 py-1 rounded font-bold hover:bg-indigo-700 shadow">+ ADD</button>
                 </div>
-
-                <!-- Strategic Pillars Overview -->
-                <div class="glass p-6 rounded-xl shadow-md border border-white/50">
-                    <h3 class="display-font text-2xl font-bold text-neutral-900 mb-6">Strategic Pillars</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <template x-for="pillar in settings.pillars" :key="pillar.id">
-                            <div class="border-2 rounded-xl p-5 transition-all hover:shadow-lg cursor-pointer" :style="`border-color: ${pillar.color}; border-left-width: 6px;`" @click="filterPillar = pillar.id; switchView('projects')">
-                                <div class="flex items-start justify-between mb-3">
-                                    <div class="flex-1">
-                                        <h4 class="font-bold text-lg mb-1" x-text="pillar.title"></h4>
-                                        <p class="text-xs text-neutral-600 leading-relaxed" x-text="pillar.intent"></p>
-                                    </div>
-                                    <div class="text-right ml-4">
-                                        <div class="text-2xl font-bold" x-text="getProjectsForPillar(pillar.id).length"></div>
-                                        <div class="text-xs text-neutral-500">projects</div>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <div class="flex-1 bg-neutral-100 rounded-full h-2">
-                                        <div class="h-full rounded-full" :style="`width: ${getPillarProgress(pillar.id)}%; background-color: ${pillar.color};`"></div>
-                                    </div>
-                                    <span class="text-xs font-bold" x-text="getPillarProgress(pillar.id) + '%'"></span>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-
-            <!-- STRATEGY -->
-            <div x-show="view === 'strategy'" class="fade-in">
-                <div class="glass p-6 rounded-xl shadow-md border border-white/50">
-                    <div class="flex justify-between mb-6">
-                        <h2 class="display-font text-2xl font-bold">Strategic Framework</h2>
-                        <button @click="addPillar()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2 rounded-lg font-bold hover:shadow-lg">
-                            <i class="fas fa-plus mr-2"></i> Add Pillar
-                        </button>
-                    </div>
-                    <div class="flex gap-2 border-b mb-6 overflow-x-auto">
-                        <template x-for="(pillar, index) in settings.pillars" :key="pillar.id">
-                            <button @click="activeStrategyTab = index" :class="activeStrategyTab === index ? 'border-b-2 font-bold' : 'text-neutral-600'" class="px-4 py-3 text-sm whitespace-nowrap" :style="activeStrategyTab === index ? `border-color: ${pillar.color}; color: ${pillar.color};` : ''" x-text="pillar.title"></button>
-                        </template>
-                    </div>
-                    <template x-for="(pillar, index) in settings.pillars" :key="pillar.id">
-                        <div x-show="activeStrategyTab === index" class="space-y-6">
-                            <div class="p-6 rounded-xl border-2" :style="`border-color: ${pillar.color}; background-color: ${pillar.color}20;`">
-                                <input x-model="pillar.title" class="text-xl font-bold bg-transparent w-full outline-none mb-2" placeholder="Pillar Title">
-                                <textarea x-model="pillar.intent" class="w-full bg-transparent outline-none text-sm resize-none" rows="2" placeholder="Strategic intent..."></textarea>
-                                <div class="flex gap-2 mt-3">
-                                    <input type="color" x-model="pillar.color" class="w-20">
-                                    <button @click="deletePillar(index)" class="ml-auto text-red-600 text-xs hover:underline">
-                                        <i class="fas fa-trash mr-1"></i> Delete
-                                    </button>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between mb-4">
-                                    <h4 class="font-bold text-lg">Strategic Milestones</h4>
-                                    <button @click="addMilestone(pillar)" class="text-sm bg-white border px-3 py-1.5 rounded-lg hover:bg-neutral-50">
-                                        <i class="fas fa-plus mr-1"></i> Add Milestone
-                                    </button>
-                                </div>
-                                <div class="space-y-3">
-                                    <template x-for="(m, mIdx) in (pillar.strategicMilestones || [])" :key="mIdx">
-                                        <div class="bg-white p-4 rounded-lg border hover:shadow-md">
-                                            <div class="flex gap-3">
-                                                <div class="flex-1">
-                                                    <input x-model="m.title" class="font-medium w-full outline-none mb-2" placeholder="Milestone title">
-                                                    <div class="flex gap-2 text-xs">
-                                                        <input type="date" x-model="m.targetDate" class="border rounded px-2 py-1">
-                                                        <select x-model="m.status" class="border rounded px-2 py-1">
-                                                            <option value="Planned">Planned</option>
-                                                            <option value="In Progress">In Progress</option>
-                                                            <option value="Achieved">Achieved</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <button @click="createProjectFromMilestone(pillar, m)" class="text-blue-600" title="Create Project">
-                                                    <i class="fas fa-arrow-right"></i>
-                                                </button>
-                                                <button @click="pillar.strategicMilestones.splice(mIdx, 1)" class="text-red-600">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
+                <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                    <template x-for="task in todos.filter(t => !t.completed)" :key="task.id">
+                        <div draggable="true" @dragstart="dragEvent = task" class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-400 cursor-move transition group">
+                            <div class="text-xs font-bold text-slate-800 mb-1" x-text="task.text"></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[9px] text-slate-400 uppercase font-medium" x-text="task.projectTitle || 'Quick Task'"></span>
+                                <i class="fas fa-grip-vertical text-slate-200 group-hover:text-slate-400"></i>
                             </div>
                         </div>
                     </template>
                 </div>
             </div>
 
-            <!-- PLANNER -->
-            <div x-show="view === 'planner'" class="h-full flex gap-6 fade-in">
-                <div class="w-1/3 glass rounded-xl shadow-md border border-white/50 flex flex-col">
-                    <div class="p-4 border-b flex justify-between bg-gradient-to-r from-blue-50 to-purple-50">
-                        <h3 class="font-bold text-neutral-800 uppercase text-xs tracking-wider">Action Hopper</h3>
-                        <button @click="addTaskModal=true" class="text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1.5 rounded-lg">
-                            <i class="fas fa-plus mr-1"></i> Add
-                        </button>
+            <div class="flex-1 flex flex-col bg-slate-100 overflow-hidden">
+                <div class="h-12 bg-white border-b flex items-center px-4 justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm font-bold text-slate-600">Weekly Performance</span>
                     </div>
-                    <div class="p-3 border-b">
-                        <input x-model="taskSearch" placeholder="Filter..." class="w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500">
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-3 space-y-2">
-                        <template x-for="task in getSortedTasks()" :key="task.id">
-                            <div class="bg-white p-3 rounded-lg border shadow-sm hover:shadow-md group">
-                                <div class="flex gap-3">
-                                    <input type="checkbox" x-model="task.completed" @change="completeTask(task)" class="mt-1 w-4 h-4">
-                                    <div class="flex-1">
-                                        <div class="text-sm font-medium" :class="{'line-through text-neutral-400': task.completed}" x-text="task.text || task.title"></div>
-                                        <div class="flex gap-2 mt-2">
-                                            <span x-show="task.context" class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase font-bold" x-text="task.context"></span>
-                                            <span x-show="task.dueDate" class="text-[10px] px-2 py-0.5 rounded-full font-bold" :class="getDueDateClass(task.dueDate)" x-text="formatDateShort(task.dueDate)"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="flex gap-2">
+                        <template x-for="filter in ['Strategy', 'Projects', 'Meetings', 'Activities']">
+                            <button class="text-[10px] px-2 py-1 rounded bg-slate-200 font-bold text-slate-500 hover:bg-indigo-100 hover:text-indigo-600" x-text="filter"></button>
                         </template>
-                        <div x-show="getSortedTasks().length === 0" class="text-center py-10 text-neutral-400">
-                            <i class="fas fa-check-circle text-3xl mb-2"></i>
-                            <div>All caught up!</div>
-                        </div>
                     </div>
                 </div>
-
-                <div class="flex-1 glass rounded-xl shadow-md border border-white/50 flex flex-col">
-                    <div class="p-4 border-b flex justify-between bg-gradient-to-r from-purple-50 to-pink-50">
-                        <h3 class="font-bold text-neutral-800 uppercase text-xs tracking-wider">Weekly Workflow</h3>
-                        <button @click="addCalendarEvent()" class="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 rounded-lg font-bold">
-                            <i class="fas fa-plus mr-2"></i> Add Event
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-4">
-                        <div class="grid grid-cols-5 gap-4 min-h-[500px]">
-                            <template x-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']">
-                                <div class="flex flex-col bg-neutral-50 rounded-xl border">
-                                    <div class="p-3 text-center text-xs font-bold text-neutral-600 border-b uppercase bg-white rounded-t-xl" x-text="day"></div>
-                                    <div class="flex-1 p-2 space-y-2">
-                                        <template x-for="evt in getEventsForDay(day)" :key="evt.id">
-                                            <div class="p-3 rounded-lg text-xs border-l-4 shadow-sm cursor-pointer hover:shadow-md group" :class="evt.type === 'meeting' ? 'bg-amber-50 border-amber-400' : 'bg-blue-50 border-blue-400'" @click="editEvent(evt)">
-                                                <div class="font-bold truncate mb-1" x-text="evt.title"></div>
-                                                <div class="text-[10px] opacity-75" x-text="evt.time || 'All Day'"></div>
-                                                <button @click.stop="deleteEvent(evt.id)" class="absolute top-2 right-2 text-red-400 opacity-0 group-hover:opacity-100">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </div>
+                
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div class="calendar-grid bg-white rounded-xl shadow-lg">
+                        <div class="col-start-1 row-start-1 border-r border-b"></div>
+                        <template x-for="(day, index) in ['Monday','Tuesday','Wednesday','Thursday','Friday']">
+                            <div class="border-r border-b bg-slate-50/50 flex items-center justify-center text-[10px] font-black uppercase text-slate-400" :style="`grid-column: ${index + 2}`" x-text="day"></div>
+                        </template>
+                        
+                        <template x-for="slot in 40"> <div class="time-label" :style="`grid-row: ${slot + 1}`" x-text="getTimeForSlot(slot)"></div>
+                        </template>
+                        
+                        <template x-for="dayIdx in 5">
+                            <template x-for="slotIdx in 40">
+                                <div class="day-cell" 
+                                     :style="`grid-column: ${dayIdx + 1}; grid-row: ${slotIdx + 1}`"
+                                     @dragover.prevent=""
+                                     @drop="dropOnCalendar(dayIdx, slotIdx)">
                                 </div>
                             </template>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PROJECTS -->
-            <div x-show="view === 'projects'" class="fade-in flex flex-col">
-                <div class="glass p-5 rounded-xl shadow-md border border-white/50 mb-6">
-                    <div class="flex justify-between gap-4">
-                        <div class="flex gap-3 flex-1">
-                            <input x-model="searchQuery" placeholder="Search..." class="border px-4 py-2 rounded-lg text-sm w-64 outline-none focus:border-blue-500">
-                            <select x-model="filterPillar" class="border px-4 py-2 rounded-lg text-sm bg-white outline-none">
-                                <option value="">All Pillars</option>
-                                <template x-for="p in settings.pillars" :key="p.id">
-                                    <option :value="p.id" x-text="p.title"></option>
-                                </template>
-                            </select>
-                            <button x-show="searchQuery || filterPillar" @click="resetFilters()" class="text-xs text-red-600 px-3 py-2 hover:bg-red-50 rounded-lg">Clear</button>
-                        </div>
-                        <button @click="startNewProject()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:shadow-lg">
-                            <i class="fas fa-plus mr-2"></i> New Project
-                        </button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-10">
-                    <template x-for="project in filteredProjects" :key="project.id">
-                        <div class="glass rounded-xl shadow-md border border-white/50 flex flex-col card-hover cursor-pointer" @click="editProject(project)">
-                            <div class="h-1.5 rounded-t-xl" :style="`background-color: ${getPillarColorForProject(project)};`"></div>
-                            <div class="p-6 flex-1 flex flex-col">
-                                <div class="flex justify-between mb-3">
-                                    <span class="text-[10px] font-bold uppercase text-neutral-500" x-text="project.type || 'Project'"></span>
-                                    <span x-show="project.kpi" class="text-[9px] bg-purple-600 text-white px-2 py-1 rounded font-bold" x-text="project.kpi.substring(0, 12)"></span>
-                                </div>
-                                <h3 class="font-bold text-lg mb-2 group-hover:text-blue-600" x-text="project.title"></h3>
-                                <p class="text-sm text-neutral-600 line-clamp-2 mb-4" x-text="project.objective || 'No objective'"></p>
-                                <div class="flex flex-wrap gap-2 mb-4">
-                                    <span x-show="project.deptCode" class="text-[10px] bg-neutral-100 px-2 py-1 rounded-full" x-text="project.deptCode"></span>
-                                    <span x-show="project.staff" class="text-[10px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full border border-yellow-200" x-text="project.staff"></span>
-                                </div>
-                                <div class="mt-auto">
-                                    <div class="flex items-center gap-2 text-xs font-bold mb-1">
-                                        <span x-text="calculateProgress(project) + '%'"></span>
-                                        <span class="ml-auto text-neutral-500" x-text="(project.milestones || []).filter(m => m.completed).length + '/' + (project.milestones || []).length"></span>
-                                    </div>
-                                    <div class="bg-neutral-100 rounded-full h-2">
-                                        <div class="h-full rounded-full" :style="`width: ${calculateProgress(project)}%; background-color: ${getPillarColorForProject(project)};`"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <!-- MEETINGS -->
-            <div x-show="view === 'meetings'" class="h-full flex glass rounded-xl shadow-md border border-white/50 overflow-hidden fade-in">
-                <div class="w-64 bg-neutral-50 border-r flex flex-col">
-                    <div class="p-4 border-b bg-white">
-                        <h3 class="font-bold text-neutral-800 uppercase text-xs">Notebooks</h3>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-2 space-y-1">
-                        <template x-for="cat in settings.meetingCategories" :key="cat">
-                            <button @click="activeMeetingCategory = cat; currentMeeting = null" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition flex justify-between" :class="activeMeetingCategory === cat ? 'bg-white shadow-md text-blue-700' : 'text-neutral-600 hover:bg-white/50'">
-                                <span x-text="cat"></span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" :class="activeMeetingCategory === cat ? 'bg-blue-100 text-blue-700' : 'bg-neutral-200 text-neutral-500'" x-text="meetingNotes.filter(n => n.category === cat).length"></span>
-                            </button>
                         </template>
-                    </div>
-                    <button @click="addNewMeetingCategory()" class="m-3 p-3 text-xs text-blue-600 font-bold border-2 border-dashed border-blue-300 rounded-lg hover:bg-blue-50">
-                        <i class="fas fa-plus mr-1"></i> Add Notebook
-                    </button>
-                </div>
 
-                <div class="w-80 border-r flex flex-col bg-white">
-                    <div class="p-4 border-b flex justify-between h-16 bg-gradient-to-r from-blue-50 to-purple-50">
-                        <span class="font-bold text-sm" x-text="activeMeetingCategory"></span>
-                        <button @click="createNewMeeting()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">
-                            <i class="fas fa-plus mr-1"></i> New
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-3 space-y-2 bg-neutral-50">
-                        <template x-for="note in filteredMeetings" :key="note.id">
-                            <div @click="currentMeeting = note" class="p-4 rounded-lg border cursor-pointer transition bg-white hover:shadow-md" :class="currentMeeting && currentMeeting.id === note.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-neutral-200'">
-                                <div class="font-bold text-sm truncate mb-1" x-text="note.title || 'Untitled'"></div>
-                                <div class="text-[10px] text-neutral-500 mb-2" x-text="formatDate(note.date)"></div>
-                                <div class="text-xs text-neutral-600 line-clamp-2" x-text="note.content || 'No content'"></div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
-                <div class="flex-1 flex flex-col bg-white">
-                    <template x-if="!currentMeeting">
-                        <div class="h-full flex flex-col items-center justify-center text-neutral-300">
-                            <i class="far fa-file-alt text-6xl mb-4"></i>
-                            <div class="font-medium text-lg">Select a note</div>
-                        </div>
-                    </template>
-                    <template x-if="currentMeeting">
-                        <div class="flex flex-col h-full">
-                            <div class="p-6 border-b">
-                                <input x-model="currentMeeting.title" class="text-2xl font-bold w-full outline-none mb-4" placeholder="Meeting Subject">
-                                <div class="flex gap-6 text-sm text-neutral-600 mb-4">
-                                    <div class="flex items-center gap-2">
-                                        <i class="far fa-calendar text-blue-600"></i>
-                                        <input type="date" x-model="currentMeeting.date" class="outline-none bg-transparent font-medium">
-                                    </div>
-                                    <div class="flex items-center gap-2 flex-1">
-                                        <i class="far fa-user text-purple-600"></i>
-                                        <input x-model="currentMeeting.attendees" class="w-full outline-none bg-transparent" placeholder="Attendees...">
-                                    </div>
-                                </div>
-                                <div class="flex gap-3">
-                                    <select x-model="currentMeeting.linkedProjectId" class="text-xs border rounded-lg px-3 py-2 bg-white flex-1 outline-none focus:border-blue-500">
-                                        <option value="">— No Link —</option>
-                                        <optgroup label="Pillars">
-                                            <template x-for="p in settings.pillars" :key="p.id">
-                                                <option :value="'pillar:'+p.id" x-text="'🎯 ' + p.title"></option>
-                                            </template>
-                                        </optgroup>
-                                        <optgroup label="Projects">
-                                            <template x-for="p in projects" :key="p.id">
-                                                <option :value="'proj:'+p.id" x-text="'📁 ' + p.title"></option>
-                                            </template>
-                                        </optgroup>
-                                    </select>
-                                    <button @click="saveToFile(); showToast('Note saved')" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-xs font-bold">
-                                        <i class="fas fa-save mr-1"></i> Save
-                                    </button>
-                                </div>
-                            </div>
-                            <textarea x-model="currentMeeting.content" class="flex-1 p-8 outline-none resize-none leading-relaxed" placeholder="Start typing notes..."></textarea>
-                            <div class="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-t flex gap-3">
-                                <span class="text-xs font-bold text-neutral-600 uppercase">Quick Action:</span>
-                                <input x-model="quickActionText" class="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="Task...">
-                                <input type="date" x-model="quickActionDate" class="border rounded-lg px-3 py-2 text-xs">
-                                <button @click="pushActionToDashboard()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2 rounded-lg text-sm font-bold">
-                                    <i class="fas fa-plus mr-1"></i> Add
-                                </button>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <!-- TIMELINE -->
-            <div x-show="view === 'timeline'" class="h-full flex flex-col fade-in">
-                <div class="glass p-5 rounded-xl shadow-md border border-white/50 mb-4 flex justify-between">
-                    <h2 class="display-font text-2xl font-bold">Project Timeline</h2>
-                    <div class="flex bg-white rounded-lg p-1 shadow-sm border">
-                        <button @click="timelineMode = 'year'" :class="timelineMode==='year' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm' : 'text-neutral-600'" class="px-4 py-2 rounded-lg text-xs font-bold">Year</button>
-                        <button @click="timelineMode = '3m'" :class="timelineMode==='3m' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm' : 'text-neutral-600'" class="px-4 py-2 rounded-lg text-xs font-bold">Quarter</button>
-                    </div>
-                </div>
-                <div class="glass rounded-xl shadow-md border border-white/50 overflow-auto flex-1">
-                    <div class="gantt-grid" :style="getTimelineGridStyle()">
-                        <div class="contents">
-                            <div class="gantt-sticky-col gantt-header px-4">Project</div>
-                            <template x-for="col in timelineColumns" :key="col.label">
-                                <div class="gantt-header">
-                                    <div class="font-bold" x-text="col.label"></div>
-                                    <div x-show="col.sub" class="text-[9px] text-neutral-500 font-normal" x-text="col.sub"></div>
-                                </div>
-                            </template>
-                        </div>
-                        <template x-for="(p, idx) in filteredProjects.filter(p => p.startDate && p.endDate)" :key="p.id">
-                            <div class="contents hover:bg-neutral-50 group">
-                                <div class="gantt-sticky-col gantt-cell px-4 font-bold cursor-pointer hover:text-blue-600" @click="editProject(p)" x-text="p.title"></div>
-                                <template x-for="c in timelineColumns">
-                                    <div class="gantt-cell"></div>
-                                </template>
+                        <template x-for="evt in calendarEvents" :key="evt.id">
+                            <div class="event-card" 
+                                 :style="getEventStyle(evt)"
+                                 :class="evt.type === 'meeting' ? 'bg-amber-50 border-amber-500 text-amber-800' : 'bg-indigo-50 border-indigo-500 text-indigo-800'"
+                                 @click="openEvent(evt)">
+                                <div class="font-black leading-tight" x-text="evt.title"></div>
+                                <div class="text-[9px] opacity-70" x-text="evt.startTime + ' - ' + evt.endTime"></div>
                             </div>
                         </template>
                     </div>
                 </div>
             </div>
+        </div>
 
+        <div x-show="view === 'reports'" class="flex-1 overflow-y-auto p-8 animate-fade-in print-area">
+             <div class="max-w-5xl mx-auto space-y-10">
+                 <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4">
+                     <div>
+                         <h1 class="text-3xl font-black text-slate-900 uppercase">Impact Dossier</h1>
+                         <p class="text-slate-500 font-medium">Data Integration & Pedagogy Analysis</p>
+                     </div>
+                     <button @click="window.print()" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold no-print">Download PDF</button>
+                 </div>
+
+                 <div class="grid grid-cols-3 gap-6">
+                     <div class="bg-indigo-600 text-white p-6 rounded-2xl">
+                         <div class="text-sm opacity-80 uppercase font-black">Project Velocity</div>
+                         <div class="text-4xl font-black mt-2" x-text="projects.length"></div>
+                         <div class="text-xs mt-4">Across 4 Strategic Pillars</div>
+                     </div>
+                     <div class="bg-emerald-600 text-white p-6 rounded-2xl">
+                         <div class="text-sm opacity-80 uppercase font-black">QIP Traction</div>
+                         <div class="text-4xl font-black mt-2" x-text="projects.filter(p => p.isQip).length"></div>
+                         <div class="text-xs mt-4">Linked to Quality Improvement</div>
+                     </div>
+                     <div class="bg-slate-800 text-white p-6 rounded-2xl">
+                         <div class="text-sm opacity-80 uppercase font-black">Evidence Logged</div>
+                         <div class="text-4xl font-black mt-2" x-text="projects.reduce((acc, p) => acc + (p.updates?.length || 0), 0)"></div>
+                         <div class="text-xs mt-4">Verified Impact Statements</div>
+                     </div>
+                 </div>
+
+                 <section class="space-y-4">
+                     <h3 class="text-xl font-bold border-l-4 border-indigo-600 pl-4">Pillar Progress & Impact</h3>
+                     <table class="w-full border-collapse">
+                         <thead>
+                             <tr class="bg-slate-100 text-left text-[10px] uppercase font-black text-slate-500">
+                                 <th class="p-3">Strategic Pillar</th>
+                                 <th class="p-3">Lead Projects</th>
+                                 <th class="p-3">Progress</th>
+                                 <th class="p-3">Latest Impact Statement</th>
+                             </tr>
+                         </thead>
+                         <tbody class="text-xs">
+                             <template x-for="prio in settings.priorities">
+                                 <tr class="border-b">
+                                     <td class="p-3 font-bold" x-text="prio.title"></td>
+                                     <td class="p-3">
+                                         <div class="space-y-1">
+                                             <template x-for="proj in projects.filter(x => x.priorityId == prio.id)">
+                                                 <div x-text="proj.title" class="text-slate-600 italic"></div>
+                                             </template>
+                                         </div>
+                                     </td>
+                                     <td class="p-3">
+                                         <div class="w-24 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500" :style="`width: ${calculatePriorityProgress(prio.id)}%`"></div></div>
+                                     </td>
+                                     <td class="p-3 text-slate-500" x-text="getLatestImpact(prio.id)"></td>
+                                 </tr>
+                             </template>
+                         </tbody>
+                     </table>
+                 </section>
+             </div>
         </div>
     </main>
 
-    <!-- PROJECT MODAL -->
-    <div x-show="showModal" class="fixed inset-0 z-50" x-cloak>
-        <div class="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" @click="showModal = false"></div>
-        <div class="absolute inset-y-0 right-0 max-w-3xl w-full">
-            <div class="h-full bg-white shadow-2xl flex flex-col" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="transform translate-x-full" x-transition:enter-end="transform translate-x-0">
-                <div class="px-8 py-5 border-b flex justify-between bg-gradient-to-r from-blue-50 to-purple-50">
-                    <h2 class="display-font text-2xl font-bold">Project Details</h2>
-                    <div class="flex gap-3">
-                        <button @click="showModal = false" class="text-neutral-500 hover:text-neutral-700 px-4 py-2 rounded-lg hover:bg-white">Cancel</button>
-                        <button @click="saveProject(); showToast('Project saved')" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-bold shadow-md">
-                            <i class="fas fa-save mr-2"></i> Save
-                        </button>
-                    </div>
+    <div x-show="showDailyUpdate" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md" x-cloak>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl p-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-8 border-b pb-4">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 uppercase italic">Daily Impact Wrap-up</h2>
+                    <p class="text-sm text-slate-500">Sync calendar activities to project evidence</p>
                 </div>
-                <div class="flex-1 overflow-y-auto p-8 bg-neutral-50">
-                    <input x-model="currentProject.title" class="w-full text-3xl font-bold bg-transparent outline-none mb-8" placeholder="Project Title">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border mb-6">
-                        <h4 class="text-xs font-bold text-neutral-500 uppercase border-b pb-3 mb-5">Core Metadata</h4>
-                        <div class="grid grid-cols-2 gap-5">
-                            <div>
-                                <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Strategic Pillar</label>
-                                <select x-model="currentProject.pillarId" class="w-full border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:border-blue-500">
-                                    <option value="">Stand-alone</option>
-                                    <template x-for="p in settings.pillars" :key="p.id">
-                                        <option :value="p.id" x-text="p.title"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Type</label>
-                                <select x-model="currentProject.type" class="w-full border rounded-lg px-3 py-2 text-sm bg-white outline-none">
-                                    <option value="coaching">Coaching</option>
-                                    <option value="project">Project</option>
-                                    <option value="strategy">Strategy</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Department</label>
-                                <input x-model="currentProject.deptCode" class="w-full border rounded-lg px-3 py-2 text-sm bg-white outline-none">
-                            </div>
-                            <div>
-                                <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Lead Staff</label>
-                                <input x-model="currentProject.staff" class="w-full border rounded-lg px-3 py-2 text-sm bg-white outline-none">
-                            </div>
+                <button @click="showDailyUpdate = false" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            
+            <div class="space-y-6">
+                <template x-for="evt in calendarEvents" :key="evt.id">
+                    <div class="grid grid-cols-12 gap-4 p-4 border rounded-2xl bg-slate-50 items-center">
+                        <div class="col-span-3 font-bold text-slate-700" x-text="evt.title"></div>
+                        <div class="col-span-3">
+                            <select class="w-full text-xs border-slate-200 rounded-lg p-2 bg-white" x-model="evt.linkedProjectId">
+                                <option value="">Link to Project...</option>
+                                <template x-for="p in projects"><option :value="p.id" x-text="p.title"></option></template>
+                            </select>
                         </div>
-                        <div class="mt-5">
-                            <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Date Range</label>
-                            <div class="flex gap-3">
-                                <input type="date" x-model="currentProject.startDate" class="border rounded-lg px-3 py-2 text-sm w-1/2 outline-none">
-                                <input type="date" x-model="currentProject.endDate" class="border rounded-lg px-3 py-2 text-sm w-1/2 outline-none">
-                            </div>
+                        <div class="col-span-4">
+                            <input type="text" placeholder="Impact statement for this activity..." class="w-full text-xs border-slate-200 rounded-lg p-2" x-model="evt.impact">
+                        </div>
+                        <div class="col-span-2 flex justify-end">
+                            <button @click="syncEventToProject(evt)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-lg">Sync</button>
                         </div>
                     </div>
-                    <div class="bg-white rounded-xl shadow-sm border">
-                        <div class="flex border-b">
-                            <button @click="modalTab='tasks'" :class="modalTab==='tasks'?'bg-blue-50 text-blue-700 font-bold border-b-2 border-blue-600':'text-neutral-600'" class="flex-1 py-4 text-sm">Micro-Tasks</button>
-                            <button @click="modalTab='updates'" :class="modalTab==='updates'?'bg-purple-50 text-purple-700 font-bold border-b-2 border-purple-600':'text-neutral-600'" class="flex-1 py-4 text-sm">Evidence</button>
-                        </div>
-                        <div class="p-6 min-h-[400px]">
-                            <div x-show="modalTab==='tasks'">
-                                <div class="space-y-3 mb-5">
-                                    <template x-for="(m, idx) in (currentProject.milestones || [])" :key="idx">
-                                        <div class="flex gap-3 p-3 rounded-lg border hover:bg-neutral-50 group">
-                                            <input type="checkbox" x-model="m.completed" class="w-5 h-5">
-                                            <input x-model="m.title" class="flex-1 bg-transparent outline-none text-sm font-medium">
-                                            <button @click="currentProject.milestones.splice(idx, 1)" class="text-red-600 opacity-0 group-hover:opacity-100">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </template>
-                                </div>
-                                <button @click="addMilestoneToProject()" class="w-full py-3 border-2 border-dashed rounded-lg text-neutral-600 text-sm hover:bg-neutral-50">
-                                    <i class="fas fa-plus mr-2"></i> Add Task
-                                </button>
-                            </div>
-                            <div x-show="modalTab==='updates'">
-                                <div class="mb-5 p-4 bg-neutral-50 rounded-lg border">
-                                    <textarea x-model="newUpdateText" class="w-full border rounded-lg p-3 text-sm mb-3 resize-none outline-none" rows="3" placeholder="Evidence..."></textarea>
-                                    <button @click="addUpdate()" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-2 rounded-lg text-sm font-bold w-full">
-                                        <i class="fas fa-plus mr-2"></i> Log Evidence
-                                    </button>
-                                </div>
-                                <div class="space-y-3">
-                                    <template x-for="(u, idx) in (currentProject.updates || [])" :key="idx">
-                                        <div class="bg-neutral-50 p-4 rounded-lg border">
-                                            <div class="text-[10px] text-neutral-500 mb-2" x-text="formatDate(u.date)"></div>
-                                            <div class="font-medium text-sm" x-text="u.text"></div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </template>
             </div>
         </div>
-    </div>
-
-    <!-- CALENDAR MODAL -->
-    <div x-show="showCalendarModal" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40" x-cloak>
-        <div class="glass rounded-2xl shadow-2xl w-full max-w-md p-8 m-4 border border-white/50">
-            <h3 class="display-font text-2xl font-bold mb-6">Schedule Event</h3>
-            <div class="space-y-4">
-                <input x-model="newEvent.title" class="w-full border rounded-lg px-4 py-3 outline-none focus:border-blue-500" placeholder="Event Title">
-                <div class="grid grid-cols-2 gap-3">
-                    <select x-model="newEvent.day" class="border rounded-lg px-4 py-3 bg-white outline-none">
-                        <option>Mon</option><option>Tue</option><option>Wed</option><option>Thu</option><option>Fri</option>
-                    </select>
-                    <input x-model="newEvent.time" placeholder="Time" class="border rounded-lg px-4 py-3 outline-none">
-                </div>
-                <select x-model="newEvent.type" class="w-full border rounded-lg px-4 py-3 bg-white outline-none">
-                    <option value="work">Work Block</option>
-                    <option value="meeting">Meeting</option>
-                </select>
-            </div>
-            <div class="flex justify-end gap-3 mt-8">
-                <button @click="showCalendarModal=false" class="text-neutral-600 px-5 py-2 rounded-lg hover:bg-neutral-100">Cancel</button>
-                <button @click="saveCalendarEvent()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-bold">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- TASK MODAL -->
-    <div x-show="addTaskModal" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40" x-cloak>
-        <div class="glass rounded-2xl shadow-2xl w-full max-w-md p-8 m-4 border border-white/50">
-            <h3 class="display-font text-2xl font-bold mb-6">Add Task</h3>
-            <textarea x-model="newTodoText" class="w-full border rounded-lg px-4 py-3 outline-none resize-none mb-4" rows="3" placeholder="What needs to be done?"></textarea>
-            <input type="date" x-model="newTodoDueDate" class="w-full border rounded-lg px-4 py-3 outline-none mb-4">
-            <div class="flex justify-end gap-3">
-                <button @click="addTaskModal=false" class="text-neutral-600 px-5 py-2 rounded-lg hover:bg-neutral-100">Cancel</button>
-                <button @click="addTodo(); addTaskModal=false" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-bold">Add</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- TOASTS -->
-    <div class="toast-container">
-        <template x-for="toast in toasts" :key="toast.id">
-            <div class="toast">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-600">
-                    <i class="fas fa-check"></i>
-                </div>
-                <div class="flex-1">
-                    <div class="font-bold text-sm">Success</div>
-                    <div class="text-xs text-neutral-600" x-text="toast.message"></div>
-                </div>
-            </div>
-        </template>
     </div>
 
     <script>
         function appData() {
             return {
-                view: 'dashboard', fileHandle: null, showModal: false, showCalendarModal: false, addTaskModal: false, modalTab: 'tasks', activeStrategyTab: 0,
-                searchQuery: '', filterPillar: '', filterKpi: '', taskSearch: '', timelineMode: 'year',
-                activeMeetingCategory: '', currentMeeting: null, quickActionText: '', quickActionDate: '', newLinkName: '', newLinkUrl: '',
-                newEvent: {}, newTodoText: '', newTodoDueDate: '', newTodoContext: '', newUpdateText: '', newUpdateLink: '', newUpdateSource: '',
-                projects: [], todos: [], meetingNotes: [], calendarEvents: [], toasts: [], currentProject: {},
-                settings: { pillars: [], kpis: [], qaSources: [], meetingCategories: [] },
+                view: 'strategy',
+                fileHandle: null,
+                showDailyUpdate: false,
+                dragEvent: null,
+                projects: [],
+                todos: [],
+                calendarEvents: [],
+                settings: {
+                    priorities: [
+                        { id: 1, title: 'Digital Ecosystem', intent: 'Consistent college-wide digital baseline.', color: '#2563eb' },
+                        { id: 2, title: 'Pedagogy & AI', intent: 'Improving instructional design through AI & Modelling.', color: '#7c3aed' },
+                        { id: 3, title: 'Inclusion (SEND)', intent: 'Accessibility by design and universal Assistive Tech.', color: '#059669' },
+                        { id: 4, title: 'Capacity & Quality', intent: 'Digital Champions network and governance alignment.', color: '#db2777' }
+                    ]
+                },
                 navItems: [
-                    { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-th-large' },
+                    { id: 'planner', label: 'Planner', icon: 'fas fa-calendar-day' },
                     { id: 'strategy', label: 'Strategy', icon: 'fas fa-chess' },
-                    { id: 'planner', label: 'Planner', icon: 'fas fa-calendar-check' },
-                    { id: 'projects', label: 'Projects', icon: 'fas fa-folder-open' },
-                    { id: 'meetings', label: 'Meetings', icon: 'fas fa-users' },
-                    { id: 'timeline', label: 'Timeline', icon: 'fas fa-stream' }
+                    { id: 'projects', label: 'Projects', icon: 'fas fa-folder' },
+                    { id: 'reports', label: 'Reports', icon: 'fas fa-chart-bar' }
                 ],
 
                 async init() {
-                    this.settings.kpis = ['Teaching Quality Indicators', 'QIP Traction', 'Staff Capability', 'Staff Confidence', 'Student Experience', 'Retention Proxy', 'Value for Money', 'Digital Champions'];
-                    this.settings.qaSources = ['Learning Walk Data', 'TLA Profile', 'QIP Review', 'Coaching Record', 'Staff Survey', 'Learner Voice', 'Exit Interview', 'Teams Analytics', 'Other'];
-                    this.settings.meetingCategories = ['1:1 Line Manager', 'Wider Leadership', 'HoAs', 'Digital Leads', 'Champions', 'TLAMs', 'Quality Team', 'External', 'Other'];
-                    this.settings.pillars = [
-                        { id: 1, title: 'Digital Ecosystem & Standards', intent: 'Build reliable, accessible digital infrastructure', color: '#0891b2', strategicMilestones: [] },
-                        { id: 2, title: 'Pedagogy, Assessment & Innovation', intent: 'Transform teaching through digital tools', color: '#7c3aed', strategicMilestones: [] },
-                        { id: 3, title: 'Inclusion & Accessibility', intent: 'Ensure equitable digital access for all learners', color: '#059669', strategicMilestones: [] },
-                        { id: 4, title: 'Capacity Building & QA', intent: 'Develop staff capability and quality processes', color: '#ea580c', strategicMilestones: [] }
-                    ];
-                    this.activeMeetingCategory = this.settings.meetingCategories[0];
+                    // Auto-mapping logic for old data would go here
                 },
 
-                showToast(message, type = 'success') {
-                    const id = Date.now();
-                    this.toasts.push({ id, message, type });
-                    setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3000);
+                // --- CALENDAR LOGIC ---
+                getTimeForSlot(slot) {
+                    const startHour = 8;
+                    const totalMinutes = (slot - 1) * 15;
+                    const hour = startHour + Math.floor(totalMinutes / 60);
+                    const mins = totalMinutes % 60;
+                    return `${hour.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
                 },
 
+                dropOnCalendar(dayIdx, slotIdx) {
+                    if (!this.dragEvent) return;
+                    const startTime = this.getTimeForSlot(slotIdx + 1);
+                    const endTime = this.getTimeForSlot(slotIdx + 5); // Default 1hr
+                    
+                    this.calendarEvents.push({
+                        id: Date.now(),
+                        title: this.dragEvent.text,
+                        day: dayIdx,
+                        slotStart: slotIdx + 1,
+                        slotSpan: 4, // 1 hour
+                        startTime,
+                        endTime,
+                        type: 'work',
+                        linkedProjectId: this.dragEvent.projectId || ''
+                    });
+                    
+                    this.dragEvent = null;
+                    this.saveToFile();
+                },
+
+                getEventStyle(evt) {
+                    return `grid-column: ${evt.day + 2}; grid-row: ${evt.slotStart} / span ${evt.slotSpan};`;
+                },
+
+                // --- IMPACT LOGIC ---
+                syncEventToProject(evt) {
+                    if (!evt.linkedProjectId || !evt.impact) return;
+                    const proj = this.projects.find(p => p.id == evt.linkedProjectId);
+                    if (proj) {
+                        if (!proj.updates) proj.updates = [];
+                        proj.updates.push({
+                            date: new Date().toISOString(),
+                            text: evt.impact,
+                            source: 'Calendar Sync'
+                        });
+                        this.showToast('Impact Logged to ' + proj.title);
+                        this.saveToFile();
+                    }
+                },
+
+                getLatestImpact(prioId) {
+                    const pillarProjects = this.projects.filter(p => p.priorityId == prioId);
+                    let allUpdates = [];
+                    pillarProjects.forEach(p => { if(p.updates) allUpdates = [...allUpdates, ...p.updates]; });
+                    if (allUpdates.length === 0) return 'No recent impact recorded.';
+                    return allUpdates.sort((a,b) => new Date(b.date) - new Date(a.date))[0].text;
+                },
+
+                calculateProgress(p) {
+                    if (!p.milestones || p.milestones.length === 0) return 0;
+                    return Math.round((p.milestones.filter(m => m.completed).length / p.milestones.length) * 100);
+                },
+
+                calculatePriorityProgress(pId) {
+                    const projs = this.projects.filter(p => p.priorityId == pId);
+                    if (projs.length === 0) return 0;
+                    const total = projs.reduce((acc, p) => acc + this.calculateProgress(p), 0);
+                    return Math.round(total / projs.length);
+                },
+
+                // --- FILE ACCESS ---
                 async openFile() {
                     try {
-                        const [handle] = await window.showOpenFilePicker({ types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+                        const [handle] = await window.showOpenFilePicker();
                         this.fileHandle = handle;
                         const file = await handle.getFile();
-                        const text = await file.text();
-                        if (text.trim()) {
-                            const data = JSON.parse(text);
-                            this.projects = (data.projects || []).map(p => ({ ...p, milestones: (p.milestones || []).map(m => ({ ...m, uuid: m.uuid || Date.now() + Math.random() })), updates: p.updates || [], pillarId: p.priorityId || p.pillarId || '' }));
-                            this.todos = (data.todos || []).map(t => ({ ...t, id: t.id || Date.now() + Math.random() }));
-                            this.meetingNotes = (data.meetingNotes || []).map(n => ({ ...n, id: n.id || Date.now() + Math.random(), links: n.links || [] }));
-                            this.calendarEvents = data.calendarEvents || [];
-                            if (data.settings?.pillars) this.settings.pillars = data.settings.pillars;
-                            this.showToast('Data loaded successfully');
-                        }
-                    } catch (err) { console.error(err); alert("Error loading file"); }
+                        const data = JSON.parse(await file.text());
+                        this.projects = data.projects || [];
+                        this.todos = data.todos || [];
+                        this.calendarEvents = data.calendarEvents || [];
+                        this.showToast('Data Synced');
+                    } catch (e) { console.error(e); }
                 },
 
                 async saveToFile() {
                     if (!this.fileHandle) return;
-                    try {
-                        const writable = await this.fileHandle.createWritable();
-                        await writable.write(JSON.stringify({ projects: this.projects, settings: this.settings, todos: this.todos, meetingNotes: this.meetingNotes, calendarEvents: this.calendarEvents }, null, 2));
-                        await writable.close();
-                        this.showToast('Saved successfully');
-                    } catch (err) { console.error('Save failed', err); }
+                    const writable = await this.fileHandle.createWritable();
+                    await writable.write(JSON.stringify({
+                        projects: this.projects,
+                        todos: this.todos,
+                        calendarEvents: this.calendarEvents,
+                        settings: this.settings
+                    }, null, 2));
+                    await writable.close();
                 },
 
-                switchView(v) { this.view = v; },
-                resetFilters() { this.searchQuery = ''; this.filterPillar = ''; this.filterKpi = ''; },
-                
-                get filteredProjects() {
-                    return this.projects.filter(p => {
-                        const matchesSearch = p.title.toLowerCase().includes(this.searchQuery.toLowerCase());
-                        if (this.filterPillar) {
-                            if (this.filterPillar === 'standalone') { if (p.pillarId) return false; }
-                            else if (p.pillarId != this.filterPillar) return false;
-                        }
-                        if (this.filterKpi && p.kpi !== this.filterKpi) return false;
-                        return matchesSearch;
-                    });
-                },
-
-                get filteredMeetings() {
-                    return this.meetingNotes.filter(n => n.category === this.activeMeetingCategory).sort((a, b) => new Date(b.date) - new Date(a.date));
-                },
-
-                getSortedTasks() {
-                    let tasks = this.todos.filter(t => !t.completed);
-                    if (this.taskSearch) tasks = tasks.filter(t => (t.text || t.title || '').toLowerCase().includes(this.taskSearch.toLowerCase()));
-                    return tasks.sort((a, b) => (a.dueDate || '9999') > (b.dueDate || '9999') ? 1 : -1);
-                },
-
-                getEventsForDay(day) { return this.calendarEvents.filter(e => e.day === day).sort((a, b) => (a.time || '').localeCompare(b.time || '')); },
-
-                addCalendarEvent() { this.newEvent = { id: Date.now(), title: '', day: 'Mon', time: '', type: 'work' }; this.showCalendarModal = true; },
-                
-                saveCalendarEvent() {
-                    this.calendarEvents.push(this.newEvent);
-                    if (this.newEvent.type === 'meeting') {
-                        this.meetingNotes.unshift({ id: Date.now(), title: this.newEvent.title, date: new Date().toISOString().split('T')[0], category: 'Other', content: '', attendees: '', linkedProjectId: '', links: [] });
-                    }
-                    this.showCalendarModal = false;
-                    this.saveToFile();
-                },
-
-                deleteEvent(id) { if (confirm('Remove?')) { this.calendarEvents = this.calendarEvents.filter(e => e.id !== id); this.saveToFile(); } },
-                
-                editEvent(evt) { this.newEvent = evt; this.showCalendarModal = true; },
-
-                createNewMeeting() {
-                    const newNote = { id: Date.now(), title: '', date: new Date().toISOString().split('T')[0], category: this.activeMeetingCategory, content: '', attendees: '', linkedProjectId: '', links: [] };
-                    this.meetingNotes.unshift(newNote);
-                    this.currentMeeting = newNote;
-                    this.saveToFile();
-                },
-
-                addNewMeetingCategory() {
-                    const name = prompt("New Category:");
-                    if (name && !this.settings.meetingCategories.includes(name)) {
-                        this.settings.meetingCategories.push(name);
-                        this.activeMeetingCategory = name;
-                        this.saveToFile();
-                    }
-                },
-
-                addLinkToMeeting() {
-                    if (this.newLinkName && this.newLinkUrl) {
-                        if (!this.currentMeeting.links) this.currentMeeting.links = [];
-                        this.currentMeeting.links.push({ name: this.newLinkName, url: this.newLinkUrl });
-                        this.newLinkName = '';
-                        this.newLinkUrl = '';
-                    }
-                },
-
-                pushActionToDashboard() {
-                    if (!this.quickActionText) return;
-                    this.todos.push({ id: Date.now(), text: this.quickActionText, completed: false, dueDate: this.quickActionDate, context: 'Meeting' });
-                    this.quickActionText = '';
-                    this.quickActionDate = '';
-                    this.saveToFile();
-                    this.showToast('Action added');
-                },
-
-                addTodo() {
-                    if (!this.newTodoText) return;
-                    this.todos.push({ id: Date.now(), text: this.newTodoText, completed: false, dueDate: this.newTodoDueDate, context: this.newTodoContext });
-                    this.newTodoText = '';
-                    this.newTodoDueDate = '';
-                    this.newTodoContext = '';
-                    this.saveToFile();
-                },
-
-                completeTask(task) {
-                    if (task.completed) {
-                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-                    }
-                    this.saveToFile();
-                },
-
-                startNewProject() {
-                    this.currentProject = { id: Date.now(), title: '', pillarId: '', type: 'project', milestones: [], updates: [], status: 'Active', deptCode: '', staff: '', startDate: '', endDate: '' };
-                    this.showModal = true;
-                    this.modalTab = 'tasks';
-                },
-
-                editProject(p) { this.currentProject = p; this.showModal = true; this.modalTab = 'tasks'; },
-
-                saveProject() {
-                    const idx = this.projects.findIndex(x => x.id === this.currentProject.id);
-                    if (idx === -1) this.projects.push(this.currentProject);
-                    else this.projects[idx] = this.currentProject;
-                    this.saveToFile();
-                    this.showModal = false;
-                },
-
-                addMilestoneToProject() {
-                    if (!this.currentProject.milestones) this.currentProject.milestones = [];
-                    this.currentProject.milestones.push({ title: 'New Task', completed: false, uuid: Date.now() + Math.random() });
-                },
-
-                addUpdate() {
-                    if (!this.newUpdateText) return;
-                    if (!this.currentProject.updates) this.currentProject.updates = [];
-                    this.currentProject.updates.push({ date: new Date().toISOString(), text: this.newUpdateText, link: this.newUpdateLink, source: this.newUpdateSource });
-                    this.newUpdateText = '';
-                    this.newUpdateLink = '';
-                    this.newUpdateSource = '';
-                    this.saveToFile();
-                },
-
-                addPillar() {
-                    this.settings.pillars.push({ id: Date.now(), title: 'New Pillar', intent: '', color: '#3b82f6', strategicMilestones: [] });
-                    this.activeStrategyTab = this.settings.pillars.length - 1;
-                },
-
-                deletePillar(index) {
-                    if (confirm('Delete this pillar?')) {
-                        this.settings.pillars.splice(index, 1);
-                        this.activeStrategyTab = 0;
-                        this.saveToFile();
-                    }
-                },
-
-                addMilestone(pillar) {
-                    if (!pillar.strategicMilestones) pillar.strategicMilestones = [];
-                    pillar.strategicMilestones.push({ title: 'New Milestone', targetDate: '', status: 'Planned' });
-                },
-
-                createProjectFromMilestone(pillar, milestone) {
-                    const name = prompt("Project Name:", milestone.title);
-                    if (!name) return;
-                    const newProj = {
-                        id: Date.now(),
-                        title: name,
-                        pillarId: pillar.id,
-                        milestoneLink: milestone.title,
-                        type: 'strategy',
-                        status: 'Active',
-                        startDate: '',
-                        endDate: milestone.targetDate || '',
-                        milestones: [],
-                        updates: [],
-                        deptCode: '',
-                        staff: ''
-                    };
-                    this.projects.push(newProj);
-                    this.saveToFile();
-                    this.showToast('Project created');
-                },
-
-                getProjectsForPillar(pillarId) { return this.projects.filter(p => p.pillarId == pillarId); },
-                
-                getProjectsForMilestone(pillarId, milestoneTitle) {
-                    return this.projects.filter(p => p.pillarId == pillarId && p.milestoneLink == milestoneTitle);
-                },
-
-                getPillarProgress(pillarId) {
-                    const projects = this.getProjectsForPillar(pillarId);
-                    if (projects.length === 0) return 0;
-                    const total = projects.reduce((sum, p) => sum + this.calculateProgress(p), 0);
-                    return Math.round(total / projects.length);
-                },
-
-                getPillarColorForProject(p) {
-                    if (!p.pillarId) return '#64748b';
-                    const pillar = this.settings.pillars.find(x => x.id == p.pillarId);
-                    return pillar ? pillar.color : '#64748b';
-                },
-
-                calculateProgress(p) {
-                    if (!(p.milestones || []).length) return 0;
-                    return Math.round(((p.milestones || []).filter(m => m.completed).length / (p.milestones || []).length) * 100);
-                },
-
-                getOverallProgress() {
-                    if (this.projects.length === 0) return 0;
-                    const total = this.projects.reduce((sum, p) => sum + this.calculateProgress(p), 0);
-                    return total / this.projects.length;
-                },
-
-                getAllOpenTasks() {
-                    return this.todos.filter(t => !t.completed);
-                },
-
-                getUpcomingDeadlines() {
-                    let all = [];
-                    this.projects.forEach(p => {
-                        (p.milestones || []).forEach(m => {
-                            if (!m.completed && m.dueDate) {
-                                all.push({ id: Math.random(), projectId: p.id, projectName: p.title, title: m.title, dueDate: m.dueDate });
-                            }
-                        });
-                    });
-                    return all.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 10);
-                },
-
-                getDueDateClass(d) {
-                    if (!d) return '';
-                    const diff = Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24));
-                    if (diff < 0) return 'bg-red-100 text-red-600';
-                    if (diff < 3) return 'bg-amber-100 text-amber-600';
-                    return 'bg-green-100 text-green-600';
-                },
-
-                getDueDateBadgeClass(d) {
-                    if (!d) return 'bg-neutral-100 text-neutral-600';
-                    const diff = Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24));
-                    if (diff < 0) return 'bg-red-100 text-red-700 border border-red-200';
-                    if (diff < 7) return 'bg-amber-100 text-amber-700 border border-amber-200';
-                    return 'bg-green-100 text-green-700 border border-green-200';
-                },
-
-                getDueDateColor(d) {
-                    if (!d) return 'bg-neutral-300';
-                    const diff = Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24));
-                    if (diff < 0) return 'bg-red-500';
-                    if (diff < 7) return 'bg-amber-500';
-                    return 'bg-green-500';
-                },
-
-                getRagBadgeClass(d) {
-                    if (!d) return 'bg-neutral-100 text-neutral-600';
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const due = new Date(d);
-                    const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
-                    if (diff < 0) return 'bg-red-100 text-red-700 border border-red-200';
-                    if (diff <= 7) return 'bg-amber-100 text-amber-700 border border-amber-200';
-                    return 'bg-green-100 text-green-700 border border-green-200';
-                },
-
-                formatDate(d) { return d ? new Date(d).toLocaleDateString('en-GB') : ''; },
-                formatDateShort(d) { return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) : ''; },
-
-                get timelineColumns() {
-                    const today = new Date();
-                    const cols = [];
-                    if (this.timelineMode === 'year') {
-                        const currentYear = today.getFullYear();
-                        for (let i = 0; i < 12; i++) {
-                            const d = new Date(currentYear, i, 1);
-                            cols.push({ label: d.toLocaleString('default', { month: 'short' }), sub: d.getFullYear(), start: d, end: new Date(currentYear, i + 1, 0) });
-                        }
-                    } else if (this.timelineMode === '3m') {
-                        const start = new Date(today);
-                        start.setDate(today.getDate() - today.getDay() + 1);
-                        for (let i = 0; i < 12; i++) {
-                            const wStart = new Date(start);
-                            wStart.setDate(start.getDate() + (i * 7));
-                            const wEnd = new Date(wStart);
-                            wEnd.setDate(wStart.getDate() + 6);
-                            cols.push({ label: 'W' + (i + 1), sub: wStart.getDate() + '/' + (wStart.getMonth() + 1), start: wStart, end: wEnd });
-                        }
-                    }
-                    return cols;
-                },
-
-                getTimelineGridStyle() {
-                    return `grid-template-columns: 200px repeat(${this.timelineColumns.length}, minmax(60px, 1fr));`;
-                }
+                showToast(msg) { alert(msg); } // Placeholder for custom toast
             }
         }
     </script>
