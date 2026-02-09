@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v27.0 (Meeting Hub)</title>
+    <title>Digital Impact Hub v28.0 (Professional Edition)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,232 +17,203 @@
             body { background: white; color: black; }
             .break-avoid { break-inside: avoid; }
         }
-        /* Dynamic Gantt Grid */
+        /* Professional Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Slide-Over Animation */
+        .slide-over-enter-active, .slide-over-leave-active { transition: transform 0.3s ease-in-out; }
+        .slide-over-enter-start, .slide-over-leave-end { transform: translateX(100%); }
+        
+        /* Gantt Grid */
         .gantt-container { overflow-x: auto; padding-bottom: 10px; }
         .gantt-grid { display: grid; gap: 0; } 
         .gantt-row { display: contents; } 
-        .gantt-header { font-size: 0.70rem; font-weight: bold; text-align: center; padding: 6px 2px; background: #f1f5f9; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.1; height: 100%; }
-        .gantt-cell { background: #fff; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; height: 40px; }
-        .gantt-sticky-col { position: sticky; left: 0; z-index: 20; background: white; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; height: 40px; display: flex; align-items: center; }
-        .progress-bar { transition: width 1s ease-in-out; }
-        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        /* Meeting Hub Scrollbars */
-        .scroller { overflow-y: auto; scrollbar-width: thin; }
+        .gantt-header { font-size: 0.70rem; font-weight: bold; text-align: center; padding: 6px 2px; background: #f8fafc; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.1; height: 100%; color: #64748b; }
+        .gantt-cell { background: #fff; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; height: 44px; }
+        .gantt-sticky-col { position: sticky; left: 0; z-index: 20; background: white; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; height: 44px; display: flex; align-items: center; }
+        
+        /* Toast Notifications */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: white; border-left: 4px solid #2563eb; padding: 12px 20px; border-radius: 4px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 250px; }
+        .toast.show { transform: translateX(0); }
+        
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col" x-data="appData()" x-init="init()">
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden" x-data="appData()" x-init="init()">
 
-    <header class="bg-slate-900 text-white p-4 flex justify-between items-center shadow-lg no-print z-30 relative">
+    <header class="bg-white border-b border-slate-200 h-16 flex justify-between items-center px-6 shadow-sm z-30 no-print">
         <div class="flex items-center gap-3">
-            <div class="bg-blue-600 w-10 h-10 rounded flex items-center justify-center font-bold text-xl shadow-inner">DC</div>
+            <div class="bg-slate-900 text-white w-8 h-8 rounded flex items-center justify-center font-bold text-sm">DC</div>
             <div>
-                <h1 class="font-bold text-lg leading-tight">Digital Impact Hub</h1>
-                <p class="text-xs text-slate-400">Strategy & Execution</p>
+                <h1 class="font-bold text-slate-800 leading-none">Digital Impact Hub</h1>
+                <p class="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5">Professional Edition v28.0</p>
             </div>
         </div>
         
-        <div class="flex items-center bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
+        <nav class="hidden md:flex gap-1" x-show="fileHandle">
+            <template x-for="item in navItems">
+                <button @click="switchView(item.id)" 
+                        :class="view === item.id ? 'bg-slate-100 text-blue-700 font-bold' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                        class="px-4 py-2 rounded text-sm transition flex items-center gap-2">
+                    <i :class="item.icon"></i> <span x-text="item.label"></span>
+                </button>
+            </template>
+        </nav>
+
+        <div class="flex items-center gap-3">
             <template x-if="!fileHandle">
-                <div class="flex items-center gap-2 text-amber-400 animate-pulse">
-                    <i class="fas fa-exclamation-triangle"></i><span class="text-xs font-bold uppercase">Not Connected</span>
-                </div>
+                <button @click="openFile()" class="text-xs bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded font-bold shadow transition flex items-center gap-2 animate-pulse">
+                    <i class="fas fa-plug"></i> Connect Data
+                </button>
             </template>
             <template x-if="fileHandle">
-                <div class="flex items-center gap-2 text-emerald-400">
-                    <i class="fas fa-link"></i><span class="text-xs font-bold uppercase">Live Linked</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-100 font-bold flex items-center gap-1"><i class="fas fa-circle text-[6px]"></i> LIVE</span>
+                    <button @click="saveToFile()" class="text-xs bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded font-bold transition">
+                        <i class="fas fa-save mr-1"></i> Save
+                    </button>
                 </div>
             </template>
-        </div>
-
-        <div class="flex gap-2">
-             <template x-if="!fileHandle">
-                <button @click="openFile()" class="text-sm bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded font-bold shadow transition"><i class="fas fa-folder-open mr-2"></i> Connect</button>
-             </template>
-             <template x-if="fileHandle">
-                <button @click="saveToFile()" class="text-sm bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold shadow transition"><i class="fas fa-save mr-2"></i> Save</button>
-             </template>
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-6 relative">
+    <main class="flex-1 overflow-y-auto relative bg-slate-50/50">
         
-        <div x-show="!fileHandle" class="max-w-2xl mx-auto mt-20 text-center">
-            <div class="bg-white p-12 rounded-xl shadow-2xl border border-slate-200">
-                <div class="text-7xl text-slate-300 mb-6"><i class="fas fa-sync-alt"></i></div>
-                <h2 class="text-3xl font-bold text-slate-800 mb-4">Connect Your Hub</h2>
-                <button @click="openFile()" class="bg-blue-600 text-white text-lg px-8 py-4 rounded shadow-lg hover:bg-blue-700 transition">Select File from OneDrive</button>
+        <div x-show="!fileHandle" class="h-full flex flex-col items-center justify-center p-6">
+            <div class="bg-white p-12 rounded-2xl shadow-xl border border-slate-200 text-center max-w-lg">
+                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl"><i class="fas fa-cloud-upload-alt"></i></div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Welcome Back</h2>
+                <p class="text-slate-500 mb-8 text-sm leading-relaxed">Connect to your <strong>digital-coach-data.json</strong> file to load your dashboard, strategy, and meeting notes.</p>
+                <button @click="openFile()" class="bg-slate-900 text-white text-sm font-bold px-8 py-3 rounded-lg hover:bg-slate-800 transition w-full">Select Local File</button>
             </div>
         </div>
 
-        <div x-show="fileHandle" x-transition class="h-full flex flex-col">
+        <div x-show="fileHandle" x-transition class="h-full flex flex-col p-6">
             
-            <div class="flex justify-center gap-8 mb-4 border-b border-slate-200 pb-4 no-print flex-shrink-0">
-                <button @click="switchView('dashboard')" :class="view==='dashboard' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-home"></i> Dashboard</button>
-                <button @click="switchView('strategy')" :class="view==='strategy' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-chess"></i> Strategy Pillars</button>
-                <button @click="switchView('projects')" :class="view==='projects' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-folder-open"></i> Projects</button>
-                <button @click="switchView('meetings')" :class="view==='meetings' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-users"></i> Meeting Hub</button>
-                <button @click="switchView('gantt')" :class="view==='gantt' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-stream"></i> Timeline</button>
-                <button @click="switchView('reports')" :class="view==='reports' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-blue-600'" class="pb-2 font-bold transition flex items-center gap-2"><i class="fas fa-chart-pie"></i> Impact Reports</button>
-            </div>
-
-            <div x-show="view === 'dashboard'" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-                 <div class="lg:col-span-2 space-y-8">
-                    <div class="flex justify-between items-center bg-white p-2 rounded shadow-sm border border-slate-200">
-                        <div class="text-sm font-bold text-slate-500 uppercase px-2">View Mode:</div>
+            <div x-show="view === 'dashboard'" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 w-full animate-fade-in">
+                 <div class="lg:col-span-2 space-y-6">
+                    <div class="flex justify-between items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200">
+                        <div class="text-xs font-bold text-slate-400 uppercase px-3 tracking-wider">Dashboard Context</div>
                         <div class="flex bg-slate-100 rounded p-1">
-                            <button @click="dashboardMode='strategy'; updateCharts()" :class="dashboardMode==='strategy'?'bg-white text-blue-600 shadow':'text-slate-500'" class="px-4 py-1 rounded text-xs font-bold transition">Strategy</button>
-                            <button @click="dashboardMode='governance'; updateCharts()" :class="dashboardMode==='governance'?'bg-white text-purple-600 shadow':'text-slate-500'" class="px-4 py-1 rounded text-xs font-bold transition">Governance (KPIs)</button>
+                            <button @click="dashboardMode='strategy'; updateCharts()" :class="dashboardMode==='strategy'?'bg-white text-blue-600 shadow-sm':'text-slate-500'" class="px-4 py-1.5 rounded text-xs font-bold transition">Strategy Focus</button>
+                            <button @click="dashboardMode='governance'; updateCharts()" :class="dashboardMode==='governance'?'bg-white text-purple-600 shadow-sm':'text-slate-500'" class="px-4 py-1.5 rounded text-xs font-bold transition">Governance Focus</button>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-3 gap-4">
-                        <div class="bg-white p-4 rounded shadow border-l-4 border-blue-500">
-                            <div class="text-xs font-bold text-slate-400 uppercase">Active Projects</div>
-                            <div class="text-2xl font-bold" x-text="projects.filter(p=>p.status!=='Completed').length"></div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200 flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Active Projects</span>
+                            <span class="text-3xl font-bold text-slate-800" x-text="projects.filter(p=>p.status!=='Completed').length"></span>
                         </div>
-                        <div class="bg-white p-4 rounded shadow border-l-4 border-amber-500">
-                            <div class="text-xs font-bold text-slate-400 uppercase">Actions Due</div>
-                            <div class="text-2xl font-bold" x-text="getAllDueTasks().length"></div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200 flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Actions Due</span>
+                            <span class="text-3xl font-bold text-amber-500" x-text="getAllDueTasks().length"></span>
                         </div>
-                        <div class="bg-white p-4 rounded shadow border-l-4 border-purple-500">
-                            <div class="text-xs font-bold text-slate-400 uppercase">QIP Traction</div>
-                            <div class="text-2xl font-bold" x-text="projects.filter(p => p.isQip).length"></div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200 flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">QIP Traction</span>
+                            <span class="text-3xl font-bold text-purple-600" x-text="projects.filter(p => p.isQip).length"></span>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 h-64">
-                        <div class="bg-white p-4 rounded shadow-sm cursor-pointer hover:shadow-md transition relative" @click="switchView('projects')">
-                            <h3 class="font-bold text-slate-700 mb-2 text-sm" x-text="dashboardMode==='strategy' ? 'Strategic Focus' : 'KPI Alignment'"></h3>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition group" @click="switchView('projects')">
+                            <div class="flex justify-between mb-2"><h3 class="font-bold text-slate-700 text-xs uppercase" x-text="dashboardMode==='strategy' ? 'Strategic Focus' : 'KPI Alignment'"></h3><i class="fas fa-arrow-right text-slate-300 group-hover:text-blue-500 text-xs"></i></div>
                             <div class="h-48"><canvas id="priorityChart"></canvas></div>
                         </div>
-                        <div class="bg-white p-4 rounded shadow-sm cursor-pointer hover:shadow-md transition">
-                            <h3 class="font-bold text-slate-700 mb-2 text-sm">Pipeline</h3>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition group" @click="switchView('projects')">
+                            <div class="flex justify-between mb-2"><h3 class="font-bold text-slate-700 text-xs uppercase">Pipeline Health</h3><i class="fas fa-arrow-right text-slate-300 group-hover:text-blue-500 text-xs"></i></div>
                             <div class="h-48"><canvas id="pipelineChart"></canvas></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-md border border-slate-200 flex flex-col h-full">
-                    <div class="p-4 border-b bg-slate-50 flex justify-between items-center"><h3 class="font-bold text-lg text-slate-800">Today's Focus</h3><span class="text-xs text-slate-500" x-text="new Date().toLocaleDateString()"></span></div>
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+                    <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-slate-800 uppercase tracking-wider"><i class="fas fa-bolt text-yellow-500 mr-2"></i>Today's Focus</h3>
+                        <span class="text-[10px] font-mono text-slate-400" x-text="new Date().toLocaleDateString()"></span>
+                    </div>
                     <div class="p-4 flex-1 overflow-y-auto">
-                        <div class="flex gap-2 mb-4"><input x-model="newTodo" @keydown.enter="addTodo()" placeholder="Quick task..." class="flex-1 border p-2 rounded text-sm"><button @click="addTodo()" class="bg-blue-600 text-white px-3 rounded"><i class="fas fa-plus"></i></button></div>
-                        <div class="space-y-2"><template x-for="(todo, idx) in todos" :key="idx"><div class="flex items-start gap-2 p-2 rounded border transition" :class="todo.completed ? 'bg-slate-50 opacity-75' : 'bg-white'"><input type="checkbox" x-model="todo.completed" @change="syncFromDashboard(todo)" class="mt-1.5 cursor-pointer"><div class="flex-1"><div class="text-sm font-medium" :class="{'line-through text-slate-400': todo.completed}" x-text="todo.text"></div><div x-show="todo.projectTitle" class="text-[10px] text-blue-600 bg-blue-50 inline-block px-1 rounded mt-1" x-text="todo.projectTitle"></div></div><button @click="deleteTodo(idx)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button></div></template></div>
-                    </div>
-                </div>
-            </div>
-
-            <div x-show="view === 'meetings'" class="max-w-7xl mx-auto w-full h-full flex bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
-                <div class="w-64 bg-slate-50 border-r border-slate-200 flex flex-col">
-                    <div class="p-4 font-bold text-slate-700 uppercase text-xs tracking-wider border-b">Meeting Categories</div>
-                    <div class="flex-1 overflow-y-auto p-2 space-y-1">
-                        <template x-for="cat in settings.meetingCategories" :key="cat">
-                            <button @click="activeMeetingCategory = cat; currentMeeting = null" 
-                                    class="w-full text-left px-3 py-2 rounded text-sm font-medium transition flex justify-between items-center"
-                                    :class="activeMeetingCategory === cat ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'">
-                                <span x-text="cat"></span>
-                                <span class="text-[10px] bg-slate-200 text-slate-500 px-1.5 rounded-full" x-text="meetingNotes.filter(n => n.category === cat).length"></span>
-                            </button>
-                        </template>
-                    </div>
-                    <div class="p-2 border-t">
-                        <button @click="addNewMeetingCategory()" class="w-full text-center text-xs text-blue-600 py-2 hover:bg-blue-50 rounded dashed border border-blue-200">+ New Category</button>
-                    </div>
-                </div>
-
-                <div class="w-80 border-r border-slate-200 flex flex-col bg-white">
-                    <div class="p-3 border-b flex justify-between items-center bg-slate-50">
-                        <span class="font-bold text-sm text-slate-700" x-text="activeMeetingCategory || 'Select Category'"></span>
-                        <button @click="createNewMeeting()" class="bg-blue-600 text-white px-2 py-1 rounded text-xs shadow hover:bg-blue-500"><i class="fas fa-plus"></i> New Note</button>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-2 space-y-2">
-                        <template x-for="note in filteredMeetings" :key="note.id">
-                            <div @click="currentMeeting = note" 
-                                 class="p-3 rounded border cursor-pointer transition hover:shadow-md"
-                                 :class="currentMeeting && currentMeeting.id === note.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-100 bg-white hover:bg-slate-50'">
-                                <div class="font-bold text-sm text-slate-800 truncate" x-text="note.title || 'Untitled Meeting'"></div>
-                                <div class="text-[10px] text-slate-400 mt-1 flex justify-between">
-                                    <span x-text="formatDate(note.date)"></span>
-                                    <i class="fas fa-chevron-right text-slate-300"></i>
-                                </div>
-                                <div class="text-xs text-slate-500 mt-1 line-clamp-2 h-8" x-text="note.content"></div>
-                            </div>
-                        </template>
-                        <div x-show="filteredMeetings.length === 0" class="text-center text-slate-400 text-xs mt-10">No notes in this category.</div>
-                    </div>
-                </div>
-
-                <div class="flex-1 flex flex-col bg-white relative">
-                    <template x-if="!currentMeeting">
-                        <div class="flex items-center justify-center h-full text-slate-300 flex-col">
-                            <i class="fas fa-book-open text-4xl mb-2"></i>
-                            <span class="text-sm">Select or create a meeting note</span>
+                        <div class="flex gap-2 mb-4">
+                            <input x-model="newTodo" @keydown.enter="addTodo()" placeholder="Add a quick task..." class="flex-1 border border-slate-300 p-2 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                            <button @click="addTodo()" class="bg-slate-800 text-white px-3 rounded hover:bg-slate-700 transition"><i class="fas fa-plus"></i></button>
                         </div>
-                    </template>
-                    <template x-if="currentMeeting">
-                        <div class="flex flex-col h-full">
-                            <div class="p-6 border-b border-slate-100 pb-4">
-                                <input x-model="currentMeeting.title" class="text-2xl font-bold text-slate-800 w-full outline-none placeholder-slate-300" placeholder="Meeting Title">
-                                <div class="flex gap-4 mt-2">
-                                    <div class="flex items-center gap-2 text-sm text-slate-500">
-                                        <i class="far fa-calendar"></i>
-                                        <input type="date" x-model="currentMeeting.date" class="border-none bg-transparent outline-none p-0 text-slate-600">
+                        <div class="space-y-2">
+                            <template x-for="(todo, idx) in todos" :key="idx">
+                                <div class="flex items-start gap-3 p-3 rounded border border-slate-100 transition group hover:border-blue-200" :class="todo.completed ? 'bg-slate-50 opacity-60' : 'bg-white shadow-sm'">
+                                    <input type="checkbox" x-model="todo.completed" @change="syncFromDashboard(todo)" class="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-medium text-slate-700" :class="{'line-through text-slate-400': todo.completed}" x-text="todo.text"></div>
+                                        <div x-show="todo.projectTitle" class="text-[10px] text-blue-500 font-medium mt-0.5" x-text="todo.projectTitle"></div>
                                     </div>
-                                    <div class="flex items-center gap-2 text-sm text-slate-500 flex-1">
-                                        <i class="far fa-user"></i>
-                                        <input x-model="currentMeeting.attendees" class="w-full border-none bg-transparent outline-none p-0" placeholder="Attendees...">
-                                    </div>
+                                    <button @click="deleteTodo(idx)" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times"></i></button>
                                 </div>
-                                <div class="mt-2 flex gap-2">
-                                    <select x-model="currentMeeting.linkedProjectId" class="text-xs border rounded p-1 bg-slate-50 text-slate-600">
-                                        <option value="">- Link to Project (Optional) -</option>
-                                        <template x-for="p in projects" :key="p.id"><option :value="p.id" x-text="p.title"></option></template>
-                                    </select>
-                                    <button @click="saveToFile()" class="text-xs bg-emerald-100 text-emerald-700 px-2 rounded hover:bg-emerald-200">Save Changes</button>
-                                    <button @click="deleteMeeting()" class="text-xs bg-red-50 text-red-400 px-2 rounded hover:bg-red-100 ml-auto">Delete</button>
-                                </div>
-                            </div>
-                            
-                            <textarea x-model="currentMeeting.content" class="flex-1 w-full p-6 outline-none resize-none text-slate-700 leading-relaxed" placeholder="Type meeting notes here..."></textarea>
-                            
-                            <div class="p-2 border-t bg-slate-50 flex items-center gap-2">
-                                <span class="text-xs font-bold text-slate-400 uppercase mr-2">Quick Actions:</span>
-                                <input x-model="quickActionText" placeholder="Type action..." class="flex-1 border p-1 rounded text-xs">
-                                <button @click="pushActionToDashboard()" class="bg-purple-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-purple-500">Add to Dashboard</button>
+                            </template>
+                            <div x-show="todos.length === 0" class="text-center py-10">
+                                <div class="text-slate-300 text-4xl mb-2"><i class="fas fa-check-circle"></i></div>
+                                <p class="text-slate-400 text-xs">All caught up!</p>
                             </div>
                         </div>
-                    </template>
+                    </div>
                 </div>
             </div>
 
             <div x-show="view === 'strategy'" class="max-w-6xl mx-auto w-full">
-                <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-2">
+                <div class="flex flex-wrap gap-1 mb-6 border-b border-slate-200 pb-1">
                     <template x-for="(p, idx) in settings.priorities" :key="idx">
-                        <button @click="activeStrategyTab = idx" class="px-4 py-2 rounded-t-lg font-bold text-sm transition border-t-4 shadow-sm" :class="activeStrategyTab === idx ? 'bg-slate-900 text-white border-blue-500' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent'"><span x-text="'Priority ' + (idx + 1)"></span></button>
+                        <button @click="activeStrategyTab = idx" class="px-4 py-2 rounded-t-lg font-bold text-sm transition border-t-2" :class="activeStrategyTab === idx ? 'bg-white text-blue-700 border-blue-600 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:text-slate-700'"><span x-text="'P' + (idx + 1) + ': ' + (p.title || 'Untitled')"></span></button>
                     </template>
-                    <button @click="addPriority()" class="px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-800 text-white hover:bg-slate-700 ml-4">+ Priority</button>
+                    <button @click="addPriority()" class="px-3 py-2 text-slate-400 hover:text-blue-600"><i class="fas fa-plus"></i></button>
                 </div>
-                <div class="bg-white rounded-b-lg rounded-tr-lg shadow-md border border-slate-200 overflow-hidden min-h-[600px]">
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-8 min-h-[600px]">
                     <template x-if="settings.priorities[activeStrategyTab]">
                         <div>
-                            <div class="p-4 flex justify-between items-center" :class="getHeaderColor(activeStrategyTab)"><h3 class="font-bold text-lg text-white" x-text="'Priority ' + (activeStrategyTab + 1)"></h3></div>
-                            <div class="p-6">
-                                <input x-model="settings.priorities[activeStrategyTab].title" class="w-full text-lg font-bold border-b-2 border-slate-200 focus:border-blue-500 outline-none mb-4 pb-1 transition">
-                                <textarea x-model="settings.priorities[activeStrategyTab].details" class="w-full text-sm p-3 bg-slate-50 border rounded mb-6 h-24 outline-none"></textarea>
-                                <div class="bg-purple-50 rounded p-4 border border-purple-100 mb-6">
-                                    <div class="flex justify-between items-center mb-4"><h4 class="font-bold text-sm text-purple-900">Strategic Milestones</h4><button @click="addStratMilestone(settings.priorities[activeStrategyTab])" class="text-xs bg-white border border-purple-200 px-3 py-1 rounded">+ Add</button></div>
-                                    <template x-for="(sm, smIdx) in settings.priorities[activeStrategyTab].strategicMilestones" :key="smIdx">
-                                        <div class="bg-white p-4 rounded shadow-sm border border-purple-100 mb-3 flex gap-4">
-                                            <div class="w-16 flex-shrink-0 flex flex-col items-center justify-center"><div class="relative w-12 h-12"><svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36"><path class="text-gray-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" /><path class="text-blue-600" :stroke-dasharray="calculateMilestoneProgress(settings.priorities[activeStrategyTab].id, sm.title) + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" /></svg><div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-blue-700" x-text="calculateMilestoneProgress(settings.priorities[activeStrategyTab].id, sm.title) + '%'"></div></div></div>
-                                            <div class="flex-1">
-                                                <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-2"><input x-model="sm.title" class="w-1/2 text-sm font-bold border-b border-transparent focus:border-purple-300 outline-none"><div class="flex gap-2"><input type="date" x-model="sm.targetDate" class="text-xs border rounded p-1"><button @click="settings.priorities[activeStrategyTab].strategicMilestones.splice(smIdx, 1)" class="text-slate-300 hover:text-red-400"><i class="fas fa-times"></i></button></div></div>
-                                                <div class="pl-4 border-l-2 border-slate-200"><div class="flex justify-between items-center mb-2"><span class="text-[10px] font-bold uppercase text-slate-400">Core Actions</span><button @click="createProjectFromAction(settings.priorities[activeStrategyTab], sm)" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 border border-blue-200">+ Action</button></div>
-                                                    <div class="space-y-1"><template x-for="proj in getProjectsForMilestone(settings.priorities[activeStrategyTab].id, sm.title)"><div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 hover:bg-slate-100 cursor-pointer" @click="editProject(proj)"><div class="flex items-center gap-2"><i class="fas fa-project-diagram text-blue-500 text-xs"></i><span class="text-xs font-bold text-slate-700" x-text="proj.title"></span></div><div class="flex items-center gap-2"><div class="w-16 bg-slate-200 rounded-full h-1.5"><div class="bg-blue-500 h-1.5 rounded-full" :style="`width: ${calculateProgress(proj)}%`"></div></div></div></div></template></div>
+                            <input x-model="settings.priorities[activeStrategyTab].title" class="w-full text-2xl font-bold text-slate-800 border-none outline-none placeholder-slate-300 mb-4" placeholder="Priority Title">
+                            <textarea x-model="settings.priorities[activeStrategyTab].details" class="w-full text-sm text-slate-600 p-4 bg-slate-50 rounded border border-slate-200 mb-8 h-24 outline-none focus:ring-1 focus:ring-blue-200" placeholder="Strategic Intent..."></textarea>
+                            
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div>
+                                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2"><h4 class="font-bold text-sm text-slate-800 uppercase tracking-wide">Strategic Milestones</h4><button @click="addStratMilestone(settings.priorities[activeStrategyTab])" class="text-xs text-blue-600 font-bold hover:underline">+ Add Milestone</button></div>
+                                    <div class="space-y-4">
+                                        <template x-for="(sm, smIdx) in settings.priorities[activeStrategyTab].strategicMilestones" :key="smIdx">
+                                            <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm relative group hover:border-blue-300 transition">
+                                                <button @click="settings.priorities[activeStrategyTab].strategicMilestones.splice(smIdx, 1)" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times"></i></button>
+                                                <input x-model="sm.title" class="font-bold text-sm text-slate-800 w-full outline-none mb-1" placeholder="Milestone Title">
+                                                <div class="flex justify-between items-center text-xs text-slate-500 mb-3">
+                                                    <input type="date" x-model="sm.targetDate" class="bg-transparent border-none p-0 text-slate-400 hover:text-blue-600">
+                                                    <span x-text="calculateMilestoneProgress(settings.priorities[activeStrategyTab].id, sm.title) + '% Complete'" class="font-bold text-blue-600"></span>
+                                                </div>
+                                                <div class="bg-slate-50 rounded p-2 border border-slate-100">
+                                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Aligned Projects</div>
+                                                    <div class="space-y-1">
+                                                        <template x-for="proj in getProjectsForMilestone(settings.priorities[activeStrategyTab].id, sm.title)">
+                                                            <div class="text-xs flex justify-between cursor-pointer hover:text-blue-600" @click="editProject(proj)">
+                                                                <span x-text="proj.title" class="truncate"></span>
+                                                                <i class="fas fa-chevron-right text-[8px] mt-1"></i>
+                                                            </div>
+                                                        </template>
+                                                        <button @click="createProjectFromAction(settings.priorities[activeStrategyTab], sm)" class="text-[10px] text-blue-500 font-bold mt-2 hover:underline">+ Launch Project</button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </template>
+                                        </template>
+                                    </div>
                                 </div>
-                                <div class="bg-slate-50 rounded p-4 border border-slate-200 mt-6"><div class="flex justify-between items-center mb-3"><h4 class="font-bold text-sm text-slate-700">General Actions</h4><button @click="addStrategyTask(settings.priorities[activeStrategyTab])" class="text-xs bg-white border border-slate-300 px-3 py-1 rounded shadow-sm">+ Add</button></div><div class="space-y-2 grid grid-cols-1 md:grid-cols-2 gap-4"><template x-for="(task, tIdx) in settings.priorities[activeStrategyTab].tasks" :key="tIdx"><div class="bg-white p-2 rounded shadow-sm border border-slate-100 flex items-center gap-2"><input type="checkbox" x-model="task.completed" class="w-4 h-4 rounded"><input x-model="task.name" class="flex-1 text-sm bg-transparent border-none outline-none"><input type="date" x-model="task.dueDate" class="text-xs bg-transparent border-none text-slate-600 w-24"><button @click="settings.priorities[activeStrategyTab].tasks.splice(tIdx, 1)" class="text-slate-300 hover:text-red-400"><i class="fas fa-times"></i></button></div></template></div></div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2"><h4 class="font-bold text-sm text-slate-800 uppercase tracking-wide">General Actions</h4><button @click="addStrategyTask(settings.priorities[activeStrategyTab])" class="text-xs text-blue-600 font-bold hover:underline">+ Add Task</button></div>
+                                    <div class="bg-slate-50 rounded-lg border border-slate-200 p-4 space-y-2">
+                                        <template x-for="(task, tIdx) in settings.priorities[activeStrategyTab].tasks" :key="tIdx">
+                                            <div class="flex items-center gap-2 bg-white p-2 rounded border border-slate-100 shadow-sm">
+                                                <input type="checkbox" x-model="task.completed" class="rounded text-blue-600">
+                                                <input x-model="task.name" class="flex-1 text-xs bg-transparent border-none outline-none">
+                                                <button @click="settings.priorities[activeStrategyTab].tasks.splice(tIdx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -250,36 +221,101 @@
             </div>
 
             <div x-show="view === 'projects'" class="max-w-7xl mx-auto w-full">
-                <div class="flex flex-col md:flex-row justify-between mb-6 gap-4">
-                    <div class="flex gap-2 items-center flex-wrap">
-                        <input x-model="searchQuery" placeholder="Search projects..." class="border p-2 rounded w-64 text-sm shadow-inner">
-                        <select x-model="filterPriority" class="border p-2 rounded text-sm bg-white">
-                            <option value="">All Priorities</option>
-                            <template x-for="p in settings.priorities" :key="p.id"><option :value="p.id" x-text="p.title"></option></template>
-                            <option value="standalone">Stand-alone Only</option>
-                        </select>
-                        <select x-model="filterKpi" class="border p-2 rounded text-sm bg-white font-bold text-purple-700">
-                            <option value="">All KPIs</option>
-                            <template x-for="k in settings.kpis"><option :value="k" x-text="k"></option></template>
-                        </select>
-                        <select x-model="filterRag" class="border p-2 rounded text-sm bg-white"><option value="">All Status</option><option value="red">Critical (Red)</option><option value="orange">Warning (Orange)</option><option value="green">On Track (Green)</option></select>
-                        <button x-show="searchQuery||filterRag||filterPriority||filterKpi" @click="resetFilters()" class="text-xs text-slate-500 underline">Reset</button>
+                <div class="flex flex-col md:flex-row justify-between mb-6 gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+                    <div class="flex gap-2 items-center flex-wrap flex-1">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input x-model="searchQuery" placeholder="Search projects..." class="pl-8 border border-slate-300 p-2 rounded text-sm w-48 focus:border-blue-500 outline-none">
+                        </div>
+                        <select x-model="filterPriority" class="border border-slate-300 p-2 rounded text-sm bg-white outline-none"><option value="">All Priorities</option><template x-for="p in settings.priorities" :key="p.id"><option :value="p.id" x-text="p.title"></option></template><option value="standalone">Stand-alone</option></select>
+                        <select x-model="filterKpi" class="border border-slate-300 p-2 rounded text-sm bg-white outline-none text-purple-700 font-medium"><option value="">All KPIs</option><template x-for="k in settings.kpis"><option :value="k" x-text="k"></option></template></select>
+                        <button x-show="searchQuery||filterPriority||filterKpi" @click="resetFilters()" class="text-xs text-red-500 hover:underline ml-2">Clear</button>
                     </div>
-                    <button @click="startNewProject()" class="bg-slate-800 text-white px-4 py-2 rounded text-sm hover:bg-slate-700 shadow">+ New Project</button>
+                    <button @click="startNewProject()" class="bg-blue-600 text-white px-5 py-2 rounded text-sm font-bold hover:bg-blue-700 shadow-sm transition"><i class="fas fa-plus mr-2"></i> New Project</button>
                 </div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <template x-for="project in filteredProjects" :key="project.id">
-                        <div class="bg-white rounded-lg shadow-sm border border-slate-200 transition card-hover flex flex-col h-full cursor-pointer group" :class="getRagBorder(project.endDate)" @click="editProject(project)">
-                            <div class="p-3 text-white flex justify-between items-start" :class="getProjectHeaderColor(project.priorityId)"><h3 class="font-bold text-sm truncate pr-2" x-text="project.title"></h3><span class="text-[9px] bg-white/20 px-2 py-0.5 rounded uppercase font-bold" x-text="project.type"></span></div>
-                            <div class="p-4 flex-1 flex flex-col">
-                                <div class="flex flex-wrap gap-1 mb-2">
-                                    <span x-show="project.deptCode" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200" x-text="project.deptCode"></span>
-                                    <span x-show="project.tlam" class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded border border-indigo-100" x-text="project.tlam"></span>
-                                    <span x-show="project.staff" class="text-[10px] bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded border border-yellow-100" x-text="project.staff"></span>
+                        <div class="bg-white rounded-lg shadow-sm border border-slate-200 transition hover:shadow-md flex flex-col h-full cursor-pointer group relative overflow-hidden" @click="editProject(project)">
+                            <div class="absolute left-0 top-0 bottom-0 w-1" :class="getRagColor(project.endDate)"></div>
+                            <div class="p-5 pl-6 flex-1 flex flex-col">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400" x-text="project.type"></span>
+                                    <span x-show="project.kpi" class="text-[9px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded border border-purple-100 font-bold truncate max-w-[100px]" x-text="project.kpi"></span>
                                 </div>
-                                <div x-show="getProjectStrategyName(project)" class="mb-3"><span class="text-[10px] text-slate-500 bg-slate-100 px-2 py-1 rounded truncate block w-full border border-slate-200"><i class="fas fa-link mr-1"></i> <span x-text="getProjectStrategyName(project)"></span></span></div>
-                                <p class="text-xs text-slate-500 mb-2 line-clamp-2" x-text="project.objective || 'No objective set.'"></p>
-                                <div class="mt-auto pt-2 border-t border-slate-100"><div class="flex justify-between items-center text-[10px] text-slate-400 mb-1"><span x-show="project.endDate">Due: <span x-text="formatDate(project.endDate)" class="font-bold text-slate-600"></span></span><span x-text="calculateProgress(project) + '%'"></span></div><div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden"><div class="h-1.5 rounded-full progress-bar" :class="calculateProgress(project) === 100 ? 'bg-emerald-500' : 'bg-blue-600'" :style="`width: ${calculateProgress(project)}%`"></div></div></div>
+                                <h3 class="font-bold text-slate-800 text-lg leading-tight mb-2 group-hover:text-blue-600 transition" x-text="project.title"></h3>
+                                <p class="text-xs text-slate-500 line-clamp-2 mb-4" x-text="project.objective || 'No objective set.'"></p>
+                                
+                                <div class="mt-auto">
+                                    <div class="flex gap-2 mb-3">
+                                        <span x-show="project.deptCode" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-medium" x-text="project.deptCode"></span>
+                                        <span x-show="project.staff" class="text-[10px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded font-medium border border-yellow-100" x-text="project.staff"></span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs font-bold text-slate-600">
+                                        <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                            <div class="h-full bg-blue-500 rounded-full" :style="`width: ${calculateProgress(project)}%`"></div>
+                                        </div>
+                                        <span x-text="calculateProgress(project) + '%'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div x-show="view === 'meetings'" class="max-w-7xl mx-auto w-full h-full flex bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="w-64 bg-slate-50 border-r border-slate-200 flex flex-col">
+                    <div class="p-4 border-b border-slate-200"><h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider">Notebooks</h3></div>
+                    <div class="flex-1 overflow-y-auto p-2 space-y-1">
+                        <template x-for="cat in settings.meetingCategories" :key="cat">
+                            <button @click="activeMeetingCategory = cat; currentMeeting = null" class="w-full text-left px-3 py-2.5 rounded-md text-sm font-medium transition flex justify-between items-center group" :class="activeMeetingCategory === cat ? 'bg-white shadow-sm text-blue-700' : 'text-slate-600 hover:bg-slate-100'">
+                                <span class="truncate" x-text="cat"></span>
+                                <span class="text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full group-hover:bg-slate-300" x-text="meetingNotes.filter(n => n.category === cat).length"></span>
+                            </button>
+                        </template>
+                    </div>
+                    <button @click="addNewMeetingCategory()" class="m-2 p-2 text-xs text-blue-600 font-bold border border-dashed border-blue-200 rounded hover:bg-blue-50">+ Add Notebook</button>
+                </div>
+                <div class="w-80 border-r border-slate-200 flex flex-col bg-white">
+                    <div class="p-3 border-b flex justify-between items-center bg-slate-50/50 h-14">
+                        <span class="font-bold text-sm text-slate-700 truncate w-32" x-text="activeMeetingCategory"></span>
+                        <button @click="createNewMeeting()" class="bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-slate-700"><i class="fas fa-plus mr-1"></i> New</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50/30">
+                        <template x-for="note in filteredMeetings" :key="note.id">
+                            <div @click="currentMeeting = note" class="p-3 rounded-lg border cursor-pointer transition hover:shadow-md bg-white" :class="currentMeeting && currentMeeting.id === note.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'">
+                                <div class="font-bold text-sm text-slate-800 truncate" x-text="note.title || 'Untitled Note'"></div>
+                                <div class="text-[10px] text-slate-400 mt-1" x-text="formatDate(note.date)"></div>
+                                <div class="text-xs text-slate-500 mt-2 line-clamp-2" x-text="note.content || 'No content...'"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col bg-white relative">
+                    <template x-if="!currentMeeting">
+                        <div class="flex items-center justify-center h-full text-slate-300 flex-col"><i class="far fa-file-alt text-5xl mb-4 text-slate-200"></i><p>Select a note to view or edit</p></div>
+                    </template>
+                    <template x-if="currentMeeting">
+                        <div class="flex flex-col h-full">
+                            <div class="p-6 border-b border-slate-100">
+                                <input x-model="currentMeeting.title" class="text-2xl font-bold text-slate-800 w-full outline-none placeholder-slate-300" placeholder="Meeting Subject">
+                                <div class="flex gap-6 mt-4 text-sm text-slate-500">
+                                    <div class="flex items-center gap-2"><i class="far fa-calendar"></i><input type="date" x-model="currentMeeting.date" class="outline-none bg-transparent"></div>
+                                    <div class="flex items-center gap-2 flex-1"><i class="far fa-user"></i><input x-model="currentMeeting.attendees" class="w-full outline-none bg-transparent" placeholder="Attendees..."></div>
+                                </div>
+                                <div class="mt-4 flex justify-between items-center">
+                                    <select x-model="currentMeeting.linkedProjectId" class="text-xs border border-slate-200 rounded p-1.5 bg-slate-50 text-slate-600 outline-none"><option value="">Link to Project (Optional)</option><template x-for="p in projects" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select>
+                                    <div class="flex gap-2">
+                                        <button @click="deleteMeeting()" class="text-xs text-red-400 hover:text-red-600 px-2 font-bold">Delete</button>
+                                        <button @click="saveToFile(); showToast('Note Saved')" class="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded hover:bg-emerald-700 font-bold shadow-sm">Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <textarea x-model="currentMeeting.content" class="flex-1 w-full p-8 outline-none resize-none text-slate-700 leading-relaxed text-sm" placeholder="Start typing notes..."></textarea>
+                            <div class="p-3 bg-slate-50 border-t border-slate-200 flex gap-2 items-center">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Quick Action:</span>
+                                <input x-model="quickActionText" class="flex-1 border border-slate-300 rounded px-2 py-1 text-sm outline-none focus:border-blue-500" placeholder="Type a task to send to dashboard...">
+                                <button @click="pushActionToDashboard()" class="bg-blue-600 text-white px-4 py-1 rounded text-xs font-bold hover:bg-blue-700">Add Task</button>
                             </div>
                         </div>
                     </template>
@@ -287,220 +323,162 @@
             </div>
 
             <div x-show="view === 'gantt'" class="max-w-full mx-auto w-full">
-                <div class="bg-white p-6 rounded shadow mb-6">
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                        <div class="flex items-center gap-4">
-                            <h2 class="font-bold text-lg">Timeline</h2>
-                            <div class="flex bg-slate-100 rounded p-1">
-                                <button @click="timelineMode = 'year'" :class="timelineMode==='year' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">12 M</button>
-                                <button @click="timelineMode = '6m'" :class="timelineMode==='6m' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">6 M</button>
-                                <button @click="timelineMode = '3m'" :class="timelineMode==='3m' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">3 M (Weekly)</button>
-                                <button @click="timelineMode = '1m'" :class="timelineMode==='1m' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">1 M (Daily)</button>
-                            </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-4 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <h2 class="font-bold text-slate-700">Timeline</h2>
+                        <div class="flex bg-slate-100 rounded p-1">
+                            <button @click="timelineMode = 'year'" :class="timelineMode==='year' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">Year</button>
+                            <button @click="timelineMode = '3m'" :class="timelineMode==='3m' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">Quarter</button>
+                            <button @click="timelineMode = '1m'" :class="timelineMode==='1m' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">Month</button>
                         </div>
-                        <button @click="exportToExcel()" class="bg-green-600 text-white px-3 py-1 rounded text-xs"><i class="fas fa-file-excel mr-1"></i> Export Data</button>
                     </div>
-
-                    <div class="flex flex-wrap gap-2 mb-4 border-b border-slate-200">
-                        <button @click="timelineTab = 'all'" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="timelineTab === 'all' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'">All Projects</button>
-                        <template x-for="(p, idx) in settings.priorities" :key="idx">
-                            <button @click="timelineTab = p.id" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="timelineTab === p.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'" x-text="p.title"></button>
-                        </template>
-                        <button @click="timelineTab = 'standalone'" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="timelineTab === 'standalone' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'">Stand-alone</button>
+                    <div class="flex gap-2">
+                        <button @click="timelineTab = 'all'" class="text-xs font-bold px-2 py-1 rounded" :class="timelineTab==='all'?'bg-blue-100 text-blue-700':'text-slate-500'">All</button>
+                        <button @click="timelineTab = 'standalone'" class="text-xs font-bold px-2 py-1 rounded" :class="timelineTab==='standalone'?'bg-blue-100 text-blue-700':'text-slate-500'">Stand-alone</button>
                     </div>
-
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                     <div class="gantt-container">
-                        <div class="gantt-grid text-sm" :style="getTimelineGridStyle()">
+                        <div class="gantt-grid text-xs" :style="getTimelineGridStyle()">
                             <div class="gantt-row font-bold text-slate-700 bg-slate-50 border-b border-slate-300 sticky top-0 z-20">
-                                <div class="p-3 sticky left-0 bg-slate-50 z-30 border-r border-slate-200 shadow-sm border-bottom">Project / Action</div>
+                                <div class="gantt-sticky-col px-4 border-b border-slate-300 bg-slate-50">Project</div>
                                 <template x-for="(col, idx) in timelineColumns" :key="idx"><div class="gantt-header"><div x-text="col.label"></div><div x-show="col.sub" class="text-[9px] text-slate-400 font-normal" x-text="col.sub"></div></div></template>
                             </div>
                             <template x-for="(p, idx) in timelineProjects" :key="p.id">
                                 <div class="gantt-row hover:bg-slate-50 transition group border-b border-slate-100">
-                                    <div class="gantt-sticky-col p-2 text-xs font-bold truncate pr-4 cursor-pointer hover:text-blue-600 group-hover:bg-slate-50" :style="`grid-row: ${idx + 2}; grid-column: 1`" @click="editProject(p)"><span x-text="p.title" :title="p.title" class="truncate w-60 block"></span></div>
+                                    <div class="gantt-sticky-col px-4 text-xs font-bold truncate pr-4 cursor-pointer hover:text-blue-600 group-hover:bg-slate-50 text-slate-700" :style="`grid-row: ${idx + 2}; grid-column: 1`" @click="editProject(p)"><span x-text="p.title"></span></div>
                                     <template x-for="c in timelineColumns"><div class="gantt-cell group-hover:bg-slate-50" :style="`grid-row: ${idx + 2}`"></div></template>
-                                    <div x-show="hasDates(p) && isProjectVisibleInTimeline(p)" class="rounded text-[9px] text-white flex items-center px-2 shadow-sm cursor-pointer hover:opacity-90 overflow-hidden z-10 h-6" :class="getPriorityColor(p.priorityId)" :style="getDynamicGanttBarStyle(p, idx)" @click="editProject(p)"><span class="truncate" x-text="formatDateShort(p.startDate) + ' - ' + formatDateShort(p.endDate)"></span></div>
+                                    <div x-show="hasDates(p) && isProjectVisibleInTimeline(p)" class="rounded-full text-[9px] text-white flex items-center px-3 shadow-sm cursor-pointer hover:opacity-90 overflow-hidden z-10 h-6" :class="getPriorityColor(p.priorityId)" :style="getDynamicGanttBarStyle(p, idx)" @click="editProject(p)"><span class="truncate font-medium" x-text="formatDateShort(p.startDate) + ' - ' + formatDateShort(p.endDate)"></span></div>
                                 </div>
                             </template>
-                            <div x-show="timelineProjects.length === 0" class="p-8 text-center text-slate-400 italic" style="grid-column: 1 / -1; grid-row: 2;">No projects found in this section.</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div x-show="view === 'reports'" class="max-w-6xl mx-auto h-full flex flex-col w-full">
-                <div class="flex justify-between items-center mb-6 no-print">
-                    <h2 class="font-bold text-2xl text-slate-800">Impact Reporting</h2>
-                    <button @click="window.print()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-700 shadow"><i class="fas fa-print mr-2"></i> Print Report</button>
-                </div>
-                <div class="flex flex-wrap gap-2 mb-4 border-b border-slate-200 no-print">
-                    <button @click="reportTab = 'overview'" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="reportTab === 'overview' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'">Overview</button>
-                    <button @click="reportTab = 'deepdive'" class="px-4 py-2 text-sm font-bold border-b-2 transition text-emerald-600" :class="reportTab === 'deepdive' ? 'border-emerald-600' : 'border-transparent hover:text-emerald-500'">Deep Dive</button>
-                    <button @click="reportTab = 'kpis'" class="px-4 py-2 text-sm font-bold border-b-2 transition text-purple-600" :class="reportTab === 'kpis' ? 'border-purple-600' : 'border-transparent hover:text-purple-500'">By KPI</button>
-                    <template x-for="(p, idx) in settings.priorities" :key="idx">
-                        <button @click="reportTab = p.id" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="reportTab === p.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'" x-text="p.title"></button>
-                    </template>
-                    <button @click="reportTab = 'standalone'" class="px-4 py-2 text-sm font-bold border-b-2 transition" :class="reportTab === 'standalone' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-blue-500'">Stand-alone</button>
-                </div>
-
-                <div x-show="reportTab === 'deepdive'" class="space-y-8 animate-fade-in">
-                    <div class="bg-emerald-50 p-6 rounded-lg border border-emerald-100 mb-6">
-                        <div class="grid grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-xs font-bold text-emerald-900 mb-2 uppercase">Drill Down By:</label>
-                                <select x-model="reportDrillDownCategory" class="w-full border p-2 rounded text-sm bg-white" @change="reportDrillDownValue=''">
-                                    <option value="">- Select Category -</option>
-                                    <option value="deptCode">Department</option>
-                                    <option value="tlam">TLAM</option>
-                                    <option value="staff">Staff Member</option>
-                                    <option value="kpi">Key Performance Indicator</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-emerald-900 mb-2 uppercase">Select Specific:</label>
-                                <select x-model="reportDrillDownValue" class="w-full border p-2 rounded text-sm bg-white" :disabled="!reportDrillDownCategory">
-                                    <option value="">- Select -</option>
-                                    <template x-for="opt in getDrillDownOptions()" :key="opt">
-                                        <option :value="opt" x-text="opt"></option>
-                                    </template>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div x-show="reportDrillDownValue">
-                        <h3 class="text-xl font-bold mb-4 text-emerald-900" x-text="'Results for: ' + reportDrillDownValue"></h3>
-                        <div class="grid grid-cols-1 gap-4">
-                            <template x-for="proj in getDrillDownResults()" :key="proj.id">
-                                <div class="bg-white p-4 rounded shadow border border-slate-100">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div>
-                                            <div class="font-bold text-lg text-slate-800" x-text="proj.title"></div>
-                                            <div class="text-xs text-slate-500 flex gap-2 mt-1">
-                                                <span x-show="proj.deptCode" class="bg-gray-100 px-2 rounded" x-text="proj.deptCode"></span>
-                                                <span x-show="proj.tlam" class="bg-indigo-50 text-indigo-700 px-2 rounded" x-text="proj.tlam"></span>
-                                                <span x-show="proj.staff" class="bg-yellow-50 text-yellow-700 px-2 rounded" x-text="proj.staff"></span>
-                                            </div>
-                                        </div>
-                                        <div class="text-right">
-                                            <div class="text-xl font-bold text-emerald-600" x-text="calculateProgress(proj) + '%'"></div>
-                                            <div class="text-[10px] text-slate-400">Complete</div>
-                                        </div>
-                                    </div>
-                                    <div class="mt-2 text-sm text-slate-600 bg-slate-50 p-2 rounded italic" x-text="proj.objective || 'No description.'"></div>
-                                </div>
-                            </template>
-                            <div x-show="getDrillDownResults().length === 0" class="text-slate-400 italic text-center py-8">No matching projects found.</div>
-                        </div>
+            <div x-show="view === 'reports'" class="max-w-6xl mx-auto w-full h-full flex flex-col">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-6 flex justify-between items-center no-print">
+                    <h2 class="font-bold text-xl text-slate-800">Impact Reports</h2>
+                    <div class="flex gap-2">
+                        <select x-model="reportTab" class="border border-slate-300 rounded p-2 text-sm outline-none">
+                            <option value="overview">Overview</option>
+                            <option value="deepdive">Deep Dive Tool</option>
+                            <option value="kpis">Governance (KPIs)</option>
+                            <option value="standalone">Stand-alone Projects</option>
+                        </select>
+                        <button @click="window.print()" class="bg-slate-800 text-white px-4 py-2 rounded font-bold text-sm shadow hover:bg-slate-700">Print</button>
                     </div>
                 </div>
-
-                <div x-show="reportTab === 'kpis'" class="space-y-8 animate-fade-in">
-                    <div class="text-center py-4 border-b mb-4"><h2 class="text-2xl font-bold text-purple-800">Governance & KPI Alignment</h2><p class="text-slate-500 text-sm">Mapping projects to Deputy Principal's Indicators</p></div>
-                    <div class="grid grid-cols-1 gap-8">
-                        <template x-for="k in settings.kpis" :key="k">
-                            <div class="bg-white rounded-lg shadow border border-purple-100 overflow-hidden break-avoid">
-                                <div class="bg-purple-50 p-4 border-b border-purple-100 flex justify-between items-center">
-                                    <h3 class="font-bold text-purple-900" x-text="k"></h3>
-                                    <span class="text-xs bg-white px-2 py-1 rounded border border-purple-200" x-text="projects.filter(p => p.kpi === k).length + ' Projects'"></span>
-                                </div>
-                                <div class="p-4">
-                                    <template x-for="proj in projects.filter(p => p.kpi === k)" :key="proj.id">
-                                        <div class="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
-                                            <div>
-                                                <div class="font-bold text-sm text-slate-700" x-text="proj.title"></div>
-                                                <div class="text-xs text-slate-400" x-text="proj.qaLink || 'No QA Link'"></div>
-                                            </div>
-                                            <div class="flex items-center gap-4">
-                                                <span x-show="proj.isQip" class="text-[10px] bg-red-100 text-red-600 px-2 rounded font-bold">QIP</span>
-                                                <div class="text-sm font-bold" :class="calculateProgress(proj)==100?'text-green-600':'text-blue-600'" x-text="calculateProgress(proj)+'%'"></div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <div x-show="projects.filter(p => p.kpi === k).length === 0" class="text-xs text-slate-400 italic">No aligned projects.</div>
-                                </div>
+                
+                <div x-show="reportTab === 'deepdive'" class="bg-white p-8 rounded-lg shadow-sm border border-slate-200 min-h-[500px]">
+                    <h3 class="text-lg font-bold text-emerald-800 mb-6 border-b pb-2 border-emerald-100">Deep Dive Analysis</h3>
+                    <div class="grid grid-cols-2 gap-6 mb-8">
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Filter Dimension</label><select x-model="reportDrillDownCategory" class="w-full border p-2 rounded text-sm bg-slate-50" @change="reportDrillDownValue=''"><option value="">Select...</option><option value="deptCode">Department</option><option value="tlam">TLAM</option><option value="staff">Staff Member</option><option value="kpi">KPI</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Specific Value</label><select x-model="reportDrillDownValue" class="w-full border p-2 rounded text-sm bg-slate-50" :disabled="!reportDrillDownCategory"><option value="">Select...</option><template x-for="opt in getDrillDownOptions()" :key="opt"><option :value="opt" x-text="opt"></option></template></select></div>
+                    </div>
+                    <div x-show="reportDrillDownValue" class="space-y-4">
+                        <template x-for="proj in getDrillDownResults()" :key="proj.id">
+                            <div class="border border-slate-200 rounded p-4 flex justify-between items-center hover:bg-slate-50">
+                                <div><div class="font-bold text-slate-800" x-text="proj.title"></div><div class="text-xs text-slate-500" x-text="proj.objective"></div></div>
+                                <div class="font-bold text-emerald-600 text-lg" x-text="calculateProgress(proj) + '%'"></div>
                             </div>
                         </template>
                     </div>
                 </div>
-
-                <div x-show="reportTab === 'overview'" class="space-y-6">
-                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <template x-for="(p, idx) in settings.priorities" :key="idx"><div class="bg-white p-6 rounded-lg shadow border border-slate-200 flex items-center justify-between"><div><h3 class="font-bold text-lg text-slate-800 mb-1" x-text="p.title"></h3><p class="text-xs text-slate-500 mb-2" x-text="p.strategicMilestones.length + ' Strategic Milestones'"></p><p class="text-[10px] text-slate-400 uppercase font-bold">Total Progress</p></div><div class="w-20 h-20 relative"><svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36"><path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" /><path :class="getHeaderTextColor(idx)" :stroke-dasharray="calculatePriorityTotalProgress(p.id) + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" /></svg><div class="absolute inset-0 flex items-center justify-center font-bold text-sm text-slate-700" x-text="calculatePriorityTotalProgress(p.id) + '%'"></div></div></div></template>
-                    </div>
-                </div>
-                <template x-for="pId in getReportTabIds()" :key="pId">
-                    <div x-show="reportTab === pId" class="space-y-8 animate-fade-in">
-                        <div class="text-center py-4 border-b mb-4"><h2 class="text-2xl font-bold text-slate-800" x-text="getReportTitle(pId)"></h2><p class="text-slate-500 text-sm">Detailed Breakdown & Evidence Locker</p></div>
-                        <div class="grid grid-cols-1 gap-6">
-                            <template x-for="proj in getProjectsForReport(pId)" :key="proj.id">
-                                <div x-data="{ expanded: false }" class="bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden break-avoid">
-                                    <div @click="expanded = !expanded" class="p-5 cursor-pointer hover:bg-slate-50 transition flex justify-between items-center">
-                                        <div class="flex-1"><div class="flex items-center gap-2 mb-1"><h3 class="font-bold text-lg text-slate-800" x-text="proj.title"></h3><span class="text-[10px] bg-slate-100 text-slate-500 px-2 rounded uppercase border" x-text="proj.type"></span></div><div class="text-sm text-slate-500 flex gap-4"><span><i class="fas fa-calendar-alt mr-1"></i> Due: <span x-text="formatDate(proj.endDate)"></span></span><span><i class="fas fa-list-check mr-1"></i> Tasks: <span x-text="proj.milestones.length"></span></span></div></div>
-                                        <div class="flex items-center gap-6"><div class="w-14 h-14 relative"><svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36"><path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" /><path class="text-blue-600" :stroke-dasharray="calculateProgress(proj) + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" /></svg><div class="absolute inset-0 flex items-center justify-center font-bold text-xs text-blue-800" x-text="calculateProgress(proj) + '%'"></div></div><div class="text-slate-300"><i class="fas" :class="expanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i></div></div>
-                                    </div>
-                                    <div x-show="expanded" class="bg-slate-50 border-t border-slate-200 p-6 flex flex-col md:flex-row gap-8">
-                                        <div class="flex-1"><h4 class="font-bold text-sm uppercase text-slate-400 mb-3 tracking-wide">Micro-Tasks & Status</h4><div class="space-y-2"><template x-for="m in proj.milestones" :key="m.uuid"><div class="flex justify-between items-center bg-white p-2 rounded border border-slate-100 text-sm"><span x-text="m.title"></span><span x-show="m.completed" class="text-green-600 font-bold text-xs"><i class="fas fa-check mr-1"></i> Done</span><span x-show="!m.completed" class="text-slate-400 text-xs italic">Pending</span></div></template><div x-show="!proj.milestones.length" class="text-xs text-slate-400 italic">No tasks defined.</div></div></div>
-                                        <div class="flex-1 border-l border-slate-200 pl-8 md:block hidden sm:block"><h4 class="font-bold text-sm uppercase text-slate-400 mb-3 tracking-wide">Evidence Locker & Updates</h4><div class="space-y-3"><template x-for="u in proj.updates" :key="u.date"><div class="text-sm bg-white p-3 rounded border border-slate-100 shadow-sm"><div class="text-[10px] text-slate-400 mb-1 flex justify-between"><span x-text="formatDate(u.date)"></span><span x-show="u.source" class="bg-slate-200 px-1 rounded text-slate-600" x-text="u.source"></span></div><div class="font-medium text-slate-800 mb-1" x-text="u.text"></div><div x-show="u.link"><a :href="u.link" target="_blank" class="text-blue-600 hover:underline text-xs flex items-center gap-1 font-bold"><i class="fas fa-external-link-alt"></i> View Evidence</a></div></div></template><div x-show="!proj.updates.length" class="text-xs text-slate-400 italic">No updates or evidence logged yet.</div></div></div>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </template>
             </div>
+
         </div> 
     </main>
 
-    <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" x-cloak>
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[95vh] overflow-y-auto">
-            <div class="p-4 border-b flex justify-between items-center bg-slate-50"><h3 class="font-bold text-lg">Manage Project</h3><button @click="showModal = false"><i class="fas fa-times"></i></button></div>
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="space-y-4">
-                    <input x-model="currentProject.title" class="w-full border p-2 rounded font-bold text-lg" placeholder="Project Name">
-                    <div class="bg-blue-50 p-4 rounded border border-blue-100">
-                        <select x-model="currentProject.priorityId" class="w-full border p-2 rounded text-sm mb-2"><option value="">-- Stand-alone Project --</option><template x-for="p in settings.priorities" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select>
-                        <select x-model="currentProject.milestoneLink" class="w-full border p-2 rounded text-sm mb-2" x-show="currentProject.priorityId"><option value="">-- Link to Milestone --</option><template x-for="m in getMilestonesForPriority(currentProject.priorityId)" :key="m.title"><option :value="m.title" x-text="m.title"></option></template></select>
-                        <div class="grid grid-cols-2 gap-2 mt-2"><div><label class="text-[10px]">Start</label><input type="date" x-model="currentProject.startDate" class="w-full border p-1 rounded text-xs"></div><div><label class="text-[10px]">End</label><input type="date" x-model="currentProject.endDate" class="w-full border p-1 rounded text-xs"></div></div>
+    <div x-show="showModal" class="fixed inset-0 z-50 overflow-hidden" x-cloak>
+        <div class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" @click="showModal = false"></div>
+        <div class="absolute inset-y-0 right-0 max-w-2xl w-full flex">
+            <div class="h-full w-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col" 
+                 x-transition:enter="translate-x-full" x-transition:enter-end="translate-x-0"
+                 x-transition:leave="translate-x-0" x-transition:leave-end="translate-x-full">
+                
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
+                    <h2 class="text-lg font-bold text-slate-800">Project Details</h2>
+                    <div class="flex gap-2">
+                        <button @click="showModal = false" class="text-slate-400 hover:text-slate-600 px-3 py-1">Cancel</button>
+                        <button @click="saveProject(); showToast('Project Saved')" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm font-bold shadow hover:bg-blue-700">Save Changes</button>
                     </div>
-                    <div class="bg-purple-50 p-4 rounded border border-purple-100">
-                        <label class="block text-xs font-bold text-purple-900 mb-2 uppercase">Governance & Quality</label>
-                        <select x-model="currentProject.kpi" class="w-full border p-2 rounded text-sm mb-2"><option value="">-- Link to KPI --</option><template x-for="k in settings.kpis"><option :value="k" x-text="k"></option></template></select>
-                        <select x-model="currentProject.qaLink" class="w-full border p-2 rounded text-sm mb-2"><option value="">-- QA Mechanism --</option><template x-for="q in settings.qaSources"><option :value="q" x-text="q"></option></template></select>
-                        <div class="flex items-center gap-2 mt-2"><input type="checkbox" x-model="currentProject.isQip" class="w-4 h-4"><span class="text-sm font-bold text-slate-700">Linked to Dept QIP?</span></div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div><label class="text-[10px]">Type</label><select x-model="currentProject.type" class="w-full border p-2 rounded text-sm"><option value="coaching">Coaching</option><option value="project">Project</option><option value="strategy">Strategy</option></select></div>
-                        <div><label class="text-[10px]">Dept</label><input x-model="currentProject.deptCode" list="deptCodes" class="w-full border p-2 rounded text-sm"><datalist id="deptCodes"><option value="AGF"><option value="HAC"><option value="MAT"><option value="ENG"><option value="SKB"></datalist></div>
-                        <div><label class="text-[10px]">TLAM</label><select x-model="currentProject.tlam" class="w-full border p-2 rounded text-sm"><option value="">-- None --</option><option>Megan Brookes</option><option>Steve Brawley</option><option>Emily Green</option><option>Matt Filer</option><option>Rachel Lane</option><option>Neil Davies</option></select></div>
-                    </div>
-                    <div><label class="text-[10px] font-bold uppercase">Staff Member / Lead</label><input x-model="currentProject.staff" class="w-full border p-2 rounded text-sm" placeholder="e.g. John Smith (for Coaching)"></div>
-                    <textarea x-model="currentProject.objective" class="w-full border p-2 rounded h-24 text-sm" placeholder="Description..."></textarea>
                 </div>
-                <div class="flex flex-col h-full">
-                    <div class="flex border-b mb-4">
-                        <button @click="modalTab='tasks'" :class="modalTab==='tasks'?'border-b-2 border-blue-500 text-blue-600':'text-slate-400'" class="pb-2 px-2 text-xs font-bold flex-1">Tasks</button>
-                        <button @click="modalTab='updates'" :class="modalTab==='updates'?'border-b-2 border-blue-500 text-blue-600':'text-slate-400'" class="pb-2 px-2 text-xs font-bold flex-1">Evidence</button>
+
+                <div class="flex-1 overflow-y-auto p-8 bg-slate-50">
+                    <input x-model="currentProject.title" class="w-full text-2xl font-bold bg-transparent border-none outline-none placeholder-slate-400 mb-6 text-slate-800" placeholder="Project Title">
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-6 space-y-4">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wide border-b pb-2">Core Metadata</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">Priority</label><select x-model="currentProject.priorityId" class="w-full mt-1 border rounded p-2 text-sm bg-slate-50"><option value="">Stand-alone</option><template x-for="p in settings.priorities" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select></div>
+                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">Type</label><select x-model="currentProject.type" class="w-full mt-1 border rounded p-2 text-sm bg-slate-50"><option value="coaching">Coaching</option><option value="project">Project</option><option value="strategy">Strategy</option></select></div>
+                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">Department</label><input x-model="currentProject.deptCode" list="deptCodes" class="w-full mt-1 border rounded p-2 text-sm bg-slate-50"><datalist id="deptCodes"><option value="AGF"><option value="HAC"><option value="MAT"><option value="ENG"></datalist></div>
+                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">Lead Staff</label><input x-model="currentProject.staff" class="w-full mt-1 border rounded p-2 text-sm bg-slate-50"></div>
                         </div>
-                    <div x-show="modalTab==='tasks'" class="flex-1 flex flex-col">
-                        <button @click="addMilestone()" class="text-xs bg-slate-200 px-2 py-2 rounded mb-2 w-full font-bold">+ Add Task</button>
-                        <div class="space-y-1 overflow-y-auto max-h-[400px] flex-1"><template x-for="(m, idx) in currentProject.milestones" :key="idx"><div class="bg-white p-2 rounded border flex gap-2 items-center"><input type="checkbox" x-model="m.completed" @change="syncFromProject(m, currentProject)" class="cursor-pointer w-4 h-4"><div class="flex-1"><input x-model="m.title" class="w-full text-sm border-none outline-none bg-transparent"><input type="date" x-model="m.dueDate" class="text-[10px] bg-transparent text-slate-400 border-none p-0 h-4"></div><button @click="copyToToday(m, currentProject)" class="text-slate-300 hover:text-purple-500" title="Add to Today"><i class="fas fa-calendar-day"></i></button><button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button></div></template></div>
+                        <div><label class="text-[10px] text-slate-500 font-bold uppercase">Date Range</label><div class="flex gap-2 mt-1"><input type="date" x-model="currentProject.startDate" class="border rounded p-2 text-sm w-1/2 bg-slate-50"><input type="date" x-model="currentProject.endDate" class="border rounded p-2 text-sm w-1/2 bg-slate-50"></div></div>
                     </div>
-                    <div x-show="modalTab==='updates'" class="flex-1 flex flex-col">
-                        <div class="bg-blue-50 p-2 text-[10px] text-blue-800 mb-2 rounded border border-blue-100">Log Evidence here (Files, Links, Outcomes).</div>
-                        <div class="mb-2">
-                            <textarea x-model="newUpdateText" class="w-full border p-2 rounded text-xs h-12 mb-1" placeholder="Describe evidence..."></textarea>
-                            <div class="flex gap-2 mb-1">
-                                <select x-model="newUpdateSource" class="border p-2 rounded text-xs w-1/3"><option value="">- Source -</option><template x-for="s in settings.qaSources"><option :value="s" x-text="s"></option></template></select>
-                                <input x-model="newUpdateLink" placeholder="Link to file (https://...)" class="flex-1 border p-2 rounded text-xs">
-                            </div>
-                            <button @click="addUpdate()" class="bg-emerald-600 text-white px-4 py-2 rounded text-xs font-bold w-full">Add Evidence</button>
+
+                    <div class="bg-purple-50 p-6 rounded-lg border border-purple-100 mb-6">
+                        <h4 class="text-xs font-bold text-purple-800 uppercase tracking-wide border-b border-purple-200 pb-2 mb-4">Governance & Quality</h4>
+                        <div class="space-y-3">
+                            <select x-model="currentProject.kpi" class="w-full border-none rounded p-2 text-sm bg-white shadow-sm"><option value="">Select KPI...</option><template x-for="k in settings.kpis"><option :value="k" x-text="k"></option></template></select>
+                            <select x-model="currentProject.qaLink" class="w-full border-none rounded p-2 text-sm bg-white shadow-sm"><option value="">Select QA Mechanism...</option><template x-for="q in settings.qaSources"><option :value="q" x-text="q"></option></template></select>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" x-model="currentProject.isQip" class="w-4 h-4 text-purple-600 rounded"><span class="text-sm font-bold text-purple-900">Linked to Dept QIP</span></label>
                         </div>
-                        <div class="space-y-2 overflow-y-auto max-h-[300px] flex-1 bg-slate-50 p-2 rounded border"><template x-for="(u, idx) in currentProject.updates" :key="idx"><div class="bg-white p-2 rounded shadow-sm border border-slate-100 text-xs"><div class="flex justify-between text-slate-400 text-[10px] mb-1"><span x-text="formatDate(u.date)"></span><span x-text="u.source" class="font-bold text-slate-500"></span><button @click="currentProject.updates.splice(idx, 1)" class="hover:text-red-500"><i class="fas fa-times"></i></button></div><div x-text="u.text" class="font-medium text-slate-700 mb-1 whitespace-pre-wrap"></div><a x-show="u.link" :href="u.link" target="_blank" class="text-blue-600 underline">Evidence Link</a></div></template></div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="flex border-b border-slate-100">
+                            <button @click="modalTab='tasks'" :class="modalTab==='tasks'?'bg-slate-50 text-blue-600 font-bold border-b-2 border-blue-600':'text-slate-500'" class="flex-1 py-3 text-sm transition">Micro-Tasks</button>
+                            <button @click="modalTab='updates'" :class="modalTab==='updates'?'bg-slate-50 text-blue-600 font-bold border-b-2 border-blue-600':'text-slate-500'" class="flex-1 py-3 text-sm transition">Evidence Locker</button>
+                        </div>
+                        <div class="p-6 min-h-[300px]">
+                            <div x-show="modalTab==='tasks'">
+                                <div class="space-y-2 mb-4">
+                                    <template x-for="(m, idx) in currentProject.milestones" :key="idx">
+                                        <div class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50">
+                                            <input type="checkbox" x-model="m.completed" class="w-4 h-4 text-green-500 rounded">
+                                            <input x-model="m.title" class="flex-1 bg-transparent border-none outline-none text-sm text-slate-700">
+                                            <button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button>
+                                        </div>
+                                    </template>
+                                </div>
+                                <button @click="addMilestone()" class="w-full py-2 border border-dashed border-slate-300 rounded text-slate-500 text-sm hover:bg-slate-50">+ Add Task</button>
+                            </div>
+                            <div x-show="modalTab==='updates'">
+                                <div class="mb-4">
+                                    <textarea x-model="newUpdateText" class="w-full border border-slate-200 rounded p-2 text-sm mb-2 h-20" placeholder="Description..."></textarea>
+                                    <input x-model="newUpdateLink" class="w-full border border-slate-200 rounded p-2 text-sm mb-2" placeholder="URL Evidence...">
+                                    <button @click="addUpdate()" class="bg-slate-800 text-white px-4 py-2 rounded text-sm font-bold w-full">Log Evidence</button>
+                                </div>
+                                <div class="space-y-3">
+                                    <template x-for="(u, idx) in currentProject.updates" :key="idx">
+                                        <div class="bg-slate-50 p-3 rounded border border-slate-100 text-sm">
+                                            <div class="flex justify-between text-slate-400 text-[10px] mb-1"><span x-text="formatDate(u.date)"></span><span x-text="u.source"></span></div>
+                                            <div class="font-medium text-slate-800" x-text="u.text"></div>
+                                            <a x-show="u.link" :href="u.link" target="_blank" class="text-blue-600 text-xs mt-1 block">View Link</a>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t flex justify-end gap-2"><button @click="showModal = false" class="px-4 py-2 text-slate-500">Cancel</button><button @click="saveProject()" class="px-4 py-2 bg-blue-600 text-white rounded">Save Project</button></div>
         </div>
+    </div>
+
+    <div class="toast-container">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div class="toast show">
+                <i class="fas fa-check-circle text-blue-600 text-xl"></i>
+                <div class="flex-1">
+                    <div class="font-bold text-sm text-slate-800">Success</div>
+                    <div class="text-xs text-slate-500" x-text="toast.message"></div>
+                </div>
+            </div>
+        </template>
     </div>
 
     <script>
@@ -510,39 +488,50 @@
                 searchQuery: '', filterRag: '', filterType: '', filterPriority: '', filterKpi: '',
                 reportDrillDownCategory: '', reportDrillDownValue: '',
                 newTodo: '', newUpdateText: '', newUpdateLink: '', newUpdateSource: '',
-                quickActionText: '', activeMeetingCategory: '', currentMeeting: null,
+                newMeetingTitle: '', newMeetingNotes: '', newMeetingMilestone: '', activeMeetingCategory: '', currentMeeting: null, quickActionText: '',
                 timelineMode: 'year',
-                projects: [], todos: [], meetingNotes: [], 
+                projects: [], todos: [], meetingNotes: [], toasts: [],
                 settings: { priorities: [], kpis: [], qaSources: [], meetingCategories: [] }, 
                 currentProject: {}, charts: {}, 
+                
+                navItems: [
+                    { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-home' },
+                    { id: 'strategy', label: 'Strategy', icon: 'fas fa-chess' },
+                    { id: 'projects', label: 'Projects', icon: 'fas fa-folder-open' },
+                    { id: 'meetings', label: 'Meeting Hub', icon: 'fas fa-users' },
+                    { id: 'gantt', label: 'Timeline', icon: 'fas fa-stream' },
+                    { id: 'reports', label: 'Reports', icon: 'fas fa-chart-pie' }
+                ],
 
                 async init() {
+                    // Defaults
                     this.settings.kpis = ['Teaching Quality Indicators', 'QIP Traction', 'Staff Capability', 'Staff Confidence', 'Student Experience', 'Retention Proxy', 'Value for Money', 'Digital Champions'];
                     this.settings.qaSources = ['Learning Walk Data', 'TLA Profile', 'QIP Review', 'Coaching Record', 'Staff Survey', 'Learner Voice', 'Exit Interview', 'Teams Analytics', 'Other'];
                     this.settings.meetingCategories = ['1:1 Line Manager (Neil Davies)', 'Wider Leadership', 'Heads of Area (HoA)', 'Digital Lead Meetings', 'Digital Champions', 'TLAMs', 'Quality Team', 'External Stakeholders', 'Other'];
                     this.activeMeetingCategory = this.settings.meetingCategories[0];
                 },
+                
+                showToast(msg) {
+                    const id = Date.now();
+                    this.toasts.push({ id, message: msg });
+                    setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3000);
+                },
+
                 async openFile() {
                     try {
                         const [handle] = await window.showOpenFilePicker({ types: [{ description: 'JSON Data', accept: { 'application/json': ['.json'] } }], multiple: false });
                         this.fileHandle = handle; const file = await handle.getFile(); const text = await file.text();
                         if (text.trim()) {
                             const data = JSON.parse(text);
-                            this.projects = (data.projects || []).map(p => ({ 
-                                ...p, 
-                                milestones: (p.milestones || []).map(m => ({...m, uuid: m.uuid || Date.now() + Math.random()})), 
-                                updates: p.updates || [], 
-                                meetings: p.meetings || [], 
-                                deptCode: p.deptCode||'', tlam: p.tlam||'', staff: p.staff||'', kpi: p.kpi||'', qaLink: p.qaLink||'', isQip: p.isQip||false 
-                            }));
+                            this.projects = (data.projects || []).map(p => ({ ...p, milestones: (p.milestones || []).map(m => ({...m, uuid: m.uuid || Date.now() + Math.random()})), updates: p.updates || [], meetings: p.meetings || [], deptCode: p.deptCode||'', tlam: p.tlam||'', staff: p.staff||'', kpi: p.kpi||'', qaLink: p.qaLink||'', isQip: p.isQip||false }));
                             this.todos = (data.todos || []).map(t => ({...t, originalId: t.originalId || null})); 
                             this.meetingNotes = (data.meetingNotes || []).map(n => ({...n, id: n.id || Date.now() + Math.random()}));
                             this.settings.priorities = (data.settings?.priorities || []).map((p,i) => ({ ...p, id: p.id||(i+1), strategicMilestones: p.strategicMilestones||[], tasks: p.tasks||[] }));
                             this.settings.kpis = data.settings?.kpis || this.settings.kpis;
                             this.settings.qaSources = data.settings?.qaSources || this.settings.qaSources;
                             this.settings.meetingCategories = data.settings?.meetingCategories || this.settings.meetingCategories;
-                            
                             this.$nextTick(() => this.initCharts());
+                            this.showToast('Data Loaded Successfully');
                         }
                     } catch (err) { console.error(err); alert("Error connecting."); }
                 },
@@ -556,70 +545,25 @@
                     } catch (err) { console.error('Save failed', err); }
                 },
 
-                // --- MEETING HUB LOGIC (NEW) ---
-                get filteredMeetings() {
-                    if(!this.activeMeetingCategory) return [];
-                    return this.meetingNotes.filter(n => n.category === this.activeMeetingCategory).sort((a,b) => new Date(b.date) - new Date(a.date));
-                },
-                createNewMeeting() {
-                    const newNote = { id: Date.now(), title: '', date: new Date().toISOString().split('T')[0], category: this.activeMeetingCategory, content: '', attendees: '', linkedProjectId: '' };
-                    this.meetingNotes.unshift(newNote);
-                    this.currentMeeting = newNote;
-                    this.saveToFile();
-                },
-                deleteMeeting() {
-                    if(!this.currentMeeting) return;
-                    if(confirm('Delete this meeting note?')) {
-                        this.meetingNotes = this.meetingNotes.filter(n => n.id !== this.currentMeeting.id);
-                        this.currentMeeting = null;
-                        this.saveToFile();
-                    }
-                },
-                addNewMeetingCategory() {
-                    const name = prompt("New Category Name:");
-                    if(name && !this.settings.meetingCategories.includes(name)) {
-                        this.settings.meetingCategories.push(name);
-                        this.activeMeetingCategory = name;
-                        this.saveToFile();
-                    }
-                },
-                pushActionToDashboard() {
-                    if(!this.quickActionText) return;
-                    this.todos.push({ text: this.quickActionText, completed: false, projectTitle: 'Meeting Action', originalId: null });
-                    this.quickActionText = '';
-                    this.saveToFile();
-                    alert("Action added to Dashboard.");
-                },
+                // --- Standard Logic & Getters ---
+                get filteredMeetings() { if(!this.activeMeetingCategory) return []; return this.meetingNotes.filter(n => n.category === this.activeMeetingCategory).sort((a,b) => new Date(b.date) - new Date(a.date)); },
+                createNewMeeting() { const newNote = { id: Date.now(), title: '', date: new Date().toISOString().split('T')[0], category: this.activeMeetingCategory, content: '', attendees: '', linkedProjectId: '' }; this.meetingNotes.unshift(newNote); this.currentMeeting = newNote; this.saveToFile(); },
+                deleteMeeting() { if(this.currentMeeting && confirm('Delete note?')) { this.meetingNotes = this.meetingNotes.filter(n => n.id !== this.currentMeeting.id); this.currentMeeting = null; this.saveToFile(); } },
+                addNewMeetingCategory() { const name = prompt("New Category Name:"); if(name && !this.settings.meetingCategories.includes(name)) { this.settings.meetingCategories.push(name); this.activeMeetingCategory = name; this.saveToFile(); } },
+                pushActionToDashboard() { if(!this.quickActionText) return; this.todos.push({ text: this.quickActionText, completed: false, projectTitle: 'Meeting Action', originalId: null }); this.quickActionText = ''; this.saveToFile(); this.showToast('Action added to Dashboard'); },
+                
+                getDrillDownOptions() { if (!this.reportDrillDownCategory) return []; const key = this.reportDrillDownCategory; const values = new Set(this.projects.map(p => p[key]).filter(v => v)); return Array.from(values).sort(); },
+                getDrillDownResults() { if (!this.reportDrillDownCategory || !this.reportDrillDownValue) return []; return this.projects.filter(p => p[this.reportDrillDownCategory] === this.reportDrillDownValue); },
 
-                // --- DRILL DOWN ENGINE ---
-                getDrillDownOptions() {
-                    if (!this.reportDrillDownCategory) return [];
-                    const key = this.reportDrillDownCategory;
-                    const values = new Set(this.projects.map(p => p[key]).filter(v => v));
-                    return Array.from(values).sort();
-                },
-                getDrillDownResults() {
-                    if (!this.reportDrillDownCategory || !this.reportDrillDownValue) return [];
-                    return this.projects.filter(p => p[this.reportDrillDownCategory] === this.reportDrillDownValue);
-                },
-
-                // --- GANTT ENGINE ---
                 get timelineColumns() {
                     const today = new Date(); const cols = [];
-                    if (this.timelineMode === 'year') {
-                        const currentYear = today.getFullYear();
-                        for(let i=0; i<12; i++) { const d = new Date(currentYear, i, 1); cols.push({ label: d.toLocaleString('default', {month:'short'}), sub: d.getFullYear(), start: d, end: new Date(currentYear, i+1, 0) }); }
-                    } else if (this.timelineMode === '6m') {
-                        for(let i=0; i<6; i++) { const d = new Date(today.getFullYear(), today.getMonth() + i, 1); cols.push({ label: d.toLocaleString('default', {month:'short'}), sub: d.getFullYear(), start: d, end: new Date(d.getFullYear(), d.getMonth()+1, 0) }); }
-                    } else if (this.timelineMode === '3m') {
-                        const start = new Date(today); start.setDate(today.getDate() - today.getDay() + 1); 
-                        for(let i=0; i<12; i++) { const wStart = new Date(start); wStart.setDate(start.getDate() + (i*7)); const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6); cols.push({ label: 'W' + (i+1), sub: wStart.getDate() + '/' + (wStart.getMonth()+1), start: wStart, end: wEnd }); }
-                    } else if (this.timelineMode === '1m') {
-                        for(let i=0; i<30; i++) { const d = new Date(today); d.setDate(today.getDate() + i); cols.push({ label: d.getDate(), sub: d.toLocaleString('default',{weekday:'short'}), start: new Date(d.setHours(0,0,0,0)), end: new Date(d.setHours(23,59,59,999)) }); }
-                    }
+                    if (this.timelineMode === 'year') { const currentYear = today.getFullYear(); for(let i=0; i<12; i++) { const d = new Date(currentYear, i, 1); cols.push({ label: d.toLocaleString('default', {month:'short'}), sub: d.getFullYear(), start: d, end: new Date(currentYear, i+1, 0) }); } }
+                    else if (this.timelineMode === '6m') { for(let i=0; i<6; i++) { const d = new Date(today.getFullYear(), today.getMonth() + i, 1); cols.push({ label: d.toLocaleString('default', {month:'short'}), sub: d.getFullYear(), start: d, end: new Date(d.getFullYear(), d.getMonth()+1, 0) }); } }
+                    else if (this.timelineMode === '3m') { const start = new Date(today); start.setDate(today.getDate() - today.getDay() + 1); for(let i=0; i<12; i++) { const wStart = new Date(start); wStart.setDate(start.getDate() + (i*7)); const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6); cols.push({ label: 'W' + (i+1), sub: wStart.getDate() + '/' + (wStart.getMonth()+1), start: wStart, end: wEnd }); } }
+                    else if (this.timelineMode === '1m') { for(let i=0; i<30; i++) { const d = new Date(today); d.setDate(today.getDate() + i); cols.push({ label: d.getDate(), sub: d.toLocaleString('default',{weekday:'short'}), start: new Date(d.setHours(0,0,0,0)), end: new Date(d.setHours(23,59,59,999)) }); } }
                     return cols;
                 },
-                getTimelineGridStyle() { return `grid-template-columns: 250px repeat(${this.timelineColumns.length}, minmax(${this.timelineMode === '1m' ? '30px' : '50px'}, 1fr));`; },
+                getTimelineGridStyle() { return `grid-template-columns: 200px repeat(${this.timelineColumns.length}, minmax(${this.timelineMode === '1m' ? '30px' : '50px'}, 1fr));`; },
                 getDynamicGanttBarStyle(p, idx) {
                     const pStart = new Date(p.startDate); const pEnd = new Date(p.endDate); const cols = this.timelineColumns;
                     if (!this.hasDates(p)) return 'display:none';
@@ -631,48 +575,22 @@
                 },
                 isProjectVisibleInTimeline(p) { return !this.getDynamicGanttBarStyle(p, 0).includes('display:none'); },
 
-                // --- Standard Logic ---
-                copyToToday(task, proj) {
-                    if (!task.uuid) task.uuid = Date.now() + Math.random().toString(16).slice(2);
-                    if(this.todos.find(t => t.originalId === task.uuid)) return alert("Already in Today's list");
-                    this.todos.push({ text: task.title, completed: task.completed, projectTitle: proj.title, originalId: task.uuid, projectId: proj.id });
-                    this.saveToFile(); alert("Added to Dashboard.");
-                },
-                syncFromDashboard(todo) {
-                    const proj = this.projects.find(p => p.id === todo.projectId);
-                    if(proj) { const task = proj.milestones.find(m => m.uuid === todo.originalId); if(task) { task.completed = todo.completed; if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } else { task.completedDate = null; } } }
-                    this.saveToFile();
-                },
-                syncFromProject(task, proj) {
-                    if(!task.uuid) task.uuid = Date.now() + Math.random().toString(16).slice(2); 
-                    if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } else { task.completedDate = null; }
-                    const todo = this.todos.find(t => t.originalId === task.uuid); if(todo) todo.completed = task.completed;
-                    this.saveToFile();
-                },
+                copyToToday(task, proj) { if (!task.uuid) task.uuid = Date.now() + Math.random().toString(16).slice(2); if(this.todos.find(t => t.originalId === task.uuid)) return this.showToast("Already in Today's list"); this.todos.push({ text: task.title, completed: task.completed, projectTitle: proj.title, originalId: task.uuid, projectId: proj.id }); this.saveToFile(); this.showToast("Added to Dashboard"); },
+                syncFromDashboard(todo) { const proj = this.projects.find(p => p.id === todo.projectId); if(proj) { const task = proj.milestones.find(m => m.uuid === todo.originalId); if(task) { task.completed = todo.completed; if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } else { task.completedDate = null; } } } this.saveToFile(); },
+                syncFromProject(task, proj) { if(!task.uuid) task.uuid = Date.now() + Math.random().toString(16).slice(2); if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } else { task.completedDate = null; } const todo = this.todos.find(t => t.originalId === task.uuid); if(todo) todo.completed = task.completed; this.saveToFile(); },
                 deleteTodo(idx) { this.todos.splice(idx, 1); this.saveToFile(); },
+                
                 getReportTabIds() { return this.settings.priorities.map(p => p.id).concat(['standalone']); },
-                getReportTitle(pId) {
-                    if(pId === 'standalone') return 'Stand-alone Projects';
-                    const p = this.settings.priorities.find(x => x.id === pId); return p ? p.title : 'Unknown';
-                },
+                getReportTitle(pId) { if(pId === 'standalone') return 'Stand-alone Projects'; const p = this.settings.priorities.find(x => x.id === pId); return p ? p.title : 'Unknown'; },
                 getProjectsForReport(pId) { if(pId === 'standalone') return this.projects.filter(p => !p.priorityId); return this.projects.filter(p => p.priorityId === pId); },
-                calculatePriorityTotalProgress(pId) {
-                    const projs = this.getProjectsForReport(pId); if (projs.length === 0) return 0;
-                    const total = projs.reduce((acc, p) => acc + this.calculateProgress(p), 0); return Math.round(total / projs.length);
-                },
-                calculateMilestoneProgress(pId, mTitle) {
-                    const projs = this.getProjectsForMilestone(pId, mTitle); if (projs.length === 0) return 0;
-                    const total = projs.reduce((acc, p) => acc + this.calculateProgress(p), 0); return Math.round(total / projs.length);
-                },
+                calculatePriorityTotalProgress(pId) { const projs = this.getProjectsForReport(pId); if (projs.length === 0) return 0; const total = projs.reduce((acc, p) => acc + this.calculateProgress(p), 0); return Math.round(total / projs.length); },
+                calculateMilestoneProgress(pId, mTitle) { const projs = this.getProjectsForMilestone(pId, mTitle); if (projs.length === 0) return 0; const total = projs.reduce((acc, p) => acc + this.calculateProgress(p), 0); return Math.round(total / projs.length); },
+                
                 addPriority() { this.settings.priorities.push({ id: Date.now(), title: 'New Priority', details: '', strategicMilestones: [], tasks: [] }); this.activeStrategyTab = this.settings.priorities.length - 1; },
-                createProjectFromAction(priority, milestone) {
-                    const name = prompt("Enter Name:", milestone.title); if(!name) return;
-                    const newProj = { id: Date.now(), title: name, priorityId: priority.id, milestoneLink: milestone.title, type: 'Strategy', status: 'Active', startDate: new Date().toISOString().split('T')[0], endDate: milestone.targetDate || '', milestones: [], updates: [{date: new Date().toISOString(), text: 'Initialized.'}], deptCode: '', tlam: '', kpi: '', qaLink: '', isQip: false, staff: '' };
-                    this.projects.push(newProj); this.saveToFile(); alert(`Project created.`);
-                },
+                createProjectFromAction(priority, milestone) { const name = prompt("Enter Name:", milestone.title); if(!name) return; const newProj = { id: Date.now(), title: name, priorityId: priority.id, milestoneLink: milestone.title, type: 'Strategy', status: 'Active', startDate: new Date().toISOString().split('T')[0], endDate: milestone.targetDate || '', milestones: [], updates: [], meetings: [], deptCode: '', tlam: '', kpi: '', qaLink: '', isQip: false, staff: '' }; this.projects.push(newProj); this.saveToFile(); this.showToast(`Project created`); },
                 resetFilters() { this.searchQuery=''; this.filterRag=''; this.filterType=''; this.filterPriority=''; this.filterKpi=''; },
                 addTodo() { if(this.newTodo) { this.todos.push({text: this.newTodo, completed: false, projectTitle: 'Manual'}); this.newTodo = ''; this.saveToFile(); }},
-                addUpdate() { if(this.newUpdateText) { this.currentProject.updates.push({ date: new Date().toISOString(), text: this.newUpdateText, link: this.newUpdateLink, source: this.newUpdateSource }); this.newUpdateText = ''; this.newUpdateLink = ''; this.newUpdateSource = ''; }},
+                addUpdate() { if(this.newUpdateText) { this.currentProject.updates.push({ date: new Date().toISOString(), text: this.newUpdateText, link: this.newUpdateLink, source: this.newUpdateSource }); this.newUpdateText = ''; this.newUpdateLink = ''; this.newUpdateSource = ''; this.saveToFile(); this.showToast('Evidence Added'); }},
                 getMonthName(m) { const d = new Date(); d.setMonth(m-1); return d.toLocaleString('default', { month: 'short' }); },
                 hasDates(p) { return p.startDate && p.endDate; },
                 getPriorityColor(pId) { if(!pId) return 'bg-slate-500'; const idx = this.settings.priorities.findIndex(p => p.id == pId); return this.getHeaderColor(idx).replace('bg-', 'bg-').replace('-600', '-500'); },
@@ -689,6 +607,7 @@
                 getHeaderTextColor(idx) { return ['text-blue-600', 'text-amber-500', 'text-emerald-600', 'text-purple-600', 'text-pink-600'][idx % 5]; },
                 getProjectHeaderColor(pId) { if(!pId) return 'bg-slate-500'; const idx = this.settings.priorities.findIndex(p => p.id == pId); return idx !== -1 ? this.getHeaderColor(idx) : 'bg-slate-500'; },
                 getRagBorder(dateStr) { if (!dateStr) return 'border-slate-200'; const today = new Date(); today.setHours(0,0,0,0); const due = new Date(dateStr); const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return 'border-red-600 border-l-4'; if (diffDays <= 7) return 'border-red-500 border-l-4'; if (diffDays <= 14) return 'border-orange-400 border-l-4'; return 'border-green-500 border-l-4'; },
+                getRagColor(dateStr) { if (!dateStr) return 'bg-slate-200'; const today = new Date(); today.setHours(0,0,0,0); const due = new Date(dateStr); const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return 'bg-red-600'; if (diffDays <= 7) return 'bg-red-500'; if (diffDays <= 14) return 'bg-orange-400'; return 'bg-green-500'; },
                 switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateCharts(),100); },
                 startNewProject() { this.currentProject = { id: Date.now() + Math.random(), title: '', priorityId: '', milestoneLink: '', type: 'coaching', milestones: [], updates: [], status: 'Active', deptCode: '', tlam: '', startDate: '', endDate: '', staff: '', meetings: [] }; this.showModal = true; this.modalTab = 'tasks'; },
                 editProject(p) { this.currentProject = p; this.showModal = true; this.modalTab = 'tasks'; }, 
