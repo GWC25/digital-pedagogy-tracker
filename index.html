@@ -3,135 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v30.0 (Operating System)</title>
+    <title>Digital Impact Hub v31.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         [x-cloak] { display: none !important; }
-        @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body { background: white; color: black; }
-            .break-avoid { break-inside: avoid; }
+        :root {
+            --primary: #1e40af; --accent: #f59e0b; --success: #10b981; --danger: #ef4444;
         }
-        /* Professional Scrollbars */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-attachment: fixed; }
+        .display-font { font-family: 'Fraunces', serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        .slide-over-enter-active, .slide-over-leave-active { transition: transform 0.3s ease-in-out; }
-        .slide-over-enter-start, .slide-over-leave-end { transform: translateX(100%); }
-        
-        .gantt-grid { display: grid; gap: 0; } 
-        .gantt-row { display: contents; } 
-        .gantt-cell { background: #fff; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; height: 44px; }
-        
-        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: white; border-left: 4px solid #2563eb; padding: 12px 20px; border-radius: 4px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 250px; }
-        .toast.show { transform: translateX(0); }
-        
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: rgba(203, 213, 225, 0.5); border-radius: 4px; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .card-hover { transition: all 0.3s; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); }
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 100; }
+        .toast { background: white; border-left: 4px solid var(--primary); padding: 16px 20px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transform: translateX(400px); animation: slideInRight 0.3s forwards; display: flex; gap: 12px; }
+        @keyframes slideInRight { to { transform: translateX(0); } }
+        .gantt-grid { display: grid; gap: 0; font-size: 13px; }
+        .gantt-cell { background: white; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; min-height: 48px; display: flex; align-items: center; padding: 0 8px; }
+        .gantt-header { background: #f8fafc; border-bottom: 2px solid #cbd5e1; font-weight: 600; position: sticky; top: 0; z-index: 10; padding: 12px 4px; text-align: center; }
+        .gantt-sticky-col { position: sticky; left: 0; z-index: 15; background: white; border-right: 2px solid #e2e8f0; font-weight: 500; }
     </style>
 </head>
-<body class="text-slate-800 h-screen flex flex-col overflow-hidden" x-data="appData()" x-init="init()">
+<body class="h-screen flex flex-col overflow-hidden" x-data="appData()" x-init="init()" x-cloak>
 
-    <header class="bg-white border-b border-slate-200 h-16 flex justify-between items-center px-6 shadow-sm z-30 no-print">
+    <!-- Header -->
+    <header class="glass border-b border-neutral-200 h-16 flex justify-between items-center px-6 shadow-sm z-30">
         <div class="flex items-center gap-3">
-            <div class="bg-slate-900 text-white w-8 h-8 rounded flex items-center justify-center font-bold text-sm">DC</div>
+            <div class="bg-gradient-to-br from-blue-600 to-purple-600 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold shadow-md">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
             <div>
-                <h1 class="font-bold text-slate-800 leading-none">Digital Impact Hub</h1>
-                <p class="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5">OS v30.0</p>
+                <h1 class="display-font text-xl font-bold text-neutral-900">Digital Impact Hub</h1>
+                <p class="text-[10px] text-neutral-500 uppercase tracking-wider">v31.0 Professional</p>
             </div>
         </div>
         <nav class="hidden md:flex gap-1" x-show="fileHandle">
-            <template x-for="item in navItems">
-                <button @click="switchView(item.id)" 
-                        :class="view === item.id ? 'bg-slate-100 text-blue-700 font-bold' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
-                        class="px-4 py-2 rounded text-sm transition flex items-center gap-2">
+            <template x-for="item in navItems" :key="item.id">
+                <button @click="switchView(item.id)" :class="view === item.id ? 'bg-white text-blue-600 font-bold shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/50'" class="px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2">
                     <i :class="item.icon"></i> <span x-text="item.label"></span>
                 </button>
             </template>
         </nav>
         <div class="flex items-center gap-3">
             <template x-if="!fileHandle">
-                <button @click="openFile()" class="text-xs bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded font-bold shadow transition flex items-center gap-2 animate-pulse"><i class="fas fa-plug"></i> Connect Data</button>
+                <button @click="openFile()" class="text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 px-5 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2">
+                    <i class="fas fa-plug"></i> Connect Data
+                </button>
             </template>
             <template x-if="fileHandle">
                 <div class="flex items-center gap-3">
-                    <span class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-100 font-bold flex items-center gap-1"><i class="fas fa-circle text-[6px]"></i> LIVE</span>
-                    <button @click="saveToFile()" class="text-xs bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded font-bold transition"><i class="fas fa-save mr-1"></i> Save</button>
+                    <span class="text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 font-bold flex items-center gap-2">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> LIVE
+                    </span>
+                    <button @click="saveToFile()" class="text-sm bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-50 px-4 py-2 rounded-lg font-medium transition-all shadow-sm">
+                        <i class="fas fa-save mr-2"></i> Save
+                    </button>
                 </div>
             </template>
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto relative p-6">
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-6">
         
-        <div x-show="!fileHandle" class="h-full flex flex-col items-center justify-center">
-            <div class="bg-white p-12 rounded-2xl shadow-xl border border-slate-200 text-center max-w-lg">
-                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl"><i class="fas fa-cloud-upload-alt"></i></div>
-                <h2 class="text-2xl font-bold text-slate-800 mb-2">Welcome Back</h2>
-                <p class="text-slate-500 mb-8 text-sm leading-relaxed">Connect to your <strong>digital-coach-data.json</strong> file to load your workflow.</p>
-                <button @click="openFile()" class="bg-slate-900 text-white text-sm font-bold px-8 py-3 rounded-lg hover:bg-slate-800 transition w-full">Select Local File</button>
+        <!-- Welcome Screen -->
+        <div x-show="!fileHandle" class="h-full flex items-center justify-center">
+            <div class="glass p-12 rounded-2xl shadow-2xl border border-white/50 text-center max-w-xl slide-up">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl shadow-lg">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h2 class="display-font text-3xl font-bold text-neutral-900 mb-3">Welcome to Your Digital Hub</h2>
+                <p class="text-neutral-600 mb-8 leading-relaxed">Connect to your <strong>digital-coach-data.json</strong> file to access your strategic pillars, projects, and workflow.</p>
+                <button @click="openFile()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold px-10 py-4 rounded-xl hover:shadow-xl transition-all w-full">
+                    <i class="fas fa-folder-open mr-2"></i> Select Local File
+                </button>
+                <p class="text-xs text-neutral-500 mt-6">Your data stays on your device. No servers, no cloud.</p>
             </div>
         </div>
 
+        <!-- Main Views -->
         <div x-show="fileHandle" x-transition class="h-full flex flex-col gap-6">
             
-            <div x-show="view === 'planner'" class="h-full flex gap-6 animate-fade-in">
-                <div class="w-1/3 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                        <h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider">Action Hopper</h3>
-                        <button @click="addTaskModal=true" class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">+ Add</button>
-                    </div>
-                    <div class="p-2 border-b border-slate-100">
-                        <input x-model="taskSearch" placeholder="Filter tasks..." class="w-full text-xs border p-2 rounded bg-slate-50 outline-none">
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-2 space-y-2">
-                        <template x-for="task in getSortedTasks()" :key="task.id">
-                            <div class="bg-white p-3 rounded border border-slate-200 shadow-sm hover:border-blue-400 group relative">
-                                <div class="flex items-start gap-3">
-                                    <input type="checkbox" x-model="task.completed" @change="completeTask(task)" class="mt-1 cursor-pointer text-blue-600">
-                                    <div class="flex-1">
-                                        <div class="text-sm font-medium text-slate-800" :class="{'line-through text-slate-400': task.completed}" x-text="task.title"></div>
-                                        <div class="flex gap-2 mt-1">
-                                            <span x-show="task.context" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 uppercase font-bold" x-text="task.context"></span>
-                                            <span x-show="task.dueDate" class="text-[9px] px-1.5 py-0.5 rounded" :class="getDueClass(task.dueDate)" x-text="formatDateShort(task.dueDate)"></span>
-                                        </div>
-                                    </div>
-                                    <button @click="openScheduleModal(task)" class="text-slate-300 hover:text-purple-600" title="Add to Calendar"><i class="far fa-calendar-plus"></i></button>
-                                </div>
+            <!-- DASHBOARD -->
+            <div x-show="view === 'dashboard'" class="fade-in space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="glass p-6 rounded-xl shadow-md border border-white/50 card-hover">
+                        <div class="flex justify-between mb-3">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                <i class="fas fa-project-diagram text-xl"></i>
                             </div>
-                        </template>
-                        <div x-show="getSortedTasks().length === 0" class="text-center py-10 text-slate-400 text-sm">Hopper empty. Nice work!</div>
+                            <span class="text-xs font-bold text-neutral-500 uppercase">Active</span>
+                        </div>
+                        <div class="text-3xl font-bold text-neutral-900 mb-1" x-text="projects.filter(p => p.status !== 'Completed').length"></div>
+                        <div class="text-sm text-neutral-600">Projects Running</div>
+                    </div>
+                    <div class="glass p-6 rounded-xl shadow-md border border-white/50 card-hover">
+                        <div class="flex justify-between mb-3">
+                            <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600">
+                                <i class="fas fa-check-circle text-xl"></i>
+                            </div>
+                            <span class="text-xs font-bold text-neutral-500 uppercase">Progress</span>
+                        </div>
+                        <div class="text-3xl font-bold text-neutral-900 mb-1" x-text="Math.round(getOverallProgress()) + '%'"></div>
+                        <div class="text-sm text-neutral-600">Overall Completion</div>
+                    </div>
+                    <div class="glass p-6 rounded-xl shadow-md border border-white/50 card-hover">
+                        <div class="flex justify-between mb-3">
+                            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+                                <i class="fas fa-tasks text-xl"></i>
+                            </div>
+                            <span class="text-xs font-bold text-neutral-500 uppercase">Tasks</span>
+                        </div>
+                        <div class="text-3xl font-bold text-neutral-900 mb-1" x-text="getAllOpenTasks().length"></div>
+                        <div class="text-sm text-neutral-600">Action Items Open</div>
+                    </div>
+                    <div class="glass p-6 rounded-xl shadow-md border border-white/50 card-hover">
+                        <div class="flex justify-between mb-3">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+                                <i class="fas fa-calendar-check text-xl"></i>
+                            </div>
+                            <span class="text-xs font-bold text-neutral-500 uppercase">This Week</span>
+                        </div>
+                        <div class="text-3xl font-bold text-neutral-900 mb-1" x-text="calendarEvents.length"></div>
+                        <div class="text-sm text-neutral-600">Scheduled Events</div>
                     </div>
                 </div>
 
-                <div class="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                        <h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider">Weekly Workflow</h3>
-                        <div class="flex gap-2">
-                            <button @click="calendarView='week'" class="text-xs font-bold px-3 py-1 rounded" :class="calendarView==='week'?'bg-white shadow text-blue-600':'text-slate-500'">Week</button>
-                            <button @click="addCalendarEvent()" class="text-xs bg-slate-800 text-white px-3 py-1 rounded font-bold hover:bg-slate-700">+ Meeting / Block</button>
+                <!-- Strategic Pillars Overview -->
+                <div class="glass p-6 rounded-xl shadow-md border border-white/50">
+                    <h3 class="display-font text-2xl font-bold text-neutral-900 mb-6">Strategic Pillars</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <template x-for="pillar in settings.pillars" :key="pillar.id">
+                            <div class="border-2 rounded-xl p-5 transition-all hover:shadow-lg cursor-pointer" :style="`border-color: ${pillar.color}; border-left-width: 6px;`" @click="filterPillar = pillar.id; switchView('projects')">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-lg mb-1" x-text="pillar.title"></h4>
+                                        <p class="text-xs text-neutral-600 leading-relaxed" x-text="pillar.intent"></p>
+                                    </div>
+                                    <div class="text-right ml-4">
+                                        <div class="text-2xl font-bold" x-text="getProjectsForPillar(pillar.id).length"></div>
+                                        <div class="text-xs text-neutral-500">projects</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 bg-neutral-100 rounded-full h-2">
+                                        <div class="h-full rounded-full" :style="`width: ${getPillarProgress(pillar.id)}%; background-color: ${pillar.color};`"></div>
+                                    </div>
+                                    <span class="text-xs font-bold" x-text="getPillarProgress(pillar.id) + '%'"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STRATEGY -->
+            <div x-show="view === 'strategy'" class="fade-in">
+                <div class="glass p-6 rounded-xl shadow-md border border-white/50">
+                    <div class="flex justify-between mb-6">
+                        <h2 class="display-font text-2xl font-bold">Strategic Framework</h2>
+                        <button @click="addPillar()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2 rounded-lg font-bold hover:shadow-lg">
+                            <i class="fas fa-plus mr-2"></i> Add Pillar
+                        </button>
+                    </div>
+                    <div class="flex gap-2 border-b mb-6 overflow-x-auto">
+                        <template x-for="(pillar, index) in settings.pillars" :key="pillar.id">
+                            <button @click="activeStrategyTab = index" :class="activeStrategyTab === index ? 'border-b-2 font-bold' : 'text-neutral-600'" class="px-4 py-3 text-sm whitespace-nowrap" :style="activeStrategyTab === index ? `border-color: ${pillar.color}; color: ${pillar.color};` : ''" x-text="pillar.title"></button>
+                        </template>
+                    </div>
+                    <template x-for="(pillar, index) in settings.pillars" :key="pillar.id">
+                        <div x-show="activeStrategyTab === index" class="space-y-6">
+                            <div class="p-6 rounded-xl border-2" :style="`border-color: ${pillar.color}; background-color: ${pillar.color}20;`">
+                                <input x-model="pillar.title" class="text-xl font-bold bg-transparent w-full outline-none mb-2" placeholder="Pillar Title">
+                                <textarea x-model="pillar.intent" class="w-full bg-transparent outline-none text-sm resize-none" rows="2" placeholder="Strategic intent..."></textarea>
+                                <div class="flex gap-2 mt-3">
+                                    <input type="color" x-model="pillar.color" class="w-20">
+                                    <button @click="deletePillar(index)" class="ml-auto text-red-600 text-xs hover:underline">
+                                        <i class="fas fa-trash mr-1"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-4">
+                                    <h4 class="font-bold text-lg">Strategic Milestones</h4>
+                                    <button @click="addMilestone(pillar)" class="text-sm bg-white border px-3 py-1.5 rounded-lg hover:bg-neutral-50">
+                                        <i class="fas fa-plus mr-1"></i> Add Milestone
+                                    </button>
+                                </div>
+                                <div class="space-y-3">
+                                    <template x-for="(m, mIdx) in (pillar.strategicMilestones || [])" :key="mIdx">
+                                        <div class="bg-white p-4 rounded-lg border hover:shadow-md">
+                                            <div class="flex gap-3">
+                                                <div class="flex-1">
+                                                    <input x-model="m.title" class="font-medium w-full outline-none mb-2" placeholder="Milestone title">
+                                                    <div class="flex gap-2 text-xs">
+                                                        <input type="date" x-model="m.targetDate" class="border rounded px-2 py-1">
+                                                        <select x-model="m.status" class="border rounded px-2 py-1">
+                                                            <option value="Planned">Planned</option>
+                                                            <option value="In Progress">In Progress</option>
+                                                            <option value="Achieved">Achieved</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <button @click="createProjectFromMilestone(pillar, m)" class="text-blue-600" title="Create Project">
+                                                    <i class="fas fa-arrow-right"></i>
+                                                </button>
+                                                <button @click="pillar.strategicMilestones.splice(mIdx, 1)" class="text-red-600">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- PLANNER -->
+            <div x-show="view === 'planner'" class="h-full flex gap-6 fade-in">
+                <div class="w-1/3 glass rounded-xl shadow-md border border-white/50 flex flex-col">
+                    <div class="p-4 border-b flex justify-between bg-gradient-to-r from-blue-50 to-purple-50">
+                        <h3 class="font-bold text-neutral-800 uppercase text-xs tracking-wider">Action Hopper</h3>
+                        <button @click="addTaskModal=true" class="text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1.5 rounded-lg">
+                            <i class="fas fa-plus mr-1"></i> Add
+                        </button>
+                    </div>
+                    <div class="p-3 border-b">
+                        <input x-model="taskSearch" placeholder="Filter..." class="w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-3 space-y-2">
+                        <template x-for="task in getSortedTasks()" :key="task.id">
+                            <div class="bg-white p-3 rounded-lg border shadow-sm hover:shadow-md group">
+                                <div class="flex gap-3">
+                                    <input type="checkbox" x-model="task.completed" @change="completeTask(task)" class="mt-1 w-4 h-4">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-medium" :class="{'line-through text-neutral-400': task.completed}" x-text="task.text || task.title"></div>
+                                        <div class="flex gap-2 mt-2">
+                                            <span x-show="task.context" class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase font-bold" x-text="task.context"></span>
+                                            <span x-show="task.dueDate" class="text-[10px] px-2 py-0.5 rounded-full font-bold" :class="getDueDateClass(task.dueDate)" x-text="formatDateShort(task.dueDate)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="getSortedTasks().length === 0" class="text-center py-10 text-neutral-400">
+                            <i class="fas fa-check-circle text-3xl mb-2"></i>
+                            <div>All caught up!</div>
                         </div>
                     </div>
+                </div>
+
+                <div class="flex-1 glass rounded-xl shadow-md border border-white/50 flex flex-col">
+                    <div class="p-4 border-b flex justify-between bg-gradient-to-r from-purple-50 to-pink-50">
+                        <h3 class="font-bold text-neutral-800 uppercase text-xs tracking-wider">Weekly Workflow</h3>
+                        <button @click="addCalendarEvent()" class="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 rounded-lg font-bold">
+                            <i class="fas fa-plus mr-2"></i> Add Event
+                        </button>
+                    </div>
                     <div class="flex-1 overflow-y-auto p-4">
-                        <div class="grid grid-cols-5 gap-4 h-full min-h-[500px]">
-                            <template x-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']" :key="day">
-                                <div class="flex flex-col bg-slate-50 rounded border border-slate-200">
-                                    <div class="p-2 text-center text-xs font-bold text-slate-500 border-b border-slate-200 uppercase" x-text="day"></div>
+                        <div class="grid grid-cols-5 gap-4 min-h-[500px]">
+                            <template x-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']">
+                                <div class="flex flex-col bg-neutral-50 rounded-xl border">
+                                    <div class="p-3 text-center text-xs font-bold text-neutral-600 border-b uppercase bg-white rounded-t-xl" x-text="day"></div>
                                     <div class="flex-1 p-2 space-y-2">
                                         <template x-for="evt in getEventsForDay(day)" :key="evt.id">
-                                            <div class="p-2 rounded text-xs border shadow-sm cursor-pointer hover:opacity-90 relative group" 
-                                                 :class="evt.type === 'meeting' ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-blue-50 border-blue-200 text-blue-900'"
-                                                 @click="editEvent(evt)">
-                                                <div class="font-bold truncate" x-text="evt.title"></div>
+                                            <div class="p-3 rounded-lg text-xs border-l-4 shadow-sm cursor-pointer hover:shadow-md group" :class="evt.type === 'meeting' ? 'bg-amber-50 border-amber-400' : 'bg-blue-50 border-blue-400'" @click="editEvent(evt)">
+                                                <div class="font-bold truncate mb-1" x-text="evt.title"></div>
                                                 <div class="text-[10px] opacity-75" x-text="evt.time || 'All Day'"></div>
-                                                <button @click.stop="deleteEvent(evt.id)" class="absolute top-1 right-1 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600"><i class="fas fa-times"></i></button>
+                                                <button @click.stop="deleteEvent(evt.id)" class="absolute top-2 right-2 text-red-400 opacity-0 group-hover:opacity-100">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
                                             </div>
                                         </template>
                                     </div>
@@ -142,154 +299,272 @@
                 </div>
             </div>
 
-            <div x-show="view === 'meetings'" class="h-full flex bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
-                <div class="w-64 bg-slate-50 border-r border-slate-200 flex flex-col">
-                    <div class="p-4 border-b border-slate-200"><h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider">Notebooks</h3></div>
+            <!-- PROJECTS -->
+            <div x-show="view === 'projects'" class="fade-in flex flex-col">
+                <div class="glass p-5 rounded-xl shadow-md border border-white/50 mb-6">
+                    <div class="flex justify-between gap-4">
+                        <div class="flex gap-3 flex-1">
+                            <input x-model="searchQuery" placeholder="Search..." class="border px-4 py-2 rounded-lg text-sm w-64 outline-none focus:border-blue-500">
+                            <select x-model="filterPillar" class="border px-4 py-2 rounded-lg text-sm bg-white outline-none">
+                                <option value="">All Pillars</option>
+                                <template x-for="p in settings.pillars" :key="p.id">
+                                    <option :value="p.id" x-text="p.title"></option>
+                                </template>
+                            </select>
+                            <button x-show="searchQuery || filterPillar" @click="resetFilters()" class="text-xs text-red-600 px-3 py-2 hover:bg-red-50 rounded-lg">Clear</button>
+                        </div>
+                        <button @click="startNewProject()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:shadow-lg">
+                            <i class="fas fa-plus mr-2"></i> New Project
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-10">
+                    <template x-for="project in filteredProjects" :key="project.id">
+                        <div class="glass rounded-xl shadow-md border border-white/50 flex flex-col card-hover cursor-pointer" @click="editProject(project)">
+                            <div class="h-1.5 rounded-t-xl" :style="`background-color: ${getPillarColorForProject(project)};`"></div>
+                            <div class="p-6 flex-1 flex flex-col">
+                                <div class="flex justify-between mb-3">
+                                    <span class="text-[10px] font-bold uppercase text-neutral-500" x-text="project.type || 'Project'"></span>
+                                    <span x-show="project.kpi" class="text-[9px] bg-purple-600 text-white px-2 py-1 rounded font-bold" x-text="project.kpi.substring(0, 12)"></span>
+                                </div>
+                                <h3 class="font-bold text-lg mb-2 group-hover:text-blue-600" x-text="project.title"></h3>
+                                <p class="text-sm text-neutral-600 line-clamp-2 mb-4" x-text="project.objective || 'No objective'"></p>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <span x-show="project.deptCode" class="text-[10px] bg-neutral-100 px-2 py-1 rounded-full" x-text="project.deptCode"></span>
+                                    <span x-show="project.staff" class="text-[10px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full border border-yellow-200" x-text="project.staff"></span>
+                                </div>
+                                <div class="mt-auto">
+                                    <div class="flex items-center gap-2 text-xs font-bold mb-1">
+                                        <span x-text="calculateProgress(project) + '%'"></span>
+                                        <span class="ml-auto text-neutral-500" x-text="(project.milestones || []).filter(m => m.completed).length + '/' + (project.milestones || []).length"></span>
+                                    </div>
+                                    <div class="bg-neutral-100 rounded-full h-2">
+                                        <div class="h-full rounded-full" :style="`width: ${calculateProgress(project)}%; background-color: ${getPillarColorForProject(project)};`"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- MEETINGS -->
+            <div x-show="view === 'meetings'" class="h-full flex glass rounded-xl shadow-md border border-white/50 overflow-hidden fade-in">
+                <div class="w-64 bg-neutral-50 border-r flex flex-col">
+                    <div class="p-4 border-b bg-white">
+                        <h3 class="font-bold text-neutral-800 uppercase text-xs">Notebooks</h3>
+                    </div>
                     <div class="flex-1 overflow-y-auto p-2 space-y-1">
                         <template x-for="cat in settings.meetingCategories" :key="cat">
-                            <button @click="activeMeetingCategory = cat; currentMeeting = null" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium transition flex justify-between items-center group" :class="activeMeetingCategory === cat ? 'bg-white shadow-sm text-blue-700' : 'text-slate-600 hover:bg-slate-100'">
-                                <span class="truncate" x-text="cat"></span>
-                                <span class="text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full" x-text="meetingNotes.filter(n => n.category === cat).length"></span>
+                            <button @click="activeMeetingCategory = cat; currentMeeting = null" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition flex justify-between" :class="activeMeetingCategory === cat ? 'bg-white shadow-md text-blue-700' : 'text-neutral-600 hover:bg-white/50'">
+                                <span x-text="cat"></span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" :class="activeMeetingCategory === cat ? 'bg-blue-100 text-blue-700' : 'bg-neutral-200 text-neutral-500'" x-text="meetingNotes.filter(n => n.category === cat).length"></span>
                             </button>
                         </template>
                     </div>
-                    <button @click="addNewMeetingCategory()" class="m-2 p-2 text-xs text-blue-600 font-bold border border-dashed border-blue-200 rounded hover:bg-blue-50">+ Add Notebook</button>
+                    <button @click="addNewMeetingCategory()" class="m-3 p-3 text-xs text-blue-600 font-bold border-2 border-dashed border-blue-300 rounded-lg hover:bg-blue-50">
+                        <i class="fas fa-plus mr-1"></i> Add Notebook
+                    </button>
                 </div>
-                <div class="w-80 border-r border-slate-200 flex flex-col bg-white">
-                    <div class="p-3 border-b flex justify-between items-center bg-slate-50/50 h-14">
-                        <span class="font-bold text-sm text-slate-700 truncate w-32" x-text="activeMeetingCategory"></span>
-                        <button @click="createNewMeeting()" class="bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-slate-700"><i class="fas fa-plus mr-1"></i> New</button>
+
+                <div class="w-80 border-r flex flex-col bg-white">
+                    <div class="p-4 border-b flex justify-between h-16 bg-gradient-to-r from-blue-50 to-purple-50">
+                        <span class="font-bold text-sm" x-text="activeMeetingCategory"></span>
+                        <button @click="createNewMeeting()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">
+                            <i class="fas fa-plus mr-1"></i> New
+                        </button>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50/30">
+                    <div class="flex-1 overflow-y-auto p-3 space-y-2 bg-neutral-50">
                         <template x-for="note in filteredMeetings" :key="note.id">
-                            <div @click="currentMeeting = note" class="p-3 rounded-lg border cursor-pointer transition hover:shadow-md bg-white" :class="currentMeeting && currentMeeting.id === note.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'">
-                                <div class="font-bold text-sm text-slate-800 truncate" x-text="note.title || 'Untitled Note'"></div>
-                                <div class="text-[10px] text-slate-400 mt-1" x-text="formatDate(note.date)"></div>
-                                <div class="text-xs text-slate-500 mt-2 line-clamp-2" x-text="note.content || 'No content...'"></div>
+                            <div @click="currentMeeting = note" class="p-4 rounded-lg border cursor-pointer transition bg-white hover:shadow-md" :class="currentMeeting && currentMeeting.id === note.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-neutral-200'">
+                                <div class="font-bold text-sm truncate mb-1" x-text="note.title || 'Untitled'"></div>
+                                <div class="text-[10px] text-neutral-500 mb-2" x-text="formatDate(note.date)"></div>
+                                <div class="text-xs text-neutral-600 line-clamp-2" x-text="note.content || 'No content'"></div>
                             </div>
                         </template>
                     </div>
                 </div>
-                <div class="flex-1 flex flex-col bg-white relative">
-                    <template x-if="!currentMeeting"><div class="flex items-center justify-center h-full text-slate-300 flex-col"><i class="far fa-file-alt text-5xl mb-4 text-slate-200"></i><p>Select a note to view or edit</p></div></template>
+
+                <div class="flex-1 flex flex-col bg-white">
+                    <template x-if="!currentMeeting">
+                        <div class="h-full flex flex-col items-center justify-center text-neutral-300">
+                            <i class="far fa-file-alt text-6xl mb-4"></i>
+                            <div class="font-medium text-lg">Select a note</div>
+                        </div>
+                    </template>
                     <template x-if="currentMeeting">
                         <div class="flex flex-col h-full">
-                            <div class="p-6 border-b border-slate-100">
-                                <input x-model="currentMeeting.title" class="text-2xl font-bold text-slate-800 w-full outline-none placeholder-slate-300" placeholder="Meeting Subject">
-                                <div class="flex gap-6 mt-4 text-sm text-slate-500">
-                                    <div class="flex items-center gap-2"><i class="far fa-calendar"></i><input type="date" x-model="currentMeeting.date" class="outline-none bg-transparent"></div>
-                                    <div class="flex items-center gap-2 flex-1"><i class="far fa-user"></i><input x-model="currentMeeting.attendees" class="w-full outline-none bg-transparent" placeholder="Attendees..."></div>
+                            <div class="p-6 border-b">
+                                <input x-model="currentMeeting.title" class="text-2xl font-bold w-full outline-none mb-4" placeholder="Meeting Subject">
+                                <div class="flex gap-6 text-sm text-neutral-600 mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <i class="far fa-calendar text-blue-600"></i>
+                                        <input type="date" x-model="currentMeeting.date" class="outline-none bg-transparent font-medium">
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-1">
+                                        <i class="far fa-user text-purple-600"></i>
+                                        <input x-model="currentMeeting.attendees" class="w-full outline-none bg-transparent" placeholder="Attendees...">
+                                    </div>
                                 </div>
-                                <div class="mt-4 flex gap-2 items-center">
-                                    <select x-model="currentMeeting.linkedProjectId" class="text-xs border border-slate-200 rounded p-1.5 bg-slate-50 text-slate-600 outline-none">
-                                        <option value="">- No Link -</option>
-                                        <optgroup label="Priorities (Strategy)">
-                                            <template x-for="p in settings.priorities" :key="p.id"><option :value="'prio:'+p.id" x-text="'STRAT: ' + p.title"></option></template>
+                                <div class="flex gap-3">
+                                    <select x-model="currentMeeting.linkedProjectId" class="text-xs border rounded-lg px-3 py-2 bg-white flex-1 outline-none focus:border-blue-500">
+                                        <option value="">— No Link —</option>
+                                        <optgroup label="Pillars">
+                                            <template x-for="p in settings.pillars" :key="p.id">
+                                                <option :value="'pillar:'+p.id" x-text="'🎯 ' + p.title"></option>
+                                            </template>
                                         </optgroup>
                                         <optgroup label="Projects">
-                                            <template x-for="p in projects" :key="p.id"><option :value="'proj:'+p.id" x-text="p.title"></option></template>
+                                            <template x-for="p in projects" :key="p.id">
+                                                <option :value="'proj:'+p.id" x-text="'📁 ' + p.title"></option>
+                                            </template>
                                         </optgroup>
                                     </select>
-                                    <button @click="saveToFile(); showToast('Note Saved')" class="ml-auto text-xs bg-emerald-600 text-white px-3 py-1.5 rounded hover:bg-emerald-700 font-bold shadow-sm">Save</button>
+                                    <button @click="saveToFile(); showToast('Note saved')" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-xs font-bold">
+                                        <i class="fas fa-save mr-1"></i> Save
+                                    </button>
                                 </div>
                             </div>
-                            <div class="px-6 pt-4 pb-2 bg-slate-50/50">
-                                <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">Attachments / Links</div>
-                                <div class="flex flex-wrap gap-2 mb-2">
-                                    <template x-for="(link, lIdx) in currentMeeting.links" :key="lIdx">
-                                        <div class="text-xs bg-white border px-2 py-1 rounded flex items-center gap-2">
-                                            <a :href="link.url" target="_blank" class="text-blue-600 hover:underline" x-text="link.name"></a>
-                                            <button @click="currentMeeting.links.splice(lIdx, 1)" class="text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                            <textarea x-model="currentMeeting.content" class="flex-1 p-8 outline-none resize-none leading-relaxed" placeholder="Start typing notes..."></textarea>
+                            <div class="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-t flex gap-3">
+                                <span class="text-xs font-bold text-neutral-600 uppercase">Quick Action:</span>
+                                <input x-model="quickActionText" class="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="Task...">
+                                <input type="date" x-model="quickActionDate" class="border rounded-lg px-3 py-2 text-xs">
+                                <button @click="pushActionToDashboard()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2 rounded-lg text-sm font-bold">
+                                    <i class="fas fa-plus mr-1"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- TIMELINE -->
+            <div x-show="view === 'timeline'" class="h-full flex flex-col fade-in">
+                <div class="glass p-5 rounded-xl shadow-md border border-white/50 mb-4 flex justify-between">
+                    <h2 class="display-font text-2xl font-bold">Project Timeline</h2>
+                    <div class="flex bg-white rounded-lg p-1 shadow-sm border">
+                        <button @click="timelineMode = 'year'" :class="timelineMode==='year' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm' : 'text-neutral-600'" class="px-4 py-2 rounded-lg text-xs font-bold">Year</button>
+                        <button @click="timelineMode = '3m'" :class="timelineMode==='3m' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm' : 'text-neutral-600'" class="px-4 py-2 rounded-lg text-xs font-bold">Quarter</button>
+                    </div>
+                </div>
+                <div class="glass rounded-xl shadow-md border border-white/50 overflow-auto flex-1">
+                    <div class="gantt-grid" :style="getTimelineGridStyle()">
+                        <div class="contents">
+                            <div class="gantt-sticky-col gantt-header px-4">Project</div>
+                            <template x-for="col in timelineColumns" :key="col.label">
+                                <div class="gantt-header">
+                                    <div class="font-bold" x-text="col.label"></div>
+                                    <div x-show="col.sub" class="text-[9px] text-neutral-500 font-normal" x-text="col.sub"></div>
+                                </div>
+                            </template>
+                        </div>
+                        <template x-for="(p, idx) in filteredProjects.filter(p => p.startDate && p.endDate)" :key="p.id">
+                            <div class="contents hover:bg-neutral-50 group">
+                                <div class="gantt-sticky-col gantt-cell px-4 font-bold cursor-pointer hover:text-blue-600" @click="editProject(p)" x-text="p.title"></div>
+                                <template x-for="c in timelineColumns">
+                                    <div class="gantt-cell"></div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- PROJECT MODAL -->
+    <div x-show="showModal" class="fixed inset-0 z-50" x-cloak>
+        <div class="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" @click="showModal = false"></div>
+        <div class="absolute inset-y-0 right-0 max-w-3xl w-full">
+            <div class="h-full bg-white shadow-2xl flex flex-col" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="transform translate-x-full" x-transition:enter-end="transform translate-x-0">
+                <div class="px-8 py-5 border-b flex justify-between bg-gradient-to-r from-blue-50 to-purple-50">
+                    <h2 class="display-font text-2xl font-bold">Project Details</h2>
+                    <div class="flex gap-3">
+                        <button @click="showModal = false" class="text-neutral-500 hover:text-neutral-700 px-4 py-2 rounded-lg hover:bg-white">Cancel</button>
+                        <button @click="saveProject(); showToast('Project saved')" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-bold shadow-md">
+                            <i class="fas fa-save mr-2"></i> Save
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-8 bg-neutral-50">
+                    <input x-model="currentProject.title" class="w-full text-3xl font-bold bg-transparent outline-none mb-8" placeholder="Project Title">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border mb-6">
+                        <h4 class="text-xs font-bold text-neutral-500 uppercase border-b pb-3 mb-5">Core Metadata</h4>
+                        <div class="grid grid-cols-2 gap-5">
+                            <div>
+                                <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Strategic Pillar</label>
+                                <select x-model="currentProject.pillarId" class="w-full border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:border-blue-500">
+                                    <option value="">Stand-alone</option>
+                                    <template x-for="p in settings.pillars" :key="p.id">
+                                        <option :value="p.id" x-text="p.title"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Type</label>
+                                <select x-model="currentProject.type" class="w-full border rounded-lg px-3 py-2 text-sm bg-white outline-none">
+                                    <option value="coaching">Coaching</option>
+                                    <option value="project">Project</option>
+                                    <option value="strategy">Strategy</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Department</label>
+                                <input x-model="currentProject.deptCode" class="w-full border rounded-lg px-3 py-2 text-sm bg-white outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Lead Staff</label>
+                                <input x-model="currentProject.staff" class="w-full border rounded-lg px-3 py-2 text-sm bg-white outline-none">
+                            </div>
+                        </div>
+                        <div class="mt-5">
+                            <label class="text-[11px] text-neutral-600 font-bold uppercase block mb-2">Date Range</label>
+                            <div class="flex gap-3">
+                                <input type="date" x-model="currentProject.startDate" class="border rounded-lg px-3 py-2 text-sm w-1/2 outline-none">
+                                <input type="date" x-model="currentProject.endDate" class="border rounded-lg px-3 py-2 text-sm w-1/2 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border">
+                        <div class="flex border-b">
+                            <button @click="modalTab='tasks'" :class="modalTab==='tasks'?'bg-blue-50 text-blue-700 font-bold border-b-2 border-blue-600':'text-neutral-600'" class="flex-1 py-4 text-sm">Micro-Tasks</button>
+                            <button @click="modalTab='updates'" :class="modalTab==='updates'?'bg-purple-50 text-purple-700 font-bold border-b-2 border-purple-600':'text-neutral-600'" class="flex-1 py-4 text-sm">Evidence</button>
+                        </div>
+                        <div class="p-6 min-h-[400px]">
+                            <div x-show="modalTab==='tasks'">
+                                <div class="space-y-3 mb-5">
+                                    <template x-for="(m, idx) in (currentProject.milestones || [])" :key="idx">
+                                        <div class="flex gap-3 p-3 rounded-lg border hover:bg-neutral-50 group">
+                                            <input type="checkbox" x-model="m.completed" class="w-5 h-5">
+                                            <input x-model="m.title" class="flex-1 bg-transparent outline-none text-sm font-medium">
+                                            <button @click="currentProject.milestones.splice(idx, 1)" class="text-red-600 opacity-0 group-hover:opacity-100">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
                                         </div>
                                     </template>
                                 </div>
-                                <div class="flex gap-2">
-                                    <input x-model="newLinkName" placeholder="Link Name" class="text-xs border rounded p-1 w-32">
-                                    <input x-model="newLinkUrl" placeholder="URL..." class="text-xs border rounded p-1 flex-1">
-                                    <button @click="addLinkToMeeting()" class="text-xs bg-slate-200 px-2 rounded hover:bg-slate-300">Add</button>
-                                </div>
-                            </div>
-                            <textarea x-model="currentMeeting.content" class="flex-1 w-full p-8 outline-none resize-none text-slate-700 leading-relaxed text-sm" placeholder="Start typing notes..."></textarea>
-                            <div class="p-3 bg-slate-50 border-t border-slate-200 flex gap-2 items-center">
-                                <span class="text-xs font-bold text-slate-400 uppercase">Action Item:</span>
-                                <input x-model="quickActionText" class="flex-1 border border-slate-300 rounded px-2 py-1 text-sm outline-none focus:border-blue-500" placeholder="Task description...">
-                                <input type="date" x-model="quickActionDate" class="border border-slate-300 rounded px-2 py-1 text-xs outline-none">
-                                <button @click="pushActionToDashboard()" class="bg-blue-600 text-white px-4 py-1 rounded text-xs font-bold hover:bg-blue-700">Add</button>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <div x-show="view === 'projects'" class="h-full flex flex-col animate-fade-in">
-                <div class="flex flex-col md:flex-row justify-between mb-6 gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-                    <div class="flex gap-2 items-center flex-wrap flex-1">
-                        <div class="relative"><i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i><input x-model="searchQuery" placeholder="Search projects..." class="pl-8 border border-slate-300 p-2 rounded text-sm w-48 focus:border-blue-500 outline-none"></div>
-                        <select x-model="filterPriority" class="border border-slate-300 p-2 rounded text-sm bg-white outline-none"><option value="">All Priorities</option><template x-for="p in settings.priorities" :key="p.id"><option :value="p.id" x-text="p.title"></option></template><option value="standalone">Stand-alone</option></select>
-                        <select x-model="filterKpi" class="border border-slate-300 p-2 rounded text-sm bg-white outline-none text-purple-700 font-medium"><option value="">All KPIs</option><template x-for="k in settings.kpis"><option :value="k" x-text="k"></option></template></select>
-                        <button x-show="searchQuery||filterPriority||filterKpi" @click="resetFilters()" class="text-xs text-red-500 hover:underline ml-2">Clear</button>
-                    </div>
-                    <button @click="startNewProject()" class="bg-blue-600 text-white px-5 py-2 rounded text-sm font-bold hover:bg-blue-700 shadow-sm transition"><i class="fas fa-plus mr-2"></i> New Project</button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
-                    <template x-for="project in filteredProjects" :key="project.id">
-                        <div class="bg-white rounded-lg shadow-sm border border-slate-200 transition hover:shadow-md flex flex-col h-full cursor-pointer group relative overflow-hidden" @click="editProject(project)">
-                            <div class="absolute left-0 top-0 bottom-0 w-1" :class="getRagColor(project.endDate)"></div>
-                            <div class="p-5 pl-6 flex-1 flex flex-col">
-                                <div class="flex justify-between items-start mb-2"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400" x-text="project.type"></span><span x-show="project.kpi" class="text-[9px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded border border-purple-100 font-bold truncate max-w-[100px]" x-text="project.kpi"></span></div>
-                                <h3 class="font-bold text-slate-800 text-lg leading-tight mb-2 group-hover:text-blue-600 transition" x-text="project.title"></h3>
-                                <p class="text-xs text-slate-500 line-clamp-2 mb-4" x-text="project.objective || 'No objective set.'"></p>
-                                <div class="mt-auto"><div class="flex gap-2 mb-3"><span x-show="project.deptCode" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-medium" x-text="project.deptCode"></span><span x-show="project.staff" class="text-[10px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded font-medium border border-yellow-100" x-text="project.staff"></span></div><div class="flex items-center gap-2 text-xs font-bold text-slate-600"><div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden"><div class="h-full bg-blue-500 rounded-full" :style="`width: ${calculateProgress(project)}%`"></div></div><span x-text="calculateProgress(project) + '%'"></span></div></div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <div x-show="view === 'gantt'" class="h-full flex flex-col animate-fade-in">
-               <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-4 flex justify-between items-center">
-                    <div class="flex items-center gap-4"><h2 class="font-bold text-slate-700">Timeline</h2><div class="flex bg-slate-100 rounded p-1"><button @click="timelineMode = 'year'" :class="timelineMode==='year' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">Year</button><button @click="timelineMode = '3m'" :class="timelineMode==='3m' ? 'bg-white shadow text-blue-600' : 'text-slate-500'" class="px-3 py-1 rounded text-xs font-bold transition">Quarter</button></div></div>
-               </div>
-               <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex-1">
-                    <div class="gantt-container h-full">
-                        <div class="gantt-grid text-xs" :style="getTimelineGridStyle()">
-                            <div class="gantt-row font-bold text-slate-700 bg-slate-50 border-b border-slate-300 sticky top-0 z-20"><div class="gantt-sticky-col px-4 border-b border-slate-300 bg-slate-50">Project</div><template x-for="(col, idx) in timelineColumns" :key="idx"><div class="gantt-header"><div x-text="col.label"></div><div x-show="col.sub" class="text-[9px] text-slate-400 font-normal" x-text="col.sub"></div></div></template></div>
-                            <template x-for="(p, idx) in timelineProjects" :key="p.id"><div class="gantt-row hover:bg-slate-50 transition group border-b border-slate-100"><div class="gantt-sticky-col px-4 text-xs font-bold truncate pr-4 cursor-pointer hover:text-blue-600 group-hover:bg-slate-50 text-slate-700" :style="`grid-row: ${idx + 2}; grid-column: 1`" @click="editProject(p)"><span x-text="p.title"></span></div><template x-for="c in timelineColumns"><div class="gantt-cell group-hover:bg-slate-50" :style="`grid-row: ${idx + 2}`"></div></template><div x-show="hasDates(p) && isProjectVisibleInTimeline(p)" class="rounded-full text-[9px] text-white flex items-center px-3 shadow-sm cursor-pointer hover:opacity-90 overflow-hidden z-10 h-6" :class="getPriorityColor(p.priorityId)" :style="getDynamicGanttBarStyle(p, idx)" @click="editProject(p)"><span class="truncate font-medium" x-text="formatDateShort(p.startDate) + ' - ' + formatDateShort(p.endDate)"></span></div></div></template>
-                        </div>
-                    </div>
-               </div>
-            </div>
-
-        </div> 
-    </main>
-
-    <div x-show="showModal" class="fixed inset-0 z-50 overflow-hidden" x-cloak>
-        <div class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" @click="showModal = false"></div>
-        <div class="absolute inset-y-0 right-0 max-w-2xl w-full flex">
-            <div class="h-full w-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col" x-transition:enter="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="translate-x-0" x-transition:leave-end="translate-x-full">
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10"><h2 class="text-lg font-bold text-slate-800">Project Details</h2><div class="flex gap-2"><button @click="showModal = false" class="text-slate-400 hover:text-slate-600 px-3 py-1">Cancel</button><button @click="saveProject(); showToast('Project Saved')" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm font-bold shadow hover:bg-blue-700">Save Changes</button></div></div>
-                <div class="flex-1 overflow-y-auto p-8 bg-slate-50">
-                    <input x-model="currentProject.title" class="w-full text-2xl font-bold bg-transparent border-none outline-none placeholder-slate-400 mb-6 text-slate-800" placeholder="Project Title">
-                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-6 space-y-4">
-                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wide border-b pb-2">Core Metadata</h4>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">Priority</label><select x-model="currentProject.priorityId" class="w-full mt-1 border rounded p-2 text-sm bg-slate-50"><option value="">Stand-alone</option><template x-for="p in settings.priorities" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select></div>
-                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">Type</label><select x-model="currentProject.type" class="w-full mt-1 border rounded p-2 text-sm bg-slate-50"><option value="coaching">Coaching</option><option value="project">Project</option><option value="strategy">Strategy</option></select></div>
-                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">Department</label><input x-model="currentProject.deptCode" list="deptCodes" class="w-full mt-1 border rounded p-2 text-sm bg-slate-50"><datalist id="deptCodes"><option value="AGF"><option value="HAC"><option value="MAT"><option value="ENG"></datalist></div>
-                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">Lead Staff</label><input x-model="currentProject.staff" class="w-full mt-1 border rounded p-2 text-sm bg-slate-50"></div>
-                        </div>
-                        <div><label class="text-[10px] text-slate-500 font-bold uppercase">Date Range</label><div class="flex gap-2 mt-1"><input type="date" x-model="currentProject.startDate" class="border rounded p-2 text-sm w-1/2 bg-slate-50"><input type="date" x-model="currentProject.endDate" class="border rounded p-2 text-sm w-1/2 bg-slate-50"></div></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="flex border-b border-slate-100"><button @click="modalTab='tasks'" :class="modalTab==='tasks'?'bg-slate-50 text-blue-600 font-bold border-b-2 border-blue-600':'text-slate-500'" class="flex-1 py-3 text-sm transition">Micro-Tasks</button><button @click="modalTab='updates'" :class="modalTab==='updates'?'bg-slate-50 text-blue-600 font-bold border-b-2 border-blue-600':'text-slate-500'" class="flex-1 py-3 text-sm transition">Evidence Locker</button></div>
-                        <div class="p-6 min-h-[300px]">
-                            <div x-show="modalTab==='tasks'">
-                                <div class="space-y-2 mb-4"><template x-for="(m, idx) in currentProject.milestones" :key="idx"><div class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50"><input type="checkbox" x-model="m.completed" class="w-4 h-4 text-green-500 rounded"><input x-model="m.title" class="flex-1 bg-transparent border-none outline-none text-sm text-slate-700"><button @click="currentProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button></div></template></div>
-                                <button @click="addMilestone()" class="w-full py-2 border border-dashed border-slate-300 rounded text-slate-500 text-sm hover:bg-slate-50">+ Add Task</button>
+                                <button @click="addMilestoneToProject()" class="w-full py-3 border-2 border-dashed rounded-lg text-neutral-600 text-sm hover:bg-neutral-50">
+                                    <i class="fas fa-plus mr-2"></i> Add Task
+                                </button>
                             </div>
                             <div x-show="modalTab==='updates'">
-                                <div class="mb-4"><textarea x-model="newUpdateText" class="w-full border border-slate-200 rounded p-2 text-sm mb-2 h-20" placeholder="Description..."></textarea><div class="flex gap-2"><select x-model="newUpdateSource" class="border border-slate-200 rounded p-2 text-xs w-1/3"><option value="">- Source -</option><template x-for="s in settings.qaSources"><option :value="s" x-text="s"></option></template></select><input x-model="newUpdateLink" class="flex-1 border border-slate-200 rounded p-2 text-xs" placeholder="URL Evidence..."></div><button @click="addUpdate()" class="bg-slate-800 text-white px-4 py-2 rounded text-sm font-bold w-full mt-2">Log Evidence</button></div>
-                                <div class="space-y-3"><template x-for="(u, idx) in currentProject.updates" :key="idx"><div class="bg-slate-50 p-3 rounded border border-slate-100 text-sm"><div class="flex justify-between text-slate-400 text-[10px] mb-1"><span x-text="formatDate(u.date)"></span><span x-text="u.source"></span></div><div class="font-medium text-slate-800" x-text="u.text"></div><a x-show="u.link" :href="u.link" target="_blank" class="text-blue-600 text-xs mt-1 block">View Link</a></div></template></div>
+                                <div class="mb-5 p-4 bg-neutral-50 rounded-lg border">
+                                    <textarea x-model="newUpdateText" class="w-full border rounded-lg p-3 text-sm mb-3 resize-none outline-none" rows="3" placeholder="Evidence..."></textarea>
+                                    <button @click="addUpdate()" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-2 rounded-lg text-sm font-bold w-full">
+                                        <i class="fas fa-plus mr-2"></i> Log Evidence
+                                    </button>
+                                </div>
+                                <div class="space-y-3">
+                                    <template x-for="(u, idx) in (currentProject.updates || [])" :key="idx">
+                                        <div class="bg-neutral-50 p-4 rounded-lg border">
+                                            <div class="text-[10px] text-neutral-500 mb-2" x-text="formatDate(u.date)"></div>
+                                            <div class="font-medium text-sm" x-text="u.text"></div>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -298,156 +573,396 @@
         </div>
     </div>
 
-    <div x-show="showCalendarModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm" x-cloak>
-        <div class="bg-white rounded-lg shadow-xl w-96 p-6">
-            <h3 class="font-bold text-lg mb-4 text-slate-800">Schedule Event</h3>
-            <input x-model="newEvent.title" class="w-full border p-2 rounded mb-2 text-sm" placeholder="Title (e.g. Meeting with Neil)">
-            <div class="flex gap-2 mb-2">
-                <select x-model="newEvent.day" class="border p-2 rounded text-sm flex-1"><option>Mon</option><option>Tue</option><option>Wed</option><option>Thu</option><option>Fri</option></select>
-                <input x-model="newEvent.time" placeholder="10:00 AM" class="border p-2 rounded text-sm flex-1">
+    <!-- CALENDAR MODAL -->
+    <div x-show="showCalendarModal" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40" x-cloak>
+        <div class="glass rounded-2xl shadow-2xl w-full max-w-md p-8 m-4 border border-white/50">
+            <h3 class="display-font text-2xl font-bold mb-6">Schedule Event</h3>
+            <div class="space-y-4">
+                <input x-model="newEvent.title" class="w-full border rounded-lg px-4 py-3 outline-none focus:border-blue-500" placeholder="Event Title">
+                <div class="grid grid-cols-2 gap-3">
+                    <select x-model="newEvent.day" class="border rounded-lg px-4 py-3 bg-white outline-none">
+                        <option>Mon</option><option>Tue</option><option>Wed</option><option>Thu</option><option>Fri</option>
+                    </select>
+                    <input x-model="newEvent.time" placeholder="Time" class="border rounded-lg px-4 py-3 outline-none">
+                </div>
+                <select x-model="newEvent.type" class="w-full border rounded-lg px-4 py-3 bg-white outline-none">
+                    <option value="work">Work Block</option>
+                    <option value="meeting">Meeting</option>
+                </select>
             </div>
-            <select x-model="newEvent.type" class="w-full border p-2 rounded mb-4 text-sm"><option value="work">Work Block</option><option value="meeting">Meeting</option></select>
-            <div class="flex justify-end gap-2">
-                <button @click="showCalendarModal=false" class="text-slate-500 text-sm px-3">Cancel</button>
-                <button @click="saveCalendarEvent()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold">Save</button>
+            <div class="flex justify-end gap-3 mt-8">
+                <button @click="showCalendarModal=false" class="text-neutral-600 px-5 py-2 rounded-lg hover:bg-neutral-100">Cancel</button>
+                <button @click="saveCalendarEvent()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-bold">Save</button>
             </div>
         </div>
     </div>
 
-    <div class="toast-container"><template x-for="toast in toasts" :key="toast.id"><div class="toast show"><i class="fas fa-check-circle text-blue-600 text-xl"></i><div class="flex-1"><div class="font-bold text-sm text-slate-800">Success</div><div class="text-xs text-slate-500" x-text="toast.message"></div></div></div></template></div>
+    <!-- TASK MODAL -->
+    <div x-show="addTaskModal" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40" x-cloak>
+        <div class="glass rounded-2xl shadow-2xl w-full max-w-md p-8 m-4 border border-white/50">
+            <h3 class="display-font text-2xl font-bold mb-6">Add Task</h3>
+            <textarea x-model="newTodoText" class="w-full border rounded-lg px-4 py-3 outline-none resize-none mb-4" rows="3" placeholder="What needs to be done?"></textarea>
+            <input type="date" x-model="newTodoDueDate" class="w-full border rounded-lg px-4 py-3 outline-none mb-4">
+            <div class="flex justify-end gap-3">
+                <button @click="addTaskModal=false" class="text-neutral-600 px-5 py-2 rounded-lg hover:bg-neutral-100">Cancel</button>
+                <button @click="addTodo(); addTaskModal=false" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-bold">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOASTS -->
+    <div class="toast-container">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div class="toast">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-600">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="font-bold text-sm">Success</div>
+                    <div class="text-xs text-neutral-600" x-text="toast.message"></div>
+                </div>
+            </div>
+        </template>
+    </div>
 
     <script>
         function appData() {
             return {
-                view: 'planner', dashboardMode: 'strategy', fileHandle: null, showModal: false, showCalendarModal: false, modalTab: 'tasks', activeStrategyTab: 0, timelineTab: 'all',
-                searchQuery: '', filterRag: '', filterPriority: '', filterKpi: '',
-                newTodo: '', taskSearch: '', calendarView: 'week', newEvent: {}, 
-                newUpdateText: '', newUpdateLink: '', newUpdateSource: '', newMeetingTitle: '', newMeetingNotes: '', activeMeetingCategory: '', currentMeeting: null, quickActionText: '', quickActionDate: '', newLinkName: '', newLinkUrl: '',
-                timelineMode: 'year', projects: [], todos: [], meetingNotes: [], calendarEvents: [], toasts: [],
-                settings: { priorities: [], kpis: [], qaSources: [], meetingCategories: [] }, currentProject: {}, charts: {}, 
-                
-                navItems: [ { id: 'planner', label: 'Planner', icon: 'fas fa-calendar-check' }, { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-chart-line' }, { id: 'strategy', label: 'Strategy', icon: 'fas fa-chess' }, { id: 'projects', label: 'Projects', icon: 'fas fa-folder-open' }, { id: 'meetings', label: 'Meetings', icon: 'fas fa-users' }, { id: 'gantt', label: 'Timeline', icon: 'fas fa-stream' }, { id: 'reports', label: 'Reports', icon: 'fas fa-file-alt' } ],
+                view: 'dashboard', fileHandle: null, showModal: false, showCalendarModal: false, addTaskModal: false, modalTab: 'tasks', activeStrategyTab: 0,
+                searchQuery: '', filterPillar: '', filterKpi: '', taskSearch: '', timelineMode: 'year',
+                activeMeetingCategory: '', currentMeeting: null, quickActionText: '', quickActionDate: '', newLinkName: '', newLinkUrl: '',
+                newEvent: {}, newTodoText: '', newTodoDueDate: '', newTodoContext: '', newUpdateText: '', newUpdateLink: '', newUpdateSource: '',
+                projects: [], todos: [], meetingNotes: [], calendarEvents: [], toasts: [], currentProject: {},
+                settings: { pillars: [], kpis: [], qaSources: [], meetingCategories: [] },
+                navItems: [
+                    { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-th-large' },
+                    { id: 'strategy', label: 'Strategy', icon: 'fas fa-chess' },
+                    { id: 'planner', label: 'Planner', icon: 'fas fa-calendar-check' },
+                    { id: 'projects', label: 'Projects', icon: 'fas fa-folder-open' },
+                    { id: 'meetings', label: 'Meetings', icon: 'fas fa-users' },
+                    { id: 'timeline', label: 'Timeline', icon: 'fas fa-stream' }
+                ],
 
                 async init() {
                     this.settings.kpis = ['Teaching Quality Indicators', 'QIP Traction', 'Staff Capability', 'Staff Confidence', 'Student Experience', 'Retention Proxy', 'Value for Money', 'Digital Champions'];
                     this.settings.qaSources = ['Learning Walk Data', 'TLA Profile', 'QIP Review', 'Coaching Record', 'Staff Survey', 'Learner Voice', 'Exit Interview', 'Teams Analytics', 'Other'];
                     this.settings.meetingCategories = ['1:1 Line Manager', 'Wider Leadership', 'HoAs', 'Digital Leads', 'Champions', 'TLAMs', 'Quality Team', 'External', 'Other'];
+                    this.settings.pillars = [
+                        { id: 1, title: 'Digital Ecosystem & Standards', intent: 'Build reliable, accessible digital infrastructure', color: '#0891b2', strategicMilestones: [] },
+                        { id: 2, title: 'Pedagogy, Assessment & Innovation', intent: 'Transform teaching through digital tools', color: '#7c3aed', strategicMilestones: [] },
+                        { id: 3, title: 'Inclusion & Accessibility', intent: 'Ensure equitable digital access for all learners', color: '#059669', strategicMilestones: [] },
+                        { id: 4, title: 'Capacity Building & QA', intent: 'Develop staff capability and quality processes', color: '#ea580c', strategicMilestones: [] }
+                    ];
                     this.activeMeetingCategory = this.settings.meetingCategories[0];
                 },
-                
-                showToast(msg) { const id = Date.now(); this.toasts.push({ id, message: msg }); setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3000); },
+
+                showToast(message, type = 'success') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type });
+                    setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3000);
+                },
 
                 async openFile() {
                     try {
-                        const [handle] = await window.showOpenFilePicker({ types: [{ description: 'JSON Data', accept: { 'application/json': ['.json'] } }], multiple: false });
-                        this.fileHandle = handle; const file = await handle.getFile(); const text = await file.text();
+                        const [handle] = await window.showOpenFilePicker({ types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+                        this.fileHandle = handle;
+                        const file = await handle.getFile();
+                        const text = await file.text();
                         if (text.trim()) {
                             const data = JSON.parse(text);
-                            this.projects = (data.projects || []).map(p => ({ ...p, milestones: (p.milestones || []).map(m => ({...m, uuid: m.uuid || Date.now() + Math.random()})), updates: p.updates || [], meetings: p.meetings || [], deptCode: p.deptCode||'', tlam: p.tlam||'', staff: p.staff||'', kpi: p.kpi||'', qaLink: p.qaLink||'', isQip: p.isQip||false }));
-                            this.todos = (data.todos || []).map(t => ({...t, id: t.id || Date.now() + Math.random(), completed: t.completed || false })); 
-                            this.meetingNotes = (data.meetingNotes || []).map(n => ({...n, id: n.id || Date.now() + Math.random(), links: n.links || [] }));
+                            this.projects = (data.projects || []).map(p => ({ ...p, milestones: (p.milestones || []).map(m => ({ ...m, uuid: m.uuid || Date.now() + Math.random() })), updates: p.updates || [], pillarId: p.priorityId || p.pillarId || '' }));
+                            this.todos = (data.todos || []).map(t => ({ ...t, id: t.id || Date.now() + Math.random() }));
+                            this.meetingNotes = (data.meetingNotes || []).map(n => ({ ...n, id: n.id || Date.now() + Math.random(), links: n.links || [] }));
                             this.calendarEvents = data.calendarEvents || [];
-                            this.settings.priorities = (data.settings?.priorities || []).map((p,i) => ({ ...p, id: p.id||(i+1), strategicMilestones: p.strategicMilestones||[], tasks: p.tasks||[] }));
-                            // Restore settings if saved, else defaults
-                            if(data.settings?.meetingCategories) this.settings.meetingCategories = data.settings.meetingCategories;
-                            this.$nextTick(() => { if(this.view==='dashboard') this.initCharts(); });
-                            this.showToast('OS Loaded');
+                            if (data.settings?.pillars) this.settings.pillars = data.settings.pillars;
+                            this.showToast('Data loaded successfully');
                         }
-                    } catch (err) { console.error(err); alert("Error connecting."); }
+                    } catch (err) { console.error(err); alert("Error loading file"); }
                 },
+
                 async saveToFile() {
                     if (!this.fileHandle) return;
                     try {
                         const writable = await this.fileHandle.createWritable();
                         await writable.write(JSON.stringify({ projects: this.projects, settings: this.settings, todos: this.todos, meetingNotes: this.meetingNotes, calendarEvents: this.calendarEvents }, null, 2));
                         await writable.close();
-                        if(this.view === 'dashboard') this.updateCharts();
+                        this.showToast('Saved successfully');
                     } catch (err) { console.error('Save failed', err); }
                 },
 
-                // --- PLANNER ENGINE ---
-                getSortedTasks() {
-                    // Aggregate all open tasks from Projects + Ad-hoc Todos
-                    let allTasks = [...this.todos.filter(t => !t.completed)];
-                    // Ideally we could pull project tasks here too, but for simplicity v30 keeps them separate lists, 
-                    // focusing the Hopper on "Today's Focus" items.
-                    if(this.taskSearch) return allTasks.filter(t => t.text.toLowerCase().includes(this.taskSearch.toLowerCase()));
-                    return allTasks.sort((a,b) => (a.dueDate > b.dueDate ? 1 : -1));
-                },
-                getEventsForDay(day) { return this.calendarEvents.filter(e => e.day === day).sort((a,b) => a.time.localeCompare(b.time)); },
-                addCalendarEvent() { this.newEvent = { id: Date.now(), title: '', day: 'Mon', time: '', type: 'work' }; this.showCalendarModal = true; },
-                saveCalendarEvent() { 
-                    this.calendarEvents.push(this.newEvent); 
-                    // Auto-create meeting note if type is meeting
-                    if(this.newEvent.type === 'meeting') {
-                        this.meetingNotes.unshift({ 
-                            id: Date.now(), title: this.newEvent.title, date: new Date().toISOString().split('T')[0], 
-                            category: 'Other', content: 'Generated from Calendar', attendees: '', linkedProjectId: '', links: [] 
-                        });
-                        this.showToast('Meeting Note Created');
-                    }
-                    this.showCalendarModal = false; this.saveToFile(); 
-                },
-                deleteEvent(id) { if(confirm('Remove event?')) { this.calendarEvents = this.calendarEvents.filter(e => e.id !== id); this.saveToFile(); } },
-                openScheduleModal(task) { this.newEvent = { id: Date.now(), title: task.text, day: 'Mon', time: '', type: 'work' }; this.showCalendarModal = true; },
-
-                // --- MEETING HUB ---
-                get filteredMeetings() { if(!this.activeMeetingCategory) return []; return this.meetingNotes.filter(n => n.category === this.activeMeetingCategory).sort((a,b) => new Date(b.date) - new Date(a.date)); },
-                createNewMeeting() { const newNote = { id: Date.now(), title: '', date: new Date().toISOString().split('T')[0], category: this.activeMeetingCategory, content: '', attendees: '', linkedProjectId: '', links: [] }; this.meetingNotes.unshift(newNote); this.currentMeeting = newNote; this.saveToFile(); },
-                addLinkToMeeting() { if(this.newLinkName && this.newLinkUrl) { if(!this.currentMeeting.links) this.currentMeeting.links=[]; this.currentMeeting.links.push({name: this.newLinkName, url: this.newLinkUrl}); this.newLinkName=''; this.newLinkUrl=''; } },
-                pushActionToDashboard() { if(!this.quickActionText) return; this.todos.push({ id: Date.now(), text: this.quickActionText, completed: false, projectTitle: 'From Meeting', dueDate: this.quickActionDate }); this.quickActionText = ''; this.saveToFile(); this.showToast('Action added to Hopper'); },
-                deleteMeeting() { if(this.currentMeeting && confirm('Delete note?')) { this.meetingNotes = this.meetingNotes.filter(n => n.id !== this.currentMeeting.id); this.currentMeeting = null; this.saveToFile(); } },
-                addNewMeetingCategory() { const name = prompt("New Category Name:"); if(name && !this.settings.meetingCategories.includes(name)) { this.settings.meetingCategories.push(name); this.activeMeetingCategory = name; this.saveToFile(); } },
-
-                // --- STANDARD LOGIC ---
-                get timelineColumns() { const today = new Date(); const cols = []; if (this.timelineMode === 'year') { const currentYear = today.getFullYear(); for(let i=0; i<12; i++) { const d = new Date(currentYear, i, 1); cols.push({ label: d.toLocaleString('default', {month:'short'}), sub: d.getFullYear(), start: d, end: new Date(currentYear, i+1, 0) }); } } else if (this.timelineMode === '3m') { const start = new Date(today); start.setDate(today.getDate() - today.getDay() + 1); for(let i=0; i<12; i++) { const wStart = new Date(start); wStart.setDate(start.getDate() + (i*7)); const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6); cols.push({ label: 'W' + (i+1), sub: wStart.getDate() + '/' + (wStart.getMonth()+1), start: wStart, end: wEnd }); } } else if (this.timelineMode === '1m') { for(let i=0; i<30; i++) { const d = new Date(today); d.setDate(today.getDate() + i); cols.push({ label: d.getDate(), sub: d.toLocaleString('default',{weekday:'short'}), start: new Date(d.setHours(0,0,0,0)), end: new Date(d.setHours(23,59,59,999)) }); } } return cols; },
-                getTimelineGridStyle() { return `grid-template-columns: 200px repeat(${this.timelineColumns.length}, minmax(${this.timelineMode === '1m' ? '30px' : '50px'}, 1fr));`; },
-                getDynamicGanttBarStyle(p, idx) { const pStart = new Date(p.startDate); const pEnd = new Date(p.endDate); const cols = this.timelineColumns; if (!this.hasDates(p)) return 'display:none'; let startIndex = -1; let endIndex = -1; for(let i=0; i<cols.length; i++) { if (pStart <= cols[i].end && startIndex === -1) startIndex = i; if (pEnd >= cols[i].start) endIndex = i; } if (endIndex < 0 || startIndex === -1 || pEnd < cols[0].start || pStart > cols[cols.length-1].end) return 'display:none'; const gridStart = Math.max(0, startIndex) + 2; const span = (Math.min(cols.length - 1, endIndex) - Math.max(0, startIndex)) + 1; return `grid-column: ${gridStart} / span ${span}; grid-row: ${idx + 2}; align-self: center;`; },
-                isProjectVisibleInTimeline(p) { return !this.getDynamicGanttBarStyle(p, 0).includes('display:none'); },
-                copyToToday(task, proj) { if (!task.uuid) task.uuid = Date.now() + Math.random().toString(16).slice(2); if(this.todos.find(t => t.originalId === task.uuid)) return this.showToast("Already in Today's list"); this.todos.push({ text: task.title, completed: task.completed, projectTitle: proj.title, originalId: task.uuid, projectId: proj.id }); this.saveToFile(); this.showToast("Added to Dashboard"); },
-                syncFromDashboard(todo) { const proj = this.projects.find(p => p.id === todo.projectId); if(proj) { const task = proj.milestones.find(m => m.uuid === todo.originalId); if(task) { task.completed = todo.completed; if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } else { task.completedDate = null; } } } this.saveToFile(); },
-                syncFromProject(task, proj) { if(!task.uuid) task.uuid = Date.now() + Math.random().toString(16).slice(2); if(task.completed) { task.completedDate = new Date().toISOString(); confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } else { task.completedDate = null; } const todo = this.todos.find(t => t.originalId === task.uuid); if(todo) todo.completed = task.completed; this.saveToFile(); },
-                deleteTodo(idx) { this.todos.splice(idx, 1); this.saveToFile(); },
-                addPriority() { this.settings.priorities.push({ id: Date.now(), title: 'New Priority', details: '', strategicMilestones: [], tasks: [] }); this.activeStrategyTab = this.settings.priorities.length - 1; },
-                createProjectFromAction(priority, milestone) { const name = prompt("Enter Name:", milestone.title); if(!name) return; const newProj = { id: Date.now(), title: name, priorityId: priority.id, milestoneLink: milestone.title, type: 'Strategy', status: 'Active', startDate: new Date().toISOString().split('T')[0], endDate: milestone.targetDate || '', milestones: [], updates: [], meetings: [], deptCode: '', tlam: '', kpi: '', qaLink: '', isQip: false, staff: '' }; this.projects.push(newProj); this.saveToFile(); this.showToast(`Project created`); },
-                resetFilters() { this.searchQuery=''; this.filterRag=''; this.filterType=''; this.filterPriority=''; this.filterKpi=''; },
-                addTodo() { if(this.newTodo) { this.todos.push({ id: Date.now(), text: this.newTodo, completed: false, projectTitle: 'Manual' }); this.newTodo = ''; this.saveToFile(); }},
-                addUpdate() { if(this.newUpdateText) { this.currentProject.updates.push({ date: new Date().toISOString(), text: this.newUpdateText, link: this.newUpdateLink, source: this.newUpdateSource }); this.newUpdateText = ''; this.newUpdateLink = ''; this.newUpdateSource = ''; this.saveToFile(); this.showToast('Evidence Added'); }},
-                getMonthName(m) { const d = new Date(); d.setMonth(m-1); return d.toLocaleString('default', { month: 'short' }); },
-                hasDates(p) { return p.startDate && p.endDate; },
-                getPriorityColor(pId) { if(!pId) return 'bg-slate-500'; const idx = this.settings.priorities.findIndex(p => p.id == pId); return ['bg-blue-600', 'bg-amber-500', 'bg-emerald-600', 'bg-purple-600', 'bg-pink-600'][idx % 5]; },
-                addStratMilestone(p) { if(!p.strategicMilestones) p.strategicMilestones = []; p.strategicMilestones.push({ title: 'New Phase', targetDate: '', status: 'Planned' }); },
-                addStrategyTask(p) { if(!p.tasks) p.tasks=[]; p.tasks.push({name:'New Task', completed:false}); },
-                getMilestonesForPriority(pId) { const p = this.settings.priorities.find(x => x.id == pId); return p ? p.strategicMilestones : []; },
-                getProjectsForMilestone(pId, mTitle) { return this.projects.filter(p => p.priorityId == pId && p.milestoneLink == mTitle); },
-                getProjectStrategyName(p) { if (!p.priorityId) return null; const prio = this.settings.priorities.find(x => x.id == p.priorityId); if (!prio) return null; return p.milestoneLink ? p.milestoneLink : prio.title; },
-                getAllDueTasks() { let all = []; this.projects.forEach(p => (p.milestones||[]).forEach(m => { if (!m.completed && m.dueDate) all.push({id:Math.random(), projectId:p.id, projectName:p.title, title:m.title, dueDate:m.dueDate, context:'Task', isStrategy: false}); })); return all.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0, 30); },
-                formatDate(d) { return d ? new Date(d).toLocaleDateString('en-GB') : ''; },
-                formatDateShort(d) { return d ? new Date(d).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'}) : ''; },
-                getProjectHeaderColor(pId) { if(!pId) return 'bg-slate-500'; const idx = this.settings.priorities.findIndex(p => p.id == pId); return ['bg-blue-600', 'bg-amber-500', 'bg-emerald-600', 'bg-purple-600', 'bg-pink-600'][idx % 5]; },
-                getRagBorder(dateStr) { if (!dateStr) return 'border-slate-200'; const today = new Date(); today.setHours(0,0,0,0); const due = new Date(dateStr); const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return 'border-red-600 border-l-4'; if (diffDays <= 7) return 'border-red-500 border-l-4'; if (diffDays <= 14) return 'border-orange-400 border-l-4'; return 'border-green-500 border-l-4'; },
-                getRagColor(dateStr) { if (!dateStr) return 'bg-slate-200'; const today = new Date(); today.setHours(0,0,0,0); const due = new Date(dateStr); const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return 'bg-red-600'; if (diffDays <= 7) return 'bg-red-500'; if (diffDays <= 14) return 'bg-orange-400'; return 'bg-green-500'; },
-                getDueClass(d) { if(!d) return ''; const diff = Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24)); if(diff < 0) return 'bg-red-100 text-red-600'; if(diff < 3) return 'bg-amber-100 text-amber-600'; return 'bg-green-100 text-green-600'; },
-                switchView(v) { this.view = v; if(v==='dashboard') setTimeout(()=>this.updateCharts(),100); },
-                startNewProject() { this.currentProject = { id: Date.now() + Math.random(), title: '', priorityId: '', milestoneLink: '', type: 'coaching', milestones: [], updates: [], status: 'Active', deptCode: '', tlam: '', startDate: '', endDate: '', staff: '', meetings: [] }; this.showModal = true; this.modalTab = 'tasks'; },
-                editProject(p) { this.currentProject = p; this.showModal = true; this.modalTab = 'tasks'; }, 
-                saveProject() { const idx = this.projects.findIndex(x => x.id === this.currentProject.id); if(idx === -1) { this.projects = [...this.projects, this.currentProject]; } else { const newProjs = [...this.projects]; newProjs[idx] = this.currentProject; this.projects = newProjs; } this.saveToFile(); this.showModal = false; },
-                addMilestone() { if(!this.currentProject.milestones) this.currentProject.milestones=[]; this.currentProject.milestones.push({title:'New Task', completed:false, completedDate: null, uuid: Date.now() + Math.random().toString(16).slice(2)}); },
-                get filteredProjects() { return this.projects.filter(p => { const matchesSearch = p.title.toLowerCase().includes(this.searchQuery.toLowerCase()); if(this.filterRag) { const border = this.getRagBorder(p.endDate); if(!border.includes(this.filterRag)) return false; } if(this.filterType && p.type && p.type.toLowerCase() !== this.filterType.toLowerCase()) return false; if(this.filterPriority) { if(this.filterPriority === 'standalone') { if(p.priorityId) return false; } else if(p.priorityId != this.filterPriority) return false; } if(this.filterKpi && p.kpi !== this.filterKpi) return false; return matchesSearch; }); },
-                get timelineProjects() { const all = this.filteredProjects; if (this.timelineTab === 'all') return all; if (this.timelineTab === 'standalone') return all.filter(p => !p.priorityId); return all.filter(p => p.priorityId === this.timelineTab); },
-                calculateProgress(p) { return !p.milestones?.length ? 0 : Math.round((p.milestones.filter(m=>m.completed).length / p.milestones.length)*100); },
+                switchView(v) { this.view = v; },
+                resetFilters() { this.searchQuery = ''; this.filterPillar = ''; this.filterKpi = ''; },
                 
-                initCharts() {
-                    const pCtx = document.getElementById('priorityChart')?.getContext('2d');
-                    const pipeCtx = document.getElementById('pipelineChart')?.getContext('2d');
-                    if(this.charts.priority) this.charts.priority.destroy();
-                    if(this.charts.pipeline) this.charts.pipeline.destroy();
-                    const isGov = this.dashboardMode === 'governance';
-                    const pData = isGov ? { labels: this.settings.kpis.map(k => k.substring(0, 15)+'...'), datasets: [{ data: this.settings.kpis.map(k => this.projects.filter(p => p.kpi == k).length), backgroundColor: ['#9333ea', '#c084fc', '#a855f7', '#7e22ce', '#6b21a8', '#581c87', '#3b0764', '#d8b4fe'], borderWidth: 0 }] } : { labels: this.settings.priorities.map(p => (p.title || 'Untitled').substring(0, 15)+'...'), datasets: [{ data: this.settings.priorities.map(p => this.projects.filter(proj => proj.priorityId == p.id).length), backgroundColor: ['#2563eb', '#f59e0b', '#059669', '#7c3aed', '#db2777'], borderWidth: 0 }] };
-                    if(pCtx) this.charts.priority = new Chart(pCtx, { type: 'doughnut', data: pData, options: { responsive: true, maintainAspectRatio: false, onClick: (e, el) => { if(el.length > 0) this.switchView('projects'); } } });
-                    if(pipeCtx) this.charts.pipeline = new Chart(pipeCtx, { type: 'bar', data: { labels: ['Active Cases', 'Completed Cases'], datasets: [{ label: 'Projects', data: [this.projects.filter(p => p.status !== 'Completed').length, this.projects.filter(p => p.status === 'Completed').length], backgroundColor: ['#3b82f6', '#10b981'] }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, onClick: (e, el) => { if(el.length > 0) this.switchView('projects'); } } });
+                get filteredProjects() {
+                    return this.projects.filter(p => {
+                        const matchesSearch = p.title.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        if (this.filterPillar) {
+                            if (this.filterPillar === 'standalone') { if (p.pillarId) return false; }
+                            else if (p.pillarId != this.filterPillar) return false;
+                        }
+                        if (this.filterKpi && p.kpi !== this.filterKpi) return false;
+                        return matchesSearch;
+                    });
                 },
-                updateCharts() { this.initCharts(); }
+
+                get filteredMeetings() {
+                    return this.meetingNotes.filter(n => n.category === this.activeMeetingCategory).sort((a, b) => new Date(b.date) - new Date(a.date));
+                },
+
+                getSortedTasks() {
+                    let tasks = this.todos.filter(t => !t.completed);
+                    if (this.taskSearch) tasks = tasks.filter(t => (t.text || t.title || '').toLowerCase().includes(this.taskSearch.toLowerCase()));
+                    return tasks.sort((a, b) => (a.dueDate || '9999') > (b.dueDate || '9999') ? 1 : -1);
+                },
+
+                getEventsForDay(day) { return this.calendarEvents.filter(e => e.day === day).sort((a, b) => (a.time || '').localeCompare(b.time || '')); },
+
+                addCalendarEvent() { this.newEvent = { id: Date.now(), title: '', day: 'Mon', time: '', type: 'work' }; this.showCalendarModal = true; },
+                
+                saveCalendarEvent() {
+                    this.calendarEvents.push(this.newEvent);
+                    if (this.newEvent.type === 'meeting') {
+                        this.meetingNotes.unshift({ id: Date.now(), title: this.newEvent.title, date: new Date().toISOString().split('T')[0], category: 'Other', content: '', attendees: '', linkedProjectId: '', links: [] });
+                    }
+                    this.showCalendarModal = false;
+                    this.saveToFile();
+                },
+
+                deleteEvent(id) { if (confirm('Remove?')) { this.calendarEvents = this.calendarEvents.filter(e => e.id !== id); this.saveToFile(); } },
+                
+                editEvent(evt) { this.newEvent = evt; this.showCalendarModal = true; },
+
+                createNewMeeting() {
+                    const newNote = { id: Date.now(), title: '', date: new Date().toISOString().split('T')[0], category: this.activeMeetingCategory, content: '', attendees: '', linkedProjectId: '', links: [] };
+                    this.meetingNotes.unshift(newNote);
+                    this.currentMeeting = newNote;
+                    this.saveToFile();
+                },
+
+                addNewMeetingCategory() {
+                    const name = prompt("New Category:");
+                    if (name && !this.settings.meetingCategories.includes(name)) {
+                        this.settings.meetingCategories.push(name);
+                        this.activeMeetingCategory = name;
+                        this.saveToFile();
+                    }
+                },
+
+                addLinkToMeeting() {
+                    if (this.newLinkName && this.newLinkUrl) {
+                        if (!this.currentMeeting.links) this.currentMeeting.links = [];
+                        this.currentMeeting.links.push({ name: this.newLinkName, url: this.newLinkUrl });
+                        this.newLinkName = '';
+                        this.newLinkUrl = '';
+                    }
+                },
+
+                pushActionToDashboard() {
+                    if (!this.quickActionText) return;
+                    this.todos.push({ id: Date.now(), text: this.quickActionText, completed: false, dueDate: this.quickActionDate, context: 'Meeting' });
+                    this.quickActionText = '';
+                    this.quickActionDate = '';
+                    this.saveToFile();
+                    this.showToast('Action added');
+                },
+
+                addTodo() {
+                    if (!this.newTodoText) return;
+                    this.todos.push({ id: Date.now(), text: this.newTodoText, completed: false, dueDate: this.newTodoDueDate, context: this.newTodoContext });
+                    this.newTodoText = '';
+                    this.newTodoDueDate = '';
+                    this.newTodoContext = '';
+                    this.saveToFile();
+                },
+
+                completeTask(task) {
+                    if (task.completed) {
+                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+                    }
+                    this.saveToFile();
+                },
+
+                startNewProject() {
+                    this.currentProject = { id: Date.now(), title: '', pillarId: '', type: 'project', milestones: [], updates: [], status: 'Active', deptCode: '', staff: '', startDate: '', endDate: '' };
+                    this.showModal = true;
+                    this.modalTab = 'tasks';
+                },
+
+                editProject(p) { this.currentProject = p; this.showModal = true; this.modalTab = 'tasks'; },
+
+                saveProject() {
+                    const idx = this.projects.findIndex(x => x.id === this.currentProject.id);
+                    if (idx === -1) this.projects.push(this.currentProject);
+                    else this.projects[idx] = this.currentProject;
+                    this.saveToFile();
+                    this.showModal = false;
+                },
+
+                addMilestoneToProject() {
+                    if (!this.currentProject.milestones) this.currentProject.milestones = [];
+                    this.currentProject.milestones.push({ title: 'New Task', completed: false, uuid: Date.now() + Math.random() });
+                },
+
+                addUpdate() {
+                    if (!this.newUpdateText) return;
+                    if (!this.currentProject.updates) this.currentProject.updates = [];
+                    this.currentProject.updates.push({ date: new Date().toISOString(), text: this.newUpdateText, link: this.newUpdateLink, source: this.newUpdateSource });
+                    this.newUpdateText = '';
+                    this.newUpdateLink = '';
+                    this.newUpdateSource = '';
+                    this.saveToFile();
+                },
+
+                addPillar() {
+                    this.settings.pillars.push({ id: Date.now(), title: 'New Pillar', intent: '', color: '#3b82f6', strategicMilestones: [] });
+                    this.activeStrategyTab = this.settings.pillars.length - 1;
+                },
+
+                deletePillar(index) {
+                    if (confirm('Delete this pillar?')) {
+                        this.settings.pillars.splice(index, 1);
+                        this.activeStrategyTab = 0;
+                        this.saveToFile();
+                    }
+                },
+
+                addMilestone(pillar) {
+                    if (!pillar.strategicMilestones) pillar.strategicMilestones = [];
+                    pillar.strategicMilestones.push({ title: 'New Milestone', targetDate: '', status: 'Planned' });
+                },
+
+                createProjectFromMilestone(pillar, milestone) {
+                    const name = prompt("Project Name:", milestone.title);
+                    if (!name) return;
+                    const newProj = {
+                        id: Date.now(),
+                        title: name,
+                        pillarId: pillar.id,
+                        milestoneLink: milestone.title,
+                        type: 'strategy',
+                        status: 'Active',
+                        startDate: '',
+                        endDate: milestone.targetDate || '',
+                        milestones: [],
+                        updates: [],
+                        deptCode: '',
+                        staff: ''
+                    };
+                    this.projects.push(newProj);
+                    this.saveToFile();
+                    this.showToast('Project created');
+                },
+
+                getProjectsForPillar(pillarId) { return this.projects.filter(p => p.pillarId == pillarId); },
+                
+                getProjectsForMilestone(pillarId, milestoneTitle) {
+                    return this.projects.filter(p => p.pillarId == pillarId && p.milestoneLink == milestoneTitle);
+                },
+
+                getPillarProgress(pillarId) {
+                    const projects = this.getProjectsForPillar(pillarId);
+                    if (projects.length === 0) return 0;
+                    const total = projects.reduce((sum, p) => sum + this.calculateProgress(p), 0);
+                    return Math.round(total / projects.length);
+                },
+
+                getPillarColorForProject(p) {
+                    if (!p.pillarId) return '#64748b';
+                    const pillar = this.settings.pillars.find(x => x.id == p.pillarId);
+                    return pillar ? pillar.color : '#64748b';
+                },
+
+                calculateProgress(p) {
+                    if (!(p.milestones || []).length) return 0;
+                    return Math.round(((p.milestones || []).filter(m => m.completed).length / (p.milestones || []).length) * 100);
+                },
+
+                getOverallProgress() {
+                    if (this.projects.length === 0) return 0;
+                    const total = this.projects.reduce((sum, p) => sum + this.calculateProgress(p), 0);
+                    return total / this.projects.length;
+                },
+
+                getAllOpenTasks() {
+                    return this.todos.filter(t => !t.completed);
+                },
+
+                getUpcomingDeadlines() {
+                    let all = [];
+                    this.projects.forEach(p => {
+                        (p.milestones || []).forEach(m => {
+                            if (!m.completed && m.dueDate) {
+                                all.push({ id: Math.random(), projectId: p.id, projectName: p.title, title: m.title, dueDate: m.dueDate });
+                            }
+                        });
+                    });
+                    return all.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 10);
+                },
+
+                getDueDateClass(d) {
+                    if (!d) return '';
+                    const diff = Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24));
+                    if (diff < 0) return 'bg-red-100 text-red-600';
+                    if (diff < 3) return 'bg-amber-100 text-amber-600';
+                    return 'bg-green-100 text-green-600';
+                },
+
+                getDueDateBadgeClass(d) {
+                    if (!d) return 'bg-neutral-100 text-neutral-600';
+                    const diff = Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24));
+                    if (diff < 0) return 'bg-red-100 text-red-700 border border-red-200';
+                    if (diff < 7) return 'bg-amber-100 text-amber-700 border border-amber-200';
+                    return 'bg-green-100 text-green-700 border border-green-200';
+                },
+
+                getDueDateColor(d) {
+                    if (!d) return 'bg-neutral-300';
+                    const diff = Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24));
+                    if (diff < 0) return 'bg-red-500';
+                    if (diff < 7) return 'bg-amber-500';
+                    return 'bg-green-500';
+                },
+
+                getRagBadgeClass(d) {
+                    if (!d) return 'bg-neutral-100 text-neutral-600';
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const due = new Date(d);
+                    const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+                    if (diff < 0) return 'bg-red-100 text-red-700 border border-red-200';
+                    if (diff <= 7) return 'bg-amber-100 text-amber-700 border border-amber-200';
+                    return 'bg-green-100 text-green-700 border border-green-200';
+                },
+
+                formatDate(d) { return d ? new Date(d).toLocaleDateString('en-GB') : ''; },
+                formatDateShort(d) { return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) : ''; },
+
+                get timelineColumns() {
+                    const today = new Date();
+                    const cols = [];
+                    if (this.timelineMode === 'year') {
+                        const currentYear = today.getFullYear();
+                        for (let i = 0; i < 12; i++) {
+                            const d = new Date(currentYear, i, 1);
+                            cols.push({ label: d.toLocaleString('default', { month: 'short' }), sub: d.getFullYear(), start: d, end: new Date(currentYear, i + 1, 0) });
+                        }
+                    } else if (this.timelineMode === '3m') {
+                        const start = new Date(today);
+                        start.setDate(today.getDate() - today.getDay() + 1);
+                        for (let i = 0; i < 12; i++) {
+                            const wStart = new Date(start);
+                            wStart.setDate(start.getDate() + (i * 7));
+                            const wEnd = new Date(wStart);
+                            wEnd.setDate(wStart.getDate() + 6);
+                            cols.push({ label: 'W' + (i + 1), sub: wStart.getDate() + '/' + (wStart.getMonth() + 1), start: wStart, end: wEnd });
+                        }
+                    }
+                    return cols;
+                },
+
+                getTimelineGridStyle() {
+                    return `grid-template-columns: 200px repeat(${this.timelineColumns.length}, minmax(60px, 1fr));`;
+                }
             }
         }
     </script>
