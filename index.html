@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v32.0 (Stable)</title>
+    <title>Digital Impact Hub v33.0 (Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -12,446 +12,313 @@
     <style>
         [x-cloak] { display: none !important; }
         
-        /* 15-Minute Grid Logic */
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: 60px repeat(5, 1fr);
-            grid-template-rows: 40px repeat(40, 25px); /* 10 hours (08:00-18:00) * 4 slots */
-            border: 1px solid #e2e8f0;
-            background: white;
-            overflow-y: auto;
-        }
-        .time-label { 
-            grid-column: 1; 
-            border-right: 1px solid #e2e8f0; 
-            border-bottom: 1px solid #f1f5f9; 
-            font-size: 10px; 
-            color: #94a3b8; 
-            text-align: right; 
-            padding-right: 8px; 
-            padding-top: 4px;
-        }
-        .day-header {
-            border-right: 1px solid #e2e8f0;
-            border-bottom: 1px solid #cbd5e1;
-            background: #f8fafc;
-            font-weight: 800;
-            text-transform: uppercase;
-            font-size: 11px;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: sticky;
-            top: 0;
-            z-index: 20;
-        }
-        .day-cell { 
-            border-right: 1px solid #f1f5f9; 
-            border-bottom: 1px solid #f1f5f9; 
-            position: relative; 
-            transition: background 0.2s;
-        }
-        .day-cell:hover { background: #f8fafc; }
-        .day-cell.drag-over { background: #e0e7ff !important; }
+        /* CALENDAR GRID ENGINE */
+        .calendar-wrapper { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        .calendar-header { display: grid; grid-template-columns: 60px repeat(5, 1fr); background: #f8fafc; border-bottom: 1px solid #cbd5e1; flex-shrink: 0; }
+        .header-cell { padding: 8px; text-align: center; font-weight: 800; font-size: 11px; color: #475569; border-right: 1px solid #e2e8f0; text-transform: uppercase; }
+        
+        .calendar-body { overflow-y: auto; flex: 1; position: relative; }
+        .calendar-grid { display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: repeat(40, 25px); /* 15 mins * 4 = 1 hour. 10 hours = 40 rows */ }
+        
+        .time-slot { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #f1f5f9; font-size: 10px; color: #94a3b8; text-align: right; padding-right: 8px; padding-top: 2px; }
+        .grid-cell { border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; position: relative; transition: background 0.1s; }
+        .grid-cell:hover { background-color: #f1f5f9; }
+        .grid-cell.drag-over { background-color: #e0e7ff !important; }
 
-        .event-card { 
-            position: absolute; 
-            left: 2px; 
-            right: 2px; 
-            top: 1px;
-            bottom: 1px;
-            border-radius: 4px; 
-            padding: 4px 6px; 
-            font-size: 10px; 
-            overflow: hidden; 
-            border-left: 3px solid; 
-            z-index: 10; 
-            cursor: pointer; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.1s;
-        }
-        .event-card:hover { transform: scale(1.02); z-index: 20; }
-        
-        /* Gantt Grid */
-        .gantt-container { overflow-x: auto; }
-        .gantt-grid { display: grid; grid-template-columns: 200px repeat(12, 1fr); gap: 1px; background: #e2e8f0; border: 1px solid #e2e8f0; }
-        .gantt-cell { background: white; height: 40px; }
-        .gantt-header { background: #f8fafc; padding: 8px; font-weight: bold; font-size: 11px; text-align: center; }
-        .gantt-sidebar { background: white; padding: 0 12px; display: flex; align-items: center; font-size: 12px; font-weight: 600; border-right: 1px solid #e2e8f0; }
-        
-        /* Print Styles */
+        /* DRAGGABLE EVENTS */
+        .event-chip { position: absolute; left: 2px; right: 2px; top: 1px; bottom: 1px; border-radius: 4px; padding: 2px 6px; font-size: 10px; border-left: 3px solid; cursor: pointer; z-index: 10; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .event-chip:hover { transform: scale(1.02); z-index: 20; box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+
+        /* PRINT */
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            body { background: white; overflow: visible; }
-            .page-break { page-break-before: always; }
+            body { overflow: visible !important; height: auto; }
         }
     </style>
 </head>
-<body class="text-slate-800 bg-slate-50 h-screen flex flex-col" x-data="appData()" x-init="init()">
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden" x-data="appData()" x-init="init()">
 
-    <header class="bg-white border-b border-slate-200 h-16 flex justify-between items-center px-6 shadow-sm z-50 no-print flex-shrink-0">
+    <header class="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-6 shadow-sm z-[60] relative no-print">
         <div class="flex items-center gap-3">
-            <div class="bg-slate-900 text-white w-9 h-9 rounded-lg flex items-center justify-center font-bold text-lg">H</div>
+            <div class="w-8 h-8 bg-indigo-600 rounded-md flex items-center justify-center text-white font-bold text-lg shadow-sm">H</div>
             <div>
-                <h1 class="font-bold text-slate-800 text-sm leading-tight">Digital Impact Hub</h1>
-                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">OS v32.0</p>
+                <h1 class="font-bold text-sm leading-tight text-slate-900">Digital Impact Hub</h1>
+                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">v33.0 Stable</p>
             </div>
         </div>
-        
         <nav class="flex bg-slate-100 p-1 rounded-lg">
-            <template x-for="item in navItems">
-                <button @click="view = item.id" 
-                    :class="view === item.id ? 'bg-white shadow-sm text-blue-700 font-bold' : 'text-slate-500 hover:text-slate-700'"
-                    class="px-4 py-2 rounded-md text-xs transition flex items-center gap-2">
-                    <i :class="item.icon"></i> <span x-text="item.label"></span>
+            <template x-for="tab in tabs">
+                <button @click="view = tab.id" :class="view === tab.id ? 'bg-white text-indigo-700 shadow font-bold' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-md text-xs transition flex items-center gap-2">
+                    <i :class="tab.icon"></i> <span x-text="tab.label"></span>
                 </button>
             </template>
         </nav>
-
-        <div class="flex items-center gap-3">
-            <template x-if="!fileHandle">
-                <button @click="openFile()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 animate-pulse">
-                    <i class="fas fa-plug mr-2"></i> Connect Data
+        <div class="flex gap-2">
+             <button @click="openFile()" x-show="!fileHandle" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 animate-pulse shadow-sm">
+                <i class="fas fa-plug mr-2"></i> Connect Data
+            </button>
+             <div x-show="fileHandle" class="flex gap-2">
+                 <button @click="saveToFile()" class="bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">
+                    <i class="fas fa-save mr-1"></i> Save
                 </button>
-            </template>
-            <template x-if="fileHandle">
-                <div class="flex gap-2">
-                    <button @click="showDailyWrap = true" class="bg-amber-400 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-500 shadow-sm">
-                        <i class="fas fa-bolt mr-1"></i> Wrap Up
-                    </button>
-                    <button @click="saveToFile()" class="bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">
-                        <i class="fas fa-save mr-1"></i> Save
-                    </button>
-                </div>
-            </template>
+                 <button @click="showWrapUp = true" class="bg-amber-400 text-amber-900 px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-500 hover:text-white transition shadow-sm">
+                    <i class="fas fa-bolt mr-1"></i> Daily Wrap
+                </button>
+             </div>
         </div>
     </header>
 
-    <main class="flex-1 overflow-hidden relative flex flex-col">
-        
-        <div x-show="view === 'planner'" class="flex-1 flex overflow-hidden">
-            <div class="w-72 bg-white border-r border-slate-200 flex flex-col z-20 shadow-sm">
-                <div class="p-3 border-b bg-slate-50 flex justify-between items-center">
+    <main class="flex-1 flex overflow-hidden relative">
+
+        <div x-show="view === 'planner'" class="flex-1 flex h-full w-full">
+            <div class="w-80 bg-white border-r border-slate-200 flex flex-col z-50 shadow-lg h-full">
+                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
                     <h3 class="text-xs font-black uppercase tracking-widest text-slate-500">Action Hopper</h3>
-                    <button @click="addTodo()" class="bg-blue-100 text-blue-700 hover:bg-blue-200 p-1 rounded text-xs"><i class="fas fa-plus"></i></button>
+                    <button @click="addTodo()" class="text-indigo-600 hover:bg-indigo-50 p-1 rounded"><i class="fas fa-plus"></i></button>
                 </div>
-                <div class="p-2 border-b">
-                     <input x-model="newTodoText" @keydown.enter="addTodo()" placeholder="Add task & enter..." class="w-full text-xs border border-slate-300 rounded p-2 focus:border-blue-500 outline-none">
+                <div class="p-3 border-b bg-white">
+                    <input x-model="newTodo" @keydown.enter="addTodo()" placeholder="Type task & enter..." class="w-full text-xs border border-slate-300 rounded p-2 outline-none focus:border-indigo-500 transition">
                 </div>
-                <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50/50">
+                <div class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50/50">
                     <template x-for="task in todos.filter(t => !t.completed)" :key="task.id">
-                        <div draggable="true" 
-                             @dragstart="startDrag(task)"
-                             class="bg-white p-3 rounded border border-slate-200 shadow-sm cursor-move hover:border-blue-400 group relative">
-                            <div class="text-xs font-bold text-slate-700" x-text="task.text"></div>
-                            <div class="flex justify-between items-center mt-2">
-                                <span class="text-[9px] bg-slate-100 text-slate-500 px-1 rounded uppercase" x-text="task.projectTitle || 'Ad-hoc'"></span>
-                                <i class="fas fa-grip-lines text-slate-300"></i>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <div class="flex-1 flex flex-col bg-slate-100 overflow-hidden relative">
-                 <div class="calendar-grid flex-1">
-                    <div class="col-start-1 row-start-1 border-r border-b bg-slate-50"></div>
-                    <template x-for="(day, i) in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']">
-                        <div class="day-header" :style="`grid-column: ${i+2}; grid-row: 1`" x-text="day"></div>
-                    </template>
-
-                    <template x-for="slot in 40">
-                         <div class="time-label" :style="`grid-row: ${slot + 1}`" x-text="getTimeLabel(slot)"></div>
-                    </template>
-
-                    <template x-for="day in 5">
-                        <template x-for="slot in 40">
-                            <div class="day-cell" 
-                                 :style="`grid-column: ${day + 1}; grid-row: ${slot + 1}`"
-                                 @dragover.prevent="dragOverHandler($el)"
-                                 @dragleave="dragLeaveHandler($el)"
-                                 @drop="dropHandler(day, slot, $el)">
-                            </div>
-                        </template>
-                    </template>
-
-                    <template x-for="evt in calendarEvents" :key="evt.id">
-                        <div class="event-card"
-                             @click="openEvent(evt)"
-                             :class="evt.type === 'meeting' ? 'bg-amber-100 border-amber-500 text-amber-900' : 'bg-blue-100 border-blue-500 text-blue-900'"
-                             :style="`grid-column: ${evt.day + 2}; grid-row: ${evt.startSlot + 1} / span ${evt.durationSlots}`">
-                             <div class="font-bold truncate" x-text="evt.title"></div>
-                             <div class="text-[9px] opacity-75" x-text="evt.impact ? '★ Impact Logged' : 'Click to log impact'"></div>
-                        </div>
-                    </template>
-                 </div>
-            </div>
-        </div>
-
-        <div x-show="view === 'strategy'" class="flex-1 overflow-y-auto p-8 bg-slate-50">
-             <h2 class="text-2xl font-black text-slate-800 mb-6">Strategic Pillars 2026</h2>
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <template x-for="prio in settings.priorities" :key="prio.id">
-                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
-                         <div class="p-5 border-b border-slate-100" :class="'border-l-4 ' + getPillarColor(prio.id)">
-                             <h3 class="font-bold text-lg text-slate-800" x-text="prio.title"></h3>
-                             <p class="text-xs text-slate-500 mt-1 italic" x-text="prio.intent"></p>
-                         </div>
-                         <div class="p-5 flex-1 bg-slate-50/50 space-y-3">
-                             <div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
-                                 <span>Aligned Projects</span>
-                                 <span>Progress</span>
-                             </div>
-                             <template x-for="proj in projects.filter(p => p.priorityId == prio.id)">
-                                 <div @click="editProject(proj)" class="bg-white p-3 rounded border border-slate-200 hover:border-blue-400 cursor-pointer shadow-sm flex items-center justify-between group">
-                                     <div>
-                                         <div class="text-sm font-bold text-slate-700 group-hover:text-blue-600" x-text="proj.title"></div>
-                                         <div class="text-[10px] text-slate-400" x-text="proj.lead || 'No Lead Assigned'"></div>
-                                     </div>
-                                     <div class="text-xs font-bold text-blue-600" x-text="calculateProgress(proj) + '%'"></div>
-                                 </div>
-                             </template>
-                             <button @click="startNewProject(prio.id)" class="w-full py-2 border border-dashed border-slate-300 rounded text-slate-400 text-xs hover:bg-white hover:text-blue-600 transition">+ Launch Project in this Pillar</button>
-                         </div>
-                     </div>
-                 </template>
-             </div>
-        </div>
-
-        <div x-show="view === 'projects'" class="flex-1 overflow-y-auto p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-black text-slate-800">Active Projects</h2>
-                <button @click="startNewProject()" class="bg-slate-900 text-white px-4 py-2 rounded font-bold text-sm shadow hover:bg-slate-700">New Project</button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <template x-for="proj in projects" :key="proj.id">
-                    <div @click="editProject(proj)" class="bg-white rounded-lg shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition flex flex-col relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-1 h-full" :class="getRagColor(proj.endDate)"></div>
-                        <div class="p-5">
-                            <div class="flex justify-between mb-2">
-                                <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold uppercase" x-text="getPriorityName(proj.priorityId)"></span>
-                                <span x-show="proj.isQip" class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold">QIP</span>
-                            </div>
-                            <h3 class="font-bold text-lg text-slate-800 mb-1 leading-tight group-hover:text-blue-600" x-text="proj.title"></h3>
-                            <p class="text-xs text-slate-500 line-clamp-2" x-text="proj.objective || 'No objective set yet.'"></p>
-                        </div>
-                        <div class="mt-auto p-4 border-t border-slate-50 bg-slate-50/30 flex items-center gap-3">
-                            <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                <div class="h-full bg-blue-500 rounded-full" :style="`width: ${calculateProgress(proj)}%`"></div>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600" x-text="calculateProgress(proj)+'%'"></span>
-                        </div>
-                    </div>
-                </template>
-            </div>
-            <div x-show="projects.length === 0" class="text-center py-20 text-slate-400">
-                <i class="fas fa-folder-open text-4xl mb-4 opacity-50"></i>
-                <p>No projects found. Create one to get started.</p>
-            </div>
-        </div>
-
-        <div x-show="view === 'timeline'" class="flex-1 flex flex-col overflow-hidden p-6">
-            <h2 class="text-2xl font-black text-slate-800 mb-4">Master Timeline</h2>
-            <div class="bg-white border border-slate-200 rounded-lg shadow-sm flex-1 overflow-hidden flex flex-col">
-                <div class="gantt-container flex-1 overflow-auto">
-                    <div class="gantt-grid min-w-[1000px]">
-                        <div class="gantt-sidebar bg-slate-100">Project Name</div>
-                        <template x-for="m in 12">
-                            <div class="gantt-header" x-text="'Month ' + m"></div>
-                        </template>
-
-                        <template x-for="proj in projects" :key="proj.id">
-                            <div class="contents group">
-                                <div class="gantt-sidebar h-10 truncate pr-2 hover:text-blue-600 cursor-pointer" @click="editProject(proj)" x-text="proj.title"></div>
-                                <div class="col-span-12 h-10 relative bg-white border-b border-slate-100 hover:bg-slate-50">
-                                    <div class="absolute h-6 top-2 rounded-full text-[10px] text-white flex items-center px-2 truncate shadow-sm cursor-pointer hover:opacity-90"
-                                         :class="getPriorityColorBg(proj.priorityId)"
-                                         :style="getGanttBarStyle(proj)"
-                                         @click="editProject(proj)">
-                                        <span x-text="proj.title"></span>
+                        <div draggable="true" @dragstart="dragStart(task)" class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-move hover:border-indigo-400 group relative select-none">
+                            <div class="flex items-start gap-2">
+                                <input type="checkbox" x-model="task.completed" class="mt-1 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-slate-700 leading-snug" x-text="task.text"></div>
+                                    <div class="flex gap-1 mt-1 flex-wrap">
+                                        <span x-show="task.projectTitle" class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium border border-slate-200" x-text="task.projectTitle"></span>
+                                        <span x-show="task.tlam" class="text-[9px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded font-medium border border-purple-100" x-text="task.tlam"></span>
                                     </div>
                                 </div>
+                                <i class="fas fa-grip-vertical text-slate-300 group-hover:text-slate-400"></i>
                             </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="flex-1 bg-slate-100 overflow-hidden relative z-0">
+                <div class="calendar-wrapper bg-white shadow-inner">
+                    <div class="calendar-header">
+                        <div class="header-cell bg-slate-100"></div> <template x-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']">
+                            <div class="header-cell" x-text="day"></div>
                         </template>
+                    </div>
+                    
+                    <div class="calendar-body">
+                        <div class="calendar-grid">
+                            <template x-for="slot in 40"> <div class="time-slot" :style="`grid-row: ${slot}`" x-text="getTimeLabel(slot)"></div>
+                            </template>
+
+                            <template x-for="day in 5">
+                                <template x-for="slot in 40">
+                                    <div class="grid-cell" 
+                                         :style="`grid-column: ${day + 1}; grid-row: ${slot}`"
+                                         @dragover.prevent="dragOver($el)"
+                                         @dragleave="dragLeave($el)"
+                                         @drop="dropEvent(day, slot, $el)">
+                                    </div>
+                                </template>
+                            </template>
+
+                            <template x-for="evt in calendarEvents" :key="evt.id">
+                                <div class="event-chip"
+                                     @click="editEvent(evt)"
+                                     :class="getEventColor(evt.type)"
+                                     :style="`grid-column: ${evt.day + 1}; grid-row: ${evt.startSlot} / span ${evt.duration};`">
+                                    <div class="font-bold truncate leading-tight" x-text="evt.title"></div>
+                                    <div class="text-[9px] opacity-80 truncate" x-text="evt.projectTitle || 'No Project'"></div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div x-show="view === 'reports'" class="flex-1 overflow-y-auto p-8" id="report-area">
-             <div class="max-w-6xl mx-auto">
-                 <div class="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
-                     <div>
-                         <h1 class="text-4xl font-black text-slate-900 uppercase tracking-tighter">Impact Dossier</h1>
-                         <p class="text-slate-500">Live Strategy Report</p>
-                     </div>
-                     <button @click="downloadPDF()" class="bg-slate-900 text-white px-6 py-3 rounded-lg font-bold shadow hover:bg-slate-700 no-print">
-                         <i class="fas fa-file-download mr-2"></i> Download PDF
-                     </button>
-                 </div>
+        <div x-show="view === 'projects'" class="flex-1 overflow-y-auto p-8 bg-slate-50">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black text-slate-800">Project Portfolio</h2>
+                    <button @click="createProject()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold text-xs shadow hover:bg-indigo-700">New Project</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <template x-for="proj in projects" :key="proj.id">
+                        <div @click="editProject(proj)" class="bg-white rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition group overflow-hidden">
+                            <div class="h-1 w-full" :class="getRagColor(proj.endDate)"></div>
+                            <div class="p-5">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold uppercase tracking-wider" x-text="proj.pillar || 'General'"></span>
+                                    <span x-show="proj.tlam" class="text-[10px] bg-purple-50 text-purple-600 px-2 py-1 rounded border border-purple-100 font-bold" x-text="proj.tlam"></span>
+                                </div>
+                                <h3 class="font-bold text-slate-800 text-lg mb-1 group-hover:text-indigo-600 transition" x-text="proj.title"></h3>
+                                <p class="text-xs text-slate-500 line-clamp-2 mb-4" x-text="proj.objective || 'No objective defined.'"></p>
+                                <div class="flex items-center gap-3 text-xs font-bold text-slate-400">
+                                    <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="bg-indigo-500 h-full rounded-full" :style="`width: ${calcProgress(proj)}%`"></div>
+                                    </div>
+                                    <span x-text="calcProgress(proj) + '%'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
 
-                 <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-8 flex gap-4 items-center no-print">
-                     <span class="text-xs font-bold text-slate-400 uppercase">Filter By:</span>
-                     <select x-model="reportFilter.pillar" class="text-xs border rounded p-2"><option value="">All Pillars</option><template x-for="p in settings.priorities"><option :value="p.id" x-text="p.title"></option></template></select>
-                     <select x-model="reportFilter.lead" class="text-xs border rounded p-2"><option value="">All Leads</option><option>N/A</option><option>Joe Abdulgani</option><option>Maria Miles</option></select>
-                     <button @click="reportFilter = {pillar:'', lead:''}" class="text-xs text-red-500 hover:underline">Clear</button>
-                 </div>
+        <div x-show="view === 'reports'" class="flex-1 overflow-y-auto p-8 bg-white" id="print-area">
+            <div class="max-w-5xl mx-auto">
+                <div class="flex justify-between items-end border-b-2 border-slate-900 pb-6 mb-8">
+                    <div>
+                        <h1 class="text-4xl font-black text-slate-900 uppercase tracking-tighter">Impact Dossier</h1>
+                        <p class="text-slate-500 font-medium mt-1">Strategic Performance Report</p>
+                    </div>
+                    <button @click="downloadPDF()" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold text-xs no-print hover:bg-slate-800">
+                        <i class="fas fa-file-pdf mr-2"></i> Export PDF
+                    </button>
+                </div>
 
-                 <div class="grid grid-cols-4 gap-4 mb-8">
-                     <div class="bg-blue-600 text-white p-5 rounded-xl">
-                         <div class="text-3xl font-black" x-text="filteredProjects.length"></div>
-                         <div class="text-xs uppercase opacity-75">Active Projects</div>
-                     </div>
-                     <div class="bg-emerald-600 text-white p-5 rounded-xl">
-                         <div class="text-3xl font-black" x-text="filteredProjects.filter(p => p.isQip).length"></div>
-                         <div class="text-xs uppercase opacity-75">QIP Linked</div>
-                     </div>
-                     <div class="bg-purple-600 text-white p-5 rounded-xl">
-                         <div class="text-3xl font-black" x-text="filteredProjects.reduce((acc,p) => acc + (p.updates?p.updates.length:0), 0)"></div>
-                         <div class="text-xs uppercase opacity-75">Evidence Pieces</div>
-                     </div>
-                     <div class="bg-slate-800 text-white p-5 rounded-xl">
-                         <div class="text-3xl font-black" x-text="getAllTasks().filter(t => t.completed).length"></div>
-                         <div class="text-xs uppercase opacity-75">Tasks Complete</div>
-                     </div>
-                 </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-8 flex flex-wrap gap-4 items-center no-print shadow-sm">
+                    <div class="flex items-center gap-2"><i class="fas fa-filter text-slate-400"></i> <span class="text-xs font-bold uppercase text-slate-500">Filters:</span></div>
+                    <select x-model="filters.pillar" class="text-xs border border-slate-300 rounded p-2 bg-white outline-none"><option value="">All Pillars</option><template x-for="p in pillars"><option :value="p" x-text="p"></option></template></select>
+                    <select x-model="filters.tlam" class="text-xs border border-slate-300 rounded p-2 bg-white outline-none"><option value="">All TLAMs</option><template x-for="t in metadata.tlams"><option :value="t" x-text="t"></option></template></select>
+                    <select x-model="filters.area" class="text-xs border border-slate-300 rounded p-2 bg-white outline-none"><option value="">All Areas</option><template x-for="a in metadata.areas"><option :value="a" x-text="a"></option></template></select>
+                    <button @click="resetFilters()" class="text-xs text-red-500 font-bold hover:underline ml-auto">Reset</button>
+                </div>
 
-                 <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                     <table class="w-full text-sm">
-                         <thead class="bg-slate-100 text-slate-500 font-bold uppercase text-[10px]">
-                             <tr>
-                                 <th class="p-3 text-left">Project</th>
-                                 <th class="p-3 text-left">Lead</th>
-                                 <th class="p-3 text-left">Timeline</th>
-                                 <th class="p-3 text-left">Impact Statement</th>
-                                 <th class="p-3 text-left">Status</th>
-                             </tr>
-                         </thead>
-                         <tbody class="divide-y divide-slate-100">
-                             <template x-for="proj in filteredProjects" :key="proj.id">
-                                 <tr class="hover:bg-slate-50">
-                                     <td class="p-3 font-bold text-slate-700" x-text="proj.title"></td>
-                                     <td class="p-3 text-slate-500 text-xs" x-text="proj.lead || '-'"></td>
-                                     <td class="p-3 text-slate-500 text-xs">
-                                         <span x-text="formatDate(proj.startDate)"></span> - <span x-text="formatDate(proj.endDate)"></span>
-                                     </td>
-                                     <td class="p-3 text-slate-600 text-xs italic" x-text="getLatestImpact(proj)"></td>
-                                     <td class="p-3">
-                                         <span class="text-[10px] px-2 py-1 rounded-full font-bold" 
-                                               :class="proj.status === 'Complete' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'" 
-                                               x-text="proj.status || 'Active'"></span>
-                                     </td>
-                                 </tr>
-                             </template>
-                         </tbody>
-                     </table>
-                 </div>
-             </div>
+                <div class="border rounded-lg overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-100 text-slate-500 font-bold uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3 text-left">Project / Initiative</th>
+                                <th class="p-3 text-left">Lead & Area</th>
+                                <th class="p-3 text-left">TLAM</th>
+                                <th class="p-3 text-left w-1/3">Latest Impact Statement</th>
+                                <th class="p-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="row in filteredData" :key="row.id">
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-3">
+                                        <div class="font-bold text-slate-800" x-text="row.title"></div>
+                                        <div class="text-[10px] text-slate-400" x-text="row.pillar"></div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="text-xs text-slate-700" x-text="row.lead || '-'"></div>
+                                        <div class="text-[10px] text-slate-400 font-bold" x-text="row.area || '-'"></div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span x-show="row.tlam" class="text-[10px] bg-purple-50 text-purple-600 px-2 py-1 rounded border border-purple-100 font-bold" x-text="row.tlam"></span>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="text-xs text-slate-600 italic leading-relaxed" x-text="getLatestUpdate(row)"></div>
+                                    </td>
+                                    <td class="p-3 text-center">
+                                        <span class="text-[10px] px-2 py-1 rounded-full font-bold" :class="getStatusColor(row)" x-text="calcProgress(row) === 100 ? 'Complete' : 'Active'"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
     </main>
 
-    <div x-show="showProjectModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col">
-            <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-xl">
-                <input x-model="currentProject.title" class="bg-transparent text-lg font-bold w-full outline-none" placeholder="Project Title">
-                <button @click="showProjectModal = false" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+    <div x-show="modals.project" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                <h3 class="font-bold text-slate-700">Edit Project</h3>
+                <button @click="modals.project = false" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
             </div>
-            <div class="flex-1 overflow-y-auto p-6">
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Pillar</label>
-                        <select x-model="currentProject.priorityId" class="w-full border rounded p-2 text-sm">
-                            <template x-for="p in settings.priorities"><option :value="p.id" x-text="p.title"></option></template>
-                        </select>
-                    </div>
-                    <div>
-                         <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Lead</label>
-                         <input x-model="currentProject.lead" class="w-full border rounded p-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Start Date</label>
-                        <input type="date" x-model="currentProject.startDate" class="w-full border rounded p-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">End Date</label>
-                        <input type="date" x-model="currentProject.endDate" class="w-full border rounded p-2 text-sm">
-                    </div>
-                    <div class="flex items-center gap-2 mt-4">
-                        <input type="checkbox" x-model="currentProject.isQip" class="w-4 h-4">
-                        <span class="text-sm font-bold text-slate-600">Link to QIP (Quality Improvement Plan)</span>
-                    </div>
-                </div>
-
-                <div class="flex border-b mb-4">
-                    <button @click="modalTab='tasks'" :class="modalTab==='tasks'?'border-b-2 border-blue-600 text-blue-600':'text-slate-400'" class="px-4 py-2 font-bold text-xs uppercase">Tasks</button>
-                    <button @click="modalTab='evidence'" :class="modalTab==='evidence'?'border-b-2 border-blue-600 text-blue-600':'text-slate-400'" class="px-4 py-2 font-bold text-xs uppercase">Evidence Locker</button>
-                </div>
-
-                <div x-show="modalTab==='tasks'">
-                    <div class="space-y-2">
-                        <template x-for="(m, idx) in currentProject.milestones" :key="idx">
-                            <div class="flex gap-2 items-center">
-                                <input type="checkbox" x-model="m.completed" class="rounded text-blue-600">
-                                <input x-model="m.title" class="flex-1 border-b border-transparent focus:border-slate-300 outline-none text-sm">
-                                <button @click="currentProject.milestones.splice(idx,1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </template>
-                        <button @click="addMilestoneToProject()" class="text-xs text-blue-600 font-bold mt-2">+ Add Task</button>
-                    </div>
-                </div>
+            <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                <input x-model="activeProject.title" class="w-full text-xl font-bold border-b border-slate-200 pb-2 outline-none text-slate-800 placeholder-slate-300" placeholder="Project Title">
                 
-                <div x-show="modalTab==='evidence'">
-                    <textarea x-model="newEvidenceText" placeholder="Log impact or evidence..." class="w-full border rounded p-2 text-sm h-20 mb-2"></textarea>
-                    <button @click="addEvidenceToProject()" class="bg-slate-800 text-white px-3 py-1 rounded text-xs font-bold mb-4">Add Entry</button>
-                    <div class="space-y-3">
-                        <template x-for="upd in currentProject.updates">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Pillar</label>
+                        <select x-model="activeProject.pillar" class="w-full border rounded p-2 text-xs"><template x-for="p in pillars"><option :value="p" x-text="p"></option></template></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Area</label>
+                        <select x-model="activeProject.area" class="w-full border rounded p-2 text-xs"><template x-for="a in metadata.areas"><option :value="a" x-text="a"></option></template></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">TLAM</label>
+                        <select x-model="activeProject.tlam" class="w-full border rounded p-2 text-xs"><template x-for="t in metadata.tlams"><option :value="t" x-text="t"></option></template></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Lead Staff</label>
+                        <input x-model="activeProject.lead" class="w-full border rounded p-2 text-xs">
+                    </div>
+                </div>
+
+                <div class="border-t pt-4">
+                    <h4 class="text-xs font-bold uppercase text-slate-500 mb-2">Tasks</h4>
+                    <div class="space-y-2 mb-2">
+                        <template x-for="(task, idx) in activeProject.milestones" :key="idx">
+                            <div class="flex gap-2 items-center">
+                                <input type="checkbox" x-model="task.completed" class="rounded text-indigo-600">
+                                <input x-model="task.title" class="flex-1 border-b border-transparent focus:border-slate-300 outline-none text-sm">
+                                <button @click="activeProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </template>
+                    </div>
+                    <button @click="addTaskToProject()" class="text-xs text-indigo-600 font-bold">+ Add Task</button>
+                </div>
+
+                <div class="border-t pt-4">
+                    <h4 class="text-xs font-bold uppercase text-slate-500 mb-2">Evidence Locker</h4>
+                    <textarea x-model="newUpdate" class="w-full border rounded p-2 text-xs h-16 mb-2" placeholder="Log impact/evidence..."></textarea>
+                    <button @click="addUpdateToProject()" class="bg-slate-800 text-white px-3 py-1 rounded text-xs font-bold">Log Entry</button>
+                    <div class="mt-4 space-y-2">
+                        <template x-for="u in activeProject.updates">
                             <div class="bg-slate-50 p-2 rounded text-xs border border-slate-100">
-                                <div class="font-bold text-slate-400 text-[10px]" x-text="formatDate(upd.date)"></div>
-                                <div x-text="upd.text"></div>
+                                <span class="font-bold text-slate-400 block text-[9px]" x-text="new Date(u.date).toLocaleDateString()"></span>
+                                <span x-text="u.text"></span>
                             </div>
                         </template>
                     </div>
                 </div>
-
             </div>
-            <div class="p-4 border-t bg-slate-50 flex justify-end gap-2 rounded-b-xl">
+            <div class="p-4 border-t bg-slate-50 flex justify-end gap-2">
                 <button @click="deleteProject()" class="text-red-500 text-xs font-bold px-3">Delete</button>
-                <button @click="saveProject()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs hover:bg-blue-700">Save Changes</button>
+                <button @click="saveProject()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-xs hover:bg-indigo-700">Save Changes</button>
             </div>
         </div>
     </div>
 
-    <div x-show="showDailyWrap" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md" x-cloak>
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-6 h-[80vh] flex flex-col">
-            <h2 class="text-2xl font-black text-slate-800 mb-1">Daily Wrap-Up</h2>
-            <p class="text-sm text-slate-500 mb-6">Sync your calendar blocks to project evidence.</p>
+    <div x-show="showWrapUp" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm" x-cloak>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col p-6">
+            <h2 class="text-2xl font-black text-slate-800 mb-1">Daily Impact Wrap-Up</h2>
+            <p class="text-sm text-slate-500 mb-6">Review today's calendar events and sync evidence to projects.</p>
             
             <div class="flex-1 overflow-y-auto space-y-4">
                 <template x-for="evt in calendarEvents" :key="evt.id">
-                    <div class="border rounded-lg p-3 flex gap-4 items-start bg-slate-50">
-                        <div class="w-20 text-[10px] font-bold text-slate-500 text-center pt-2">
-                           <div x-text="getTimeLabel(evt.startSlot)"></div>
-                           <div>to</div>
-                           <div x-text="getTimeLabel(evt.startSlot + evt.durationSlots)"></div>
+                    <div class="border rounded-lg p-3 bg-slate-50 flex gap-4 items-start">
+                        <div class="w-24 text-center border-r pr-4">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">Duration</div>
+                            <div class="text-lg font-black text-slate-700" x-text="(evt.duration * 15) + 'm'"></div>
                         </div>
                         <div class="flex-1">
                             <div class="font-bold text-slate-800" x-text="evt.title"></div>
-                            <select x-model="evt.linkedProjectId" class="w-full mt-2 text-xs border rounded p-1 bg-white">
-                                <option value="">- Link to Project -</option>
-                                <template x-for="p in projects"><option :value="p.id" x-text="p.title"></option></template>
-                            </select>
-                            <textarea x-model="evt.impact" placeholder="What was the impact? (Syncs to Evidence Locker)" class="w-full mt-2 text-xs border rounded p-2 h-16"></textarea>
+                            <div class="grid grid-cols-2 gap-2 mt-2">
+                                <select x-model="evt.linkedProjectId" class="text-xs border rounded p-1">
+                                    <option value="">Link to Project...</option>
+                                    <template x-for="p in projects"><option :value="p.id" x-text="p.title"></option></template>
+                                </select>
+                                <button @click="syncImpact(evt)" class="bg-green-600 text-white rounded p-1 text-xs font-bold uppercase shadow">Sync to Evidence</button>
+                            </div>
+                            <textarea x-model="evt.impact" placeholder="Type impact statement here..." class="w-full mt-2 text-xs border rounded p-2 h-14"></textarea>
                         </div>
-                        <button @click="syncEvent(evt)" class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-[10px] font-bold uppercase shadow">Sync</button>
                     </div>
                 </template>
-                <div x-show="calendarEvents.length === 0" class="text-center text-slate-400 py-10">No events on calendar today.</div>
             </div>
-            <button @click="showDailyWrap=false" class="mt-4 w-full bg-slate-100 text-slate-600 py-2 rounded font-bold">Close</button>
+            <button @click="showWrapUp = false" class="mt-4 w-full py-3 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200">Close</button>
         </div>
     </div>
 
@@ -460,60 +327,58 @@
             return {
                 view: 'planner',
                 fileHandle: null,
-                showProjectModal: false,
-                showDailyWrap: false,
-                modalTab: 'tasks',
-                newTodoText: '',
-                newEvidenceText: '',
-                draggedTask: null,
-                reportFilter: { pillar: '', lead: '' },
+                showWrapUp: false,
+                modals: { project: false },
+                activeProject: {},
+                newTodo: '',
+                newUpdate: '',
+                draggedItem: null,
                 
-                // Data Containers
+                // Data Stores
                 projects: [],
                 todos: [],
                 calendarEvents: [],
-                currentProject: {},
                 
-                settings: {
-                    priorities: [
-                        { id: 1, title: 'Digital Ecosystem', intent: 'Infrastructure & Standards', color: 'border-blue-500' },
-                        { id: 2, title: 'Pedagogy & AI', intent: 'Assessment, Feedback & Modelling', color: 'border-purple-500' },
-                        { id: 3, title: 'Inclusion', intent: 'Accessibility & SEND', color: 'border-emerald-500' },
-                        { id: 4, title: 'Capacity & QA', intent: 'Champions & Upskilling', color: 'border-pink-500' }
-                    ]
-                },
-                
-                navItems: [
+                // Config
+                tabs: [
                     { id: 'planner', label: 'Planner', icon: 'fas fa-calendar-alt' },
-                    { id: 'strategy', label: 'Strategy', icon: 'fas fa-chess-board' },
-                    { id: 'projects', label: 'Projects', icon: 'fas fa-folder' },
-                    { id: 'timeline', label: 'Timeline', icon: 'fas fa-stream' },
-                    { id: 'reports', label: 'Reports', icon: 'fas fa-chart-line' }
+                    { id: 'projects', label: 'Projects', icon: 'fas fa-folder-open' },
+                    { id: 'reports', label: 'Reports', icon: 'fas fa-chart-pie' }
                 ],
+                pillars: ['Digital Ecosystem', 'Pedagogy & AI', 'Inclusion (SEND)', 'Capacity & QA'],
+                metadata: {
+                    tlams: ['Cassie', 'Ben', 'Neil', 'Richard'],
+                    areas: ['AGF', 'HAC', 'MAT', 'ENG', 'SCI', 'ARTS']
+                },
+                filters: { pillar: '', tlam: '', area: '' },
 
                 init() {
-                    // Check for local storage backup or clean init
+                    console.log('OS v33.0 Initialized');
                 },
 
-                // --- FILE SYSTEM API ---
+                // --- DATA HANDLING ---
                 async openFile() {
                     try {
                         const [handle] = await window.showOpenFilePicker();
                         this.fileHandle = handle;
                         const file = await handle.getFile();
                         const text = await file.text();
-                        if(text) {
+                        if (text) {
                             const data = JSON.parse(text);
                             this.projects = data.projects || [];
                             this.todos = data.todos || [];
                             this.calendarEvents = data.calendarEvents || [];
-                            alert("System Online. Data Loaded.");
+                            // Migration logic ensuring fields exist
+                            this.projects.forEach(p => {
+                                if(!p.milestones) p.milestones = [];
+                                if(!p.updates) p.updates = [];
+                            });
+                            alert('Connected Successfully');
                         }
                     } catch(e) { console.error(e); }
                 },
-
                 async saveToFile() {
-                    if(!this.fileHandle) return;
+                    if (!this.fileHandle) return;
                     const writable = await this.fileHandle.createWritable();
                     await writable.write(JSON.stringify({
                         projects: this.projects,
@@ -521,179 +386,137 @@
                         calendarEvents: this.calendarEvents
                     }));
                     await writable.close();
-                    alert("Saved Successfully.");
+                    alert('Saved');
                 },
 
-                // --- DRAG & DROP LOGIC ---
-                startDrag(task) {
-                    this.draggedTask = task;
+                // --- PLANNER LOGIC ---
+                addTodo() {
+                    if(!this.newTodo) return;
+                    this.todos.push({ id: Date.now(), text: this.newTodo, completed: false });
+                    this.newTodo = '';
                 },
-                dragOverHandler(el) {
+                dragStart(item) {
+                    this.draggedItem = item;
+                },
+                dragOver(el) {
                     el.classList.add('drag-over');
                 },
-                dragLeaveHandler(el) {
+                dragLeave(el) {
                     el.classList.remove('drag-over');
                 },
-                dropHandler(day, slot, el) {
+                dropEvent(day, slot, el) {
                     el.classList.remove('drag-over');
-                    if(this.draggedTask) {
+                    if (this.draggedItem) {
                         this.calendarEvents.push({
                             id: Date.now(),
-                            title: this.draggedTask.text,
+                            title: this.draggedItem.text,
                             day: day,
                             startSlot: slot,
-                            durationSlots: 4, // Default 1 hour
-                            linkedProjectId: this.draggedTask.projectId || '',
+                            duration: 4, // 1 hour default (4x15m)
                             type: 'work',
-                            impact: ''
+                            projectTitle: this.draggedItem.projectTitle,
+                            projectId: this.draggedItem.projectId
                         });
-                        this.draggedTask = null;
+                        // Optional: Remove from hopper? 
+                        // this.todos = this.todos.filter(t => t.id !== this.draggedItem.id);
+                        this.draggedItem = null;
                         this.saveToFile();
                     }
                 },
-
-                // --- CALENDAR HELPERS ---
                 getTimeLabel(slot) {
-                    const totalMins = (slot * 15) + (8 * 60); // Start at 08:00
-                    const h = Math.floor(totalMins / 60);
-                    const m = totalMins % 60;
-                    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+                    const startMin = (slot * 15) + 480; // 480 = 8:00 AM in mins
+                    const h = Math.floor(startMin / 60);
+                    const m = startMin % 60;
+                    return `${h}:${m === 0 ? '00' : m}`;
                 },
-                openEvent(evt) {
+                getEventColor(type) {
+                    return type === 'meeting' ? 'bg-amber-100 border-amber-500 text-amber-900' : 'bg-indigo-100 border-indigo-500 text-indigo-900';
+                },
+                editEvent(evt) {
                     const newTitle = prompt("Edit Event Title:", evt.title);
                     if(newTitle) evt.title = newTitle;
-                    // Could add delete option here
+                    if(confirm("Delete this event?")) {
+                        this.calendarEvents = this.calendarEvents.filter(e => e.id !== evt.id);
+                    }
+                    this.saveToFile();
                 },
 
                 // --- PROJECT LOGIC ---
-                startNewProject(prioId = '') {
-                    this.currentProject = {
-                        id: Date.now(),
-                        title: '',
-                        priorityId: prioId,
-                        milestones: [],
-                        updates: [],
-                        startDate: new Date().toISOString().split('T')[0],
-                        endDate: '',
-                        lead: '',
-                        isQip: false
-                    };
-                    this.showProjectModal = true;
+                createProject() {
+                    this.activeProject = { id: Date.now(), title: '', milestones: [], updates: [], pillar: '', tlam: '', area: '', lead: '' };
+                    this.modals.project = true;
                 },
                 editProject(p) {
-                    this.currentProject = JSON.parse(JSON.stringify(p)); // Deep copy
-                    this.showProjectModal = true;
+                    this.activeProject = JSON.parse(JSON.stringify(p));
+                    this.modals.project = true;
                 },
                 saveProject() {
-                    const idx = this.projects.findIndex(p => p.id === this.currentProject.id);
-                    if(idx >= 0) {
-                        this.projects[idx] = this.currentProject;
-                    } else {
-                        this.projects.push(this.currentProject);
-                    }
-                    this.showProjectModal = false;
+                    const idx = this.projects.findIndex(p => p.id === this.activeProject.id);
+                    if(idx > -1) this.projects[idx] = this.activeProject;
+                    else this.projects.push(this.activeProject);
+                    this.modals.project = false;
                     this.saveToFile();
                 },
                 deleteProject() {
-                    if(confirm("Delete this project?")) {
-                        this.projects = this.projects.filter(p => p.id !== this.currentProject.id);
-                        this.showProjectModal = false;
+                    if(confirm('Delete project?')) {
+                        this.projects = this.projects.filter(p => p.id !== this.activeProject.id);
+                        this.modals.project = false;
                         this.saveToFile();
                     }
                 },
-                addMilestoneToProject() {
-                    if(!this.currentProject.milestones) this.currentProject.milestones = [];
-                    this.currentProject.milestones.push({ title: 'New Task', completed: false });
+                addTaskToProject() {
+                    this.activeProject.milestones.push({ title: 'New Task', completed: false });
                 },
-                addEvidenceToProject() {
-                    if(this.newEvidenceText) {
-                        if(!this.currentProject.updates) this.currentProject.updates = [];
-                        this.currentProject.updates.push({ date: new Date().toISOString(), text: this.newEvidenceText });
-                        this.newEvidenceText = '';
+                addUpdateToProject() {
+                    if(this.newUpdate) {
+                        this.activeProject.updates.push({ date: new Date().toISOString(), text: this.newUpdate });
+                        this.newUpdate = '';
                     }
+                },
+                calcProgress(p) {
+                    if(!p.milestones || p.milestones.length === 0) return 0;
+                    return Math.round((p.milestones.filter(m => m.completed).length / p.milestones.length) * 100);
                 },
 
-                // --- COMPUTED / HELPERS ---
-                get filteredProjects() {
+                // --- REPORTING LOGIC ---
+                get filteredData() {
                     return this.projects.filter(p => {
-                        const matchPillar = this.reportFilter.pillar ? p.priorityId == this.reportFilter.pillar : true;
-                        const matchLead = this.reportFilter.lead ? p.lead === this.reportFilter.lead : true;
-                        return matchPillar && matchLead;
+                        const mPillar = !this.filters.pillar || p.pillar === this.filters.pillar;
+                        const mTlam = !this.filters.tlam || p.tlam === this.filters.tlam;
+                        const mArea = !this.filters.area || p.area === this.filters.area;
+                        return mPillar && mTlam && mArea;
                     });
                 },
-                calculateProgress(p) {
-                    if(!p.milestones || p.milestones.length === 0) return 0;
-                    const done = p.milestones.filter(m => m.completed).length;
-                    return Math.round((done / p.milestones.length) * 100);
+                resetFilters() {
+                    this.filters = { pillar: '', tlam: '', area: '' };
                 },
-                addTodo() {
-                    if(this.newTodoText) {
-                        this.todos.push({ id: Date.now(), text: this.newTodoText, completed: false });
-                        this.newTodoText = '';
-                        this.saveToFile();
-                    }
+                getLatestUpdate(p) {
+                    if(!p.updates || p.updates.length === 0) return 'No impact logged.';
+                    return p.updates[p.updates.length - 1].text;
                 },
-                getLatestImpact(p) {
-                    if(!p.updates || p.updates.length === 0) return 'No Impact Logged';
-                    return p.updates[p.updates.length -1].text;
-                },
-                formatDate(d) {
-                    return d ? new Date(d).toLocaleDateString() : '-';
+                getStatusColor(p) {
+                    return this.calcProgress(p) === 100 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
                 },
                 getRagColor(d) {
                     if(!d) return 'bg-slate-300';
-                    const now = new Date();
-                    const end = new Date(d);
-                    const diff = (end - now) / (1000 * 60 * 60 * 24);
-                    if(diff < 0) return 'bg-red-500';
-                    if(diff < 14) return 'bg-amber-500';
-                    return 'bg-green-500';
-                },
-                getPillarColor(id) {
-                    const map = {1:'border-l-blue-500', 2:'border-l-purple-500', 3:'border-l-emerald-500', 4:'border-l-pink-500'};
-                    return map[id] || 'border-l-slate-500';
-                },
-                getPriorityName(id) {
-                    const p = this.settings.priorities.find(x => x.id == id);
-                    return p ? p.title : 'General';
-                },
-                getAllTasks() {
-                    let all = [];
-                    this.projects.forEach(p => {
-                        if(p.milestones) all = [...all, ...p.milestones];
-                    });
-                    return all;
-                },
-
-                // --- TIMELINE HELPERS ---
-                getGanttBarStyle(p) {
-                    // Simple visualization logic mapping dates to % width
-                    // In a real app this requires complex date math. 
-                    // Simulating a fixed width for demo stability:
-                    return `left: 10%; width: 40%;`; 
-                },
-                getPriorityColorBg(id) {
-                    const map = {1:'bg-blue-500', 2:'bg-purple-500', 3:'bg-emerald-500', 4:'bg-pink-500'};
-                    return map[id] || 'bg-slate-500';
-                },
-                
-                // --- DAILY WRAP SYNC ---
-                syncEvent(evt) {
-                    if(!evt.linkedProjectId || !evt.impact) { alert("Select a project and enter impact."); return; }
-                    const pIndex = this.projects.findIndex(x => x.id == evt.linkedProjectId);
-                    if(pIndex >= 0) {
-                        if(!this.projects[pIndex].updates) this.projects[pIndex].updates = [];
-                        this.projects[pIndex].updates.push({
-                            date: new Date().toISOString(),
-                            text: `[Activity: ${evt.title}] ${evt.impact}`
-                        });
-                        alert("Synced to Evidence Locker!");
-                        this.saveToFile();
-                    }
+                    const diff = (new Date(d) - new Date()) / (1000*60*60*24);
+                    return diff < 0 ? 'bg-red-500' : diff < 14 ? 'bg-amber-500' : 'bg-green-500';
                 },
                 downloadPDF() {
-                   const element = document.getElementById('report-area');
-                   html2pdf().from(element).save('Strategy_Dossier.pdf');
+                    const element = document.getElementById('print-area');
+                    html2pdf().from(element).save('Strategy_Dossier_v33.pdf');
+                },
+                
+                // --- SYNC LOGIC ---
+                syncImpact(evt) {
+                    if(!evt.linkedProjectId || !evt.impact) { alert("Select Project & Enter Impact"); return; }
+                    const proj = this.projects.find(p => p.id == evt.linkedProjectId);
+                    if(proj) {
+                        if(!proj.updates) proj.updates = [];
+                        proj.updates.push({ date: new Date().toISOString(), text: `[Calendar Sync]: ${evt.impact}` });
+                        alert("Synced to Project Evidence!");
+                        this.saveToFile();
+                    }
                 }
             }
         }
