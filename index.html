@@ -1,525 +1,828 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" :class="dark?'dark':''">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Impact Hub v33.0 (Fixed)</title>
+    <title>Digital Impact Hub v33.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        [x-cloak] { display: none !important; }
-        
-        /* CALENDAR GRID ENGINE */
-        .calendar-wrapper { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-        .calendar-header { display: grid; grid-template-columns: 60px repeat(5, 1fr); background: #f8fafc; border-bottom: 1px solid #cbd5e1; flex-shrink: 0; }
-        .header-cell { padding: 8px; text-align: center; font-weight: 800; font-size: 11px; color: #475569; border-right: 1px solid #e2e8f0; text-transform: uppercase; }
-        
-        .calendar-body { overflow-y: auto; flex: 1; position: relative; }
-        .calendar-grid { display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: repeat(40, 25px); /* 15 mins * 4 = 1 hour. 10 hours = 40 rows */ }
-        
-        .time-slot { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #f1f5f9; font-size: 10px; color: #94a3b8; text-align: right; padding-right: 8px; padding-top: 2px; }
-        .grid-cell { border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; position: relative; transition: background 0.1s; }
-        .grid-cell:hover { background-color: #f1f5f9; }
-        .grid-cell.drag-over { background-color: #e0e7ff !important; }
+[x-cloak]{display:none!important}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;margin:0}
+@media print{.no-print{display:none!important}body{background:#fff;color:#000}}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+.hdr{background:#fff;border-bottom:1px solid #e5e7eb;height:52px;display:flex;justify-content:space-between;align-items:center;padding:0 16px;z-index:30}
+.hdr-dark{background:#1f2937;border-color:#374151}
+.logo{background:#1e293b;color:#fff;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+.nav-active{background:#eef2ff;color:#4338ca;font-weight:700}.nav-btn{color:#6b7280}
+.nav-active-dark{background:#312e81;color:#a5b4fc;font-weight:700}.nav-btn-dark{color:#9ca3af}
+.nav-btn:hover{background:#f9fafb;color:#374151}.nav-btn-dark:hover{background:#374151;color:#d1d5db}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
+.card-dark{background:#1f2937;border-color:#374151}
+.btn-p{background:#4f46e5;color:#fff;padding:6px 14px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;border:none;transition:background .15s}
+.btn-p:hover{background:#4338ca}
+.btn-g{background:#fff;border:1px solid #d1d5db;color:#374151;padding:5px 12px;border-radius:6px;font-weight:600;font-size:11px;cursor:pointer;transition:all .15s}
+.btn-g:hover{background:#f9fafb;border-color:#9ca3af}
+.inp{border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:11px;outline:none;background:#fff;color:#374151;transition:border .15s}
+.inp:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,0.1)}
+.dark .inp{background:#374151;border-color:#4b5563;color:#e5e7eb}
+.chip-sm{display:inline-flex;align-items:center;font-size:9px;padding:2px 7px;border-radius:4px;font-weight:600;white-space:nowrap}
+.sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}
+.lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#9ca3af}
+.rpt-h{font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb}
+.pill-group{display:flex;background:#f1f5f9;border-radius:6px;padding:2px;gap:2px}
+.pill{font-size:10px;padding:3px 10px;border-radius:4px;font-weight:600;color:#6b7280;cursor:pointer;border:none;background:transparent;transition:all .15s}
+.pill-on{background:#fff;color:#4f46e5;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.live-badge{font-size:9px;color:#059669;background:#ecfdf5;padding:3px 8px;border-radius:4px;border:1px solid #d1fae5;font-weight:700;display:flex;align-items:center;gap:4px}
+.streak-badge{display:flex;align-items:center;gap:3px;font-size:11px;color:#ea580c;background:#fff7ed;padding:3px 8px;border-radius:4px;border:1px solid #fed7aa}
+.fade-in{animation:fadeIn .2s ease-out}@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.animate-slide-in{animation:slideIn .3s ease-out}@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+/* Calendar Events */
+.cal-cell{min-height:28px;transition:background .1s}
+.cal-evt{position:absolute;border-radius:5px;padding:3px 6px;font-size:10px;cursor:pointer;overflow:hidden;transition:opacity .15s;border-left:3px solid rgba(255,255,255,.3);box-sizing:border-box}
+.cal-evt-blue{background:#4f46e5;color:#fff}.cal-evt-amber{background:#d97706;color:#fff}
+.cal-evt-purple{background:#7c3aed;color:#fff}.cal-evt-green{background:#059669;color:#fff}
+/* Completed stamps */
+.completed-stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-12deg);font-size:15px;font-weight:900;color:rgba(5,100,73,0.35);letter-spacing:3px;white-space:nowrap;pointer-events:none;z-index:5;text-transform:uppercase;border:3px solid rgba(5,100,73,0.3);border-radius:6px;padding:4px 14px;font-family:'Georgia',serif}
+.completed-stamp-lg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-12deg);font-size:38px;font-weight:900;color:rgba(5,100,73,0.18);letter-spacing:6px;white-space:nowrap;pointer-events:none;z-index:1;text-transform:uppercase;border:4px solid rgba(5,100,73,0.15);border-radius:10px;padding:8px 24px;font-family:'Georgia',serif}
+/* Gantt */
+.gantt-grid{display:grid;gap:0}.gantt-row{display:contents}
+.gantt-cell{background:#fff;border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;min-height:36px}
+.gantt-sticky-col{position:sticky;left:0;z-index:10;background:#fff;border-right:1px solid #e5e7eb;display:flex;align-items:center;min-height:36px}
+.gantt-header{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #f1f5f9;border-bottom:2px solid #d1d5db;font-size:10px;font-weight:700;padding:6px 2px;position:sticky;top:0;z-index:20;background:#f8fafc}
+/* Dark mode overrides - WCAG 2.2 AA compliant (4.5:1 text, 3:1 UI) */
+.dark .card-dark .gantt-cell{background:#1e293b;border-color:#475569}
+.dark .gantt-sticky-col{background:#1e293b;border-color:#475569;color:#e2e8f0}
+.dark .gantt-header{background:#1e293b;border-color:#64748b;color:#e2e8f0}
+.dark .rpt-h{color:#f1f5f9;border-color:#475569}
+.dark{background-color:#0f172a;color:#e2e8f0}
+.dark .hdr-dark{background:#1e293b;border-color:#475569}
+.dark .card-dark{background:#1e293b;border-color:#475569}
+.dark .sec-title{color:#94a3b8}
+.dark .lbl{color:#94a3b8}
+.dark .inp{background:#1e293b;border-color:#64748b;color:#f1f5f9}
+.dark .inp:focus{border-color:#818cf8;box-shadow:0 0 0 2px rgba(129,140,248,0.25)}
+.dark .inp::placeholder{color:#64748b}
+.dark .btn-g{background:#1e293b;border-color:#64748b;color:#e2e8f0}
+.dark .btn-g:hover{background:#334155;border-color:#94a3b8}
+.dark .pill-group{background:#334155}
+.dark .pill{color:#cbd5e1}
+.dark .pill-on{background:#1e293b;color:#a5b4fc;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.dark .live-badge{color:#34d399;background:#064e3b;border-color:#065f46}
+.dark .streak-badge{color:#fb923c;background:#431407;border-color:#92400e}
+.dark .chip-sm{opacity:1}
+.dark .cal-cell{border-color:#334155}
+.dark table th{background:#334155;color:#e2e8f0;border-color:#475569}
+.dark table td{border-color:#475569;color:#e2e8f0}
+.dark table tr:hover td{background:#334155}
+.dark textarea{background:#1e293b;border-color:#64748b;color:#f1f5f9}
+.dark textarea::placeholder{color:#64748b}
+.dark select{background:#1e293b;border-color:#64748b;color:#f1f5f9}
+.dark option{background:#1e293b;color:#f1f5f9}
+.dark input[type="date"]{color:#e2e8f0}
+.dark input[type="checkbox"]{accent-color:#818cf8}
+.dark a{color:#93c5fd}
+.dark .text-gray-400{color:#94a3b8!important}
+.dark .text-gray-500{color:#94a3b8!important}
+.dark .text-gray-600{color:#cbd5e1!important}
+.dark .text-gray-700{color:#e2e8f0!important}
+.dark .text-gray-800{color:#f1f5f9!important}
+.dark .text-slate-400{color:#94a3b8!important}
+.dark .text-slate-500{color:#94a3b8!important}
+.dark .text-slate-600{color:#cbd5e1!important}
+.dark .text-slate-700{color:#e2e8f0!important}
+.dark .text-slate-800{color:#f1f5f9!important}
+.dark .bg-gray-50{background:#1e293b!important}
+.dark .bg-gray-100{background:#334155!important}
+.dark .bg-slate-50{background:#1e293b!important}
+.dark .border-gray-100{border-color:#334155!important}
+.dark .border-gray-200{border-color:#475569!important}
+.dark .border-gray-300{border-color:#64748b!important}
+.dark .border-slate-100{border-color:#334155!important}
+.dark .border-slate-200{border-color:#475569!important}
+.dark .hover\:bg-gray-50:hover{background:#334155!important}
+.dark .hover\:bg-gray-100:hover{background:#475569!important}
+/* Dark mode chip colors - maintain readability */
+.dark .bg-indigo-100{background:#312e81!important;color:#c7d2fe!important}
+.dark .bg-purple-100{background:#3b0764!important;color:#d8b4fe!important}
+.dark .bg-amber-100{background:#78350f!important;color:#fde68a!important}
+.dark .bg-blue-100{background:#1e3a5f!important;color:#93c5fd!important}
+.dark .bg-emerald-100{background:#064e3b!important;color:#6ee7b7!important}
+.dark .bg-red-100{background:#7f1d1d!important;color:#fca5a5!important}
+.dark .bg-cyan-100{background:#164e63!important;color:#67e8f9!important}
+.dark .bg-green-100{background:#064e3b!important;color:#6ee7b7!important}
+.dark .bg-amber-50{background:#451a03!important}
+.dark .bg-blue-50{background:#172554!important}
+.dark .bg-indigo-50{background:#1e1b4b!important}
+.dark .bg-purple-50{background:#2e1065!important}
+.dark .text-indigo-700{color:#a5b4fc!important}.dark .text-purple-700{color:#c4b5fd!important}
+.dark .text-amber-700{color:#fbbf24!important}.dark .text-blue-700{color:#93c5fd!important}
+.dark .text-emerald-700{color:#6ee7b7!important}.dark .text-red-700{color:#fca5a5!important}
+.dark .text-cyan-700{color:#67e8f9!important}.dark .text-green-700{color:#6ee7b7!important}
+/* Report section dark text */
+.dark .text-indigo-600{color:#a5b4fc!important}
+.dark .text-indigo-500{color:#818cf8!important}
+.dark .text-blue-600{color:#93c5fd!important}
+.dark .text-red-600{color:#fca5a5!important}
+.dark .text-red-500{color:#f87171!important}
+.dark .text-emerald-600{color:#6ee7b7!important}
+.dark .text-amber-600{color:#fbbf24!important}
+/* Completed tasks readable in dark mode */
+.dark .line-through{color:#64748b!important}
+/* Focus visible for keyboard nav (WCAG 2.2 2.4.7) */
+*:focus-visible{outline:2px solid #818cf8;outline-offset:2px;border-radius:2px}
+.dark *:focus-visible{outline-color:#a5b4fc}
+/* Minimum target size 24x24 for touch (WCAG 2.2 2.5.8) */
+button,a,[role="button"],input[type="checkbox"]{min-height:24px;min-width:24px}
 
-        /* DRAGGABLE EVENTS */
-        .event-chip { position: absolute; left: 2px; right: 2px; top: 1px; bottom: 1px; border-radius: 4px; padding: 2px 6px; font-size: 10px; border-left: 3px solid; cursor: pointer; z-index: 10; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.1s; }
-        .event-chip:hover { transform: scale(1.02); z-index: 20; box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
-
-        /* PRINT */
-        @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body { overflow: visible !important; height: auto; }
-        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden" x-data="appData()" x-init="init()">
-
-    <header class="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-6 shadow-sm z-[60] relative no-print">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-indigo-600 rounded-md flex items-center justify-center text-white font-bold text-lg shadow-sm">H</div>
-            <div>
-                <h1 class="font-bold text-sm leading-tight text-slate-900">Digital Impact Hub</h1>
-                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">v33.0 Stable</p>
-            </div>
-        </div>
-        <nav class="flex bg-slate-100 p-1 rounded-lg">
-            <template x-for="tab in tabs">
-                <button @click="view = tab.id" :class="view === tab.id ? 'bg-white text-indigo-700 shadow font-bold' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-md text-xs transition flex items-center gap-2">
-                    <i :class="tab.icon"></i> <span x-text="tab.label"></span>
-                </button>
-            </template>
-        </nav>
-        <div class="flex gap-2">
-             <button @click="openFile()" x-show="!fileHandle" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 animate-pulse shadow-sm">
-                <i class="fas fa-plug mr-2"></i> Connect Data
+<body class="h-screen flex flex-col overflow-hidden" :class="dark?'dark bg-slate-900 text-slate-200':'bg-gray-50 text-gray-800'" x-data="appData()" x-init="init()">
+<!-- HEADER -->
+<header class="hdr no-print" :class="dark?'hdr-dark':''">
+    <div class="flex items-center gap-3">
+        <div class="logo">DH</div>
+        <div><h1 class="text-sm font-bold leading-none" :class="dark?'text-gray-100':'text-gray-900'">Digital Impact Hub</h1><p class="text-[9px] font-mono mt-0.5" :class="dark?'text-gray-500':'text-gray-400'">v33.5</p></div>
+    </div>
+    <nav class="hidden lg:flex gap-0.5" x-show="fileHandle" x-cloak>
+        <template x-for="item in navItems" :key="item.id">
+            <button @click="switchView(item.id)" :class="view===item.id?(dark?'nav-active-dark':'nav-active'):(dark?'nav-btn-dark':'nav-btn')" class="px-2 py-1.5 rounded-md text-[11px] transition flex items-center gap-1.5">
+                <i :class="item.icon" class="text-[10px]"></i><span x-text="item.label"></span>
             </button>
-             <div x-show="fileHandle" class="flex gap-2">
-                 <button @click="saveToFile()" class="bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">
-                    <i class="fas fa-save mr-1"></i> Save
-                </button>
-                 <button @click="showWrapUp = true" class="bg-amber-400 text-amber-900 px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-500 hover:text-white transition shadow-sm">
-                    <i class="fas fa-bolt mr-1"></i> Daily Wrap
-                </button>
-             </div>
-        </div>
-    </header>
+        </template>
+    </nav>
+    <div class="lg:hidden" x-show="fileHandle" x-cloak><select @change="switchView($event.target.value)" x-model="view" class="inp text-xs"><template x-for="item in navItems" :key="item.id"><option :value="item.id" x-text="item.label"></option></template></select></div>
+    <div class="flex items-center gap-2">
+        <button @click="dark=!dark;localStorage.setItem('dh-dark',dark)" class="text-xs px-2 py-1 rounded" :class="dark?'text-yellow-400 hover:bg-gray-700':'text-gray-400 hover:bg-gray-100'"><i :class="dark?'fas fa-sun':'fas fa-moon'"></i></button>
+        <template x-if="!fileHandle"><button @click="openFile()" class="btn-p animate-pulse text-xs"><i class="fas fa-plug mr-1"></i>Connect</button></template>
+        <template x-if="fileHandle"><div class="flex items-center gap-2"><div class="streak-badge" x-show="streakCount>0"><i class="fas fa-fire text-orange-500"></i><span x-text="streakCount" class="font-bold"></span></div><span class="live-badge"><i class="fas fa-circle text-[5px]"></i>LIVE</span><button @click="saveToFile()" class="btn-g text-xs"><i class="fas fa-save mr-1"></i>Save</button></div></template>
+    </div>
+</header>
+<main class="flex-1 overflow-y-auto relative" :class="dark?'bg-gray-900':'bg-gray-50'">
+<div x-show="!fileHandle" class="h-full flex items-center justify-center p-6"><div class="card p-10 text-center max-w-md shadow-lg" :class="dark?'card-dark':''"><div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-5 text-xl"><i class="fas fa-database"></i></div><h2 class="text-xl font-bold mb-2" :class="dark?'text-gray-100':'text-gray-900'">Welcome Back</h2><p class="text-sm mb-6" :class="dark?'text-gray-400':'text-gray-500'">Connect your <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">digital-coach-data.json</code></p><button @click="openFile()" class="bg-gray-900 text-white font-bold text-sm px-8 py-3 rounded-lg hover:bg-gray-800 w-full">Select Local File</button></div></div>
+<div x-show="fileHandle" x-cloak class="h-full flex flex-col">
 
-    <main class="flex-1 flex overflow-hidden relative">
-
-        <div x-show="view === 'planner'" class="flex-1 flex h-full w-full">
-            <div class="w-80 bg-white border-r border-slate-200 flex flex-col z-50 shadow-lg h-full">
-                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-500">Action Hopper</h3>
-                    <button @click="addTodo()" class="text-indigo-600 hover:bg-indigo-50 p-1 rounded"><i class="fas fa-plus"></i></button>
-                </div>
-                <div class="p-3 border-b bg-white">
-                    <input x-model="newTodo" @keydown.enter="addTodo()" placeholder="Type task & enter..." class="w-full text-xs border border-slate-300 rounded p-2 outline-none focus:border-indigo-500 transition">
-                </div>
-                <div class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50/50">
-                    <template x-for="task in todos.filter(t => !t.completed)" :key="task.id">
-                        <div draggable="true" @dragstart="dragStart(task)" class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-move hover:border-indigo-400 group relative select-none">
-                            <div class="flex items-start gap-2">
-                                <input type="checkbox" x-model="task.completed" class="mt-1 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
-                                <div class="flex-1">
-                                    <div class="text-xs font-bold text-slate-700 leading-snug" x-text="task.text"></div>
-                                    <div class="flex gap-1 mt-1 flex-wrap">
-                                        <span x-show="task.projectTitle" class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium border border-slate-200" x-text="task.projectTitle"></span>
-                                        <span x-show="task.tlam" class="text-[9px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded font-medium border border-purple-100" x-text="task.tlam"></span>
-                                    </div>
-                                </div>
-                                <i class="fas fa-grip-vertical text-slate-300 group-hover:text-slate-400"></i>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <div class="flex-1 bg-slate-100 overflow-hidden relative z-0">
-                <div class="calendar-wrapper bg-white shadow-inner">
-                    <div class="calendar-header">
-                        <div class="header-cell bg-slate-100"></div> <template x-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']">
-                            <div class="header-cell" x-text="day"></div>
-                        </template>
-                    </div>
-                    
-                    <div class="calendar-body">
-                        <div class="calendar-grid">
-                            <template x-for="slot in 40"> <div class="time-slot" :style="`grid-row: ${slot}`" x-text="getTimeLabel(slot)"></div>
-                            </template>
-
-                            <template x-for="day in 5">
-                                <template x-for="slot in 40">
-                                    <div class="grid-cell" 
-                                         :style="`grid-column: ${day + 1}; grid-row: ${slot}`"
-                                         @dragover.prevent="dragOver($el)"
-                                         @dragleave="dragLeave($el)"
-                                         @drop="dropEvent(day, slot, $el)">
-                                    </div>
-                                </template>
-                            </template>
-
-                            <template x-for="evt in calendarEvents" :key="evt.id">
-                                <div class="event-chip"
-                                     @click="editEvent(evt)"
-                                     :class="getEventColor(evt.type)"
-                                     :style="`grid-column: ${evt.day + 1}; grid-row: ${evt.startSlot} / span ${evt.duration};`">
-                                    <div class="font-bold truncate leading-tight" x-text="evt.title"></div>
-                                    <div class="text-[9px] opacity-80 truncate" x-text="evt.projectTitle || 'No Project'"></div>
-                                </div>
-                            </template>
-                        </div>
+<!-- PLANNER -->
+<div x-show="view==='planner'" class="h-full flex gap-0 fade-in">
+    <div class="w-72 border-r flex flex-col flex-shrink-0 max-lg:hidden" :class="dark?'bg-gray-800 border-gray-700':'bg-white border-gray-200'">
+        <div class="p-3 border-b flex justify-between items-center" :class="dark?'border-gray-700':''"><h3 class="sec-title">Action Hopper</h3><button @click="addTaskModal=true" class="btn-p text-[10px] px-2 py-1">+ Add</button></div>
+        <div class="p-2 border-b" :class="dark?'border-gray-700':''"><input x-model="taskSearch" placeholder="Filter..." class="inp w-full"></div>
+        <div class="flex-1 overflow-y-auto p-2 space-y-1.5">
+            <template x-for="task in getSortedTasks()" :key="task.id">
+                <div class="p-2.5 rounded-lg border hover:border-indigo-300 group cursor-grab text-xs" :class="dark?'bg-gray-700 border-gray-600':'bg-white border-gray-200'" draggable="true" @dragstart="dragTask=task;$event.dataTransfer.setData('text/plain',task.id)">
+                    <div class="flex items-start gap-2">
+                        <input type="checkbox" x-model="task.completed" @change="completeTask(task)" class="mt-0.5 rounded text-indigo-600">
+                        <div class="flex-1 min-w-0 cursor-pointer" @click="showTaskDetail=showTaskDetail===task.id?null:task.id"><div class="font-medium leading-tight" :class="task.completed?'line-through text-gray-400':(dark?'text-gray-200':'text-gray-800')" x-text="task.text"></div><div class="flex gap-1.5 mt-1 flex-wrap"><span x-show="task.projectTitle&&task.projectTitle!=='Manual'" class="chip-sm bg-gray-100 text-gray-500 truncate max-w-[120px]" x-text="task.projectTitle"></span><span x-show="task.dueDate" class="chip-sm" :class="getDueClass(task.dueDate)" x-text="formatDateShort(task.dueDate)"></span></div>
+                        <div x-show="showTaskDetail===task.id" x-transition class="mt-2 pt-2 border-t border-gray-100 space-y-2" @click.stop>
+                            <textarea x-model="task.notes" class="inp w-full h-14 resize-none text-[11px]" placeholder="Notes / what to do..."></textarea>
+                            <textarea x-model="task.impactStatement" class="inp w-full h-10 resize-none text-[11px]" placeholder="Impact statement..."></textarea>
+                            <div class="flex gap-2"><select x-model="task.linkedProjectId" class="inp flex-1 text-[10px]"><option value="">— Link —</option><template x-for="pil in getPillars()" :key="'td'+pil.id"><optgroup :label="pil.title"><template x-for="p in getProjectsForPillar(pil.id)" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></optgroup></template></select><button @click="saveTaskDetail(task)" class="btn-p text-[10px]">Save</button></div>
+                        </div></div>
+                        <button @click="deleteTodoById(task.id)" class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 text-[10px]"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div x-show="view === 'projects'" class="flex-1 overflow-y-auto p-8 bg-slate-50">
-            <div class="max-w-7xl mx-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black text-slate-800">Project Portfolio</h2>
-                    <button @click="createProject()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold text-xs shadow hover:bg-indigo-700">New Project</button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <template x-for="proj in projects" :key="proj.id">
-                        <div @click="editProject(proj)" class="bg-white rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition group overflow-hidden">
-                            <div class="h-1 w-full" :class="getRagColor(proj.endDate)"></div>
-                            <div class="p-5">
-                                <div class="flex justify-between items-start mb-2">
-                                    <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold uppercase tracking-wider" x-text="proj.pillar || 'General'"></span>
-                                    <span x-show="proj.tlam" class="text-[10px] bg-purple-50 text-purple-600 px-2 py-1 rounded border border-purple-100 font-bold" x-text="proj.tlam"></span>
-                                </div>
-                                <h3 class="font-bold text-slate-800 text-lg mb-1 group-hover:text-indigo-600 transition" x-text="proj.title"></h3>
-                                <p class="text-xs text-slate-500 line-clamp-2 mb-4" x-text="proj.objective || 'No objective defined.'"></p>
-                                <div class="flex items-center gap-3 text-xs font-bold text-slate-400">
-                                    <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                        <div class="bg-indigo-500 h-full rounded-full" :style="`width: ${calcProgress(proj)}%`"></div>
-                                    </div>
-                                    <span x-text="calcProgress(proj) + '%'"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-        </div>
-
-        <div x-show="view === 'reports'" class="flex-1 overflow-y-auto p-8 bg-white" id="print-area">
-            <div class="max-w-5xl mx-auto">
-                <div class="flex justify-between items-end border-b-2 border-slate-900 pb-6 mb-8">
-                    <div>
-                        <h1 class="text-4xl font-black text-slate-900 uppercase tracking-tighter">Impact Dossier</h1>
-                        <p class="text-slate-500 font-medium mt-1">Strategic Performance Report</p>
-                    </div>
-                    <button @click="downloadPDF()" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold text-xs no-print hover:bg-slate-800">
-                        <i class="fas fa-file-pdf mr-2"></i> Export PDF
-                    </button>
-                </div>
-
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-8 flex flex-wrap gap-4 items-center no-print shadow-sm">
-                    <div class="flex items-center gap-2"><i class="fas fa-filter text-slate-400"></i> <span class="text-xs font-bold uppercase text-slate-500">Filters:</span></div>
-                    <select x-model="filters.pillar" class="text-xs border border-slate-300 rounded p-2 bg-white outline-none"><option value="">All Pillars</option><template x-for="p in pillars"><option :value="p" x-text="p"></option></template></select>
-                    <select x-model="filters.tlam" class="text-xs border border-slate-300 rounded p-2 bg-white outline-none"><option value="">All TLAMs</option><template x-for="t in metadata.tlams"><option :value="t" x-text="t"></option></template></select>
-                    <select x-model="filters.area" class="text-xs border border-slate-300 rounded p-2 bg-white outline-none"><option value="">All Areas</option><template x-for="a in metadata.areas"><option :value="a" x-text="a"></option></template></select>
-                    <button @click="resetFilters()" class="text-xs text-red-500 font-bold hover:underline ml-auto">Reset</button>
-                </div>
-
-                <div class="border rounded-lg overflow-hidden">
-                    <table class="w-full text-sm">
-                        <thead class="bg-slate-100 text-slate-500 font-bold uppercase text-[10px]">
-                            <tr>
-                                <th class="p-3 text-left">Project / Initiative</th>
-                                <th class="p-3 text-left">Lead & Area</th>
-                                <th class="p-3 text-left">TLAM</th>
-                                <th class="p-3 text-left w-1/3">Latest Impact Statement</th>
-                                <th class="p-3 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            <template x-for="row in filteredData" :key="row.id">
-                                <tr class="hover:bg-slate-50/50">
-                                    <td class="p-3">
-                                        <div class="font-bold text-slate-800" x-text="row.title"></div>
-                                        <div class="text-[10px] text-slate-400" x-text="row.pillar"></div>
-                                    </td>
-                                    <td class="p-3">
-                                        <div class="text-xs text-slate-700" x-text="row.lead || '-'"></div>
-                                        <div class="text-[10px] text-slate-400 font-bold" x-text="row.area || '-'"></div>
-                                    </td>
-                                    <td class="p-3">
-                                        <span x-show="row.tlam" class="text-[10px] bg-purple-50 text-purple-600 px-2 py-1 rounded border border-purple-100 font-bold" x-text="row.tlam"></span>
-                                    </td>
-                                    <td class="p-3">
-                                        <div class="text-xs text-slate-600 italic leading-relaxed" x-text="getLatestUpdate(row)"></div>
-                                    </td>
-                                    <td class="p-3 text-center">
-                                        <span class="text-[10px] px-2 py-1 rounded-full font-bold" :class="getStatusColor(row)" x-text="calcProgress(row) === 100 ? 'Complete' : 'Active'"></span>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <div x-show="modals.project" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl h-[85vh] flex flex-col overflow-hidden">
-            <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                <h3 class="font-bold text-slate-700">Edit Project</h3>
-                <button @click="modals.project = false" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-6 space-y-4">
-                <input x-model="activeProject.title" class="w-full text-xl font-bold border-b border-slate-200 pb-2 outline-none text-slate-800 placeholder-slate-300" placeholder="Project Title">
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[10px] font-bold uppercase text-slate-400">Pillar</label>
-                        <select x-model="activeProject.pillar" class="w-full border rounded p-2 text-xs"><template x-for="p in pillars"><option :value="p" x-text="p"></option></template></select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold uppercase text-slate-400">Area</label>
-                        <select x-model="activeProject.area" class="w-full border rounded p-2 text-xs"><template x-for="a in metadata.areas"><option :value="a" x-text="a"></option></template></select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold uppercase text-slate-400">TLAM</label>
-                        <select x-model="activeProject.tlam" class="w-full border rounded p-2 text-xs"><template x-for="t in metadata.tlams"><option :value="t" x-text="t"></option></template></select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold uppercase text-slate-400">Lead Staff</label>
-                        <input x-model="activeProject.lead" class="w-full border rounded p-2 text-xs">
-                    </div>
-                </div>
-
-                <div class="border-t pt-4">
-                    <h4 class="text-xs font-bold uppercase text-slate-500 mb-2">Tasks</h4>
-                    <div class="space-y-2 mb-2">
-                        <template x-for="(task, idx) in activeProject.milestones" :key="idx">
-                            <div class="flex gap-2 items-center">
-                                <input type="checkbox" x-model="task.completed" class="rounded text-indigo-600">
-                                <input x-model="task.title" class="flex-1 border-b border-transparent focus:border-slate-300 outline-none text-sm">
-                                <button @click="activeProject.milestones.splice(idx, 1)" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </template>
-                    </div>
-                    <button @click="addTaskToProject()" class="text-xs text-indigo-600 font-bold">+ Add Task</button>
-                </div>
-
-                <div class="border-t pt-4">
-                    <h4 class="text-xs font-bold uppercase text-slate-500 mb-2">Evidence Locker</h4>
-                    <textarea x-model="newUpdate" class="w-full border rounded p-2 text-xs h-16 mb-2" placeholder="Log impact/evidence..."></textarea>
-                    <button @click="addUpdateToProject()" class="bg-slate-800 text-white px-3 py-1 rounded text-xs font-bold">Log Entry</button>
-                    <div class="mt-4 space-y-2">
-                        <template x-for="u in activeProject.updates">
-                            <div class="bg-slate-50 p-2 rounded text-xs border border-slate-100">
-                                <span class="font-bold text-slate-400 block text-[9px]" x-text="new Date(u.date).toLocaleDateString()"></span>
-                                <span x-text="u.text"></span>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-            <div class="p-4 border-t bg-slate-50 flex justify-end gap-2">
-                <button @click="deleteProject()" class="text-red-500 text-xs font-bold px-3">Delete</button>
-                <button @click="saveProject()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-xs hover:bg-indigo-700">Save Changes</button>
-            </div>
+            </template>
+            <div x-show="getSortedTasks().length===0" class="text-center py-8 text-gray-400 text-xs"><i class="fas fa-inbox text-2xl mb-2 block"></i>Hopper empty.</div>
         </div>
     </div>
-
-    <div x-show="showWrapUp" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm" x-cloak>
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col p-6">
-            <h2 class="text-2xl font-black text-slate-800 mb-1">Daily Impact Wrap-Up</h2>
-            <p class="text-sm text-slate-500 mb-6">Review today's calendar events and sync evidence to projects.</p>
-            
-            <div class="flex-1 overflow-y-auto space-y-4">
-                <template x-for="evt in calendarEvents" :key="evt.id">
-                    <div class="border rounded-lg p-3 bg-slate-50 flex gap-4 items-start">
-                        <div class="w-24 text-center border-r pr-4">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase">Duration</div>
-                            <div class="text-lg font-black text-slate-700" x-text="(evt.duration * 15) + 'm'"></div>
-                        </div>
-                        <div class="flex-1">
-                            <div class="font-bold text-slate-800" x-text="evt.title"></div>
-                            <div class="grid grid-cols-2 gap-2 mt-2">
-                                <select x-model="evt.linkedProjectId" class="text-xs border rounded p-1">
-                                    <option value="">Link to Project...</option>
-                                    <template x-for="p in projects"><option :value="p.id" x-text="p.title"></option></template>
-                                </select>
-                                <button @click="syncImpact(evt)" class="bg-green-600 text-white rounded p-1 text-xs font-bold uppercase shadow">Sync to Evidence</button>
-                            </div>
-                            <textarea x-model="evt.impact" placeholder="Type impact statement here..." class="w-full mt-2 text-xs border rounded p-2 h-14"></textarea>
-                        </div>
+    <div class="flex-1 flex flex-col overflow-hidden" :class="dark?'bg-gray-900':'bg-gray-50'">
+        <div class="p-3 border-b flex justify-between items-center flex-shrink-0 flex-wrap gap-2" :class="dark?'bg-gray-800 border-gray-700':'bg-white border-gray-200'">
+            <div class="flex items-center gap-3"><h3 class="sec-title">Weekly Planner</h3><div class="pill-group"><template x-for="f in ['All','Strategy','Meeting','Activity']" :key="f"><button @click="calFilter=f" class="pill" :class="calFilter===f?'pill-on':''" x-text="f"></button></template></div></div>
+            <div class="flex gap-2 items-center"><button @click="calWeekOffset--" class="btn-g text-[10px] px-2 py-1"><i class="fas fa-chevron-left"></i></button><span class="text-[10px] font-mono font-bold" :class="dark?'text-gray-400':'text-gray-500'" x-text="getWeekLabel()"></span><button @click="calWeekOffset=0" class="btn-g text-[10px] px-2 py-1">Today</button><button @click="calWeekOffset++" class="btn-g text-[10px] px-2 py-1"><i class="fas fa-chevron-right"></i></button><button @click="addCalendarEvent()" class="btn-p text-xs"><i class="fas fa-plus mr-1"></i>Event</button></div>
+        </div>
+        <div class="flex-1 overflow-auto relative" id="calGrid">
+            <div class="grid min-w-[700px]" style="grid-template-columns:52px repeat(5,1fr);">
+                <div class="sticky top-0 z-20 border-b-2 p-2" :class="dark?'bg-gray-800 border-gray-600':'bg-gray-50 border-gray-300'"></div>
+                <template x-for="day in getWeekDays()" :key="day.key">
+                    <div class="sticky top-0 z-20 border-b-2 p-2 text-center border-l" :class="day.isToday?(dark?'bg-indigo-900/30 border-indigo-700':'bg-indigo-50 border-gray-300'):(dark?'bg-gray-800 border-gray-600':'bg-gray-50 border-gray-300')">
+                        <div class="text-[10px] font-bold uppercase" :class="day.isToday?'text-indigo-500':(dark?'text-gray-400':'text-gray-500')" x-text="day.short"></div>
+                        <div class="text-[10px] font-mono" :class="day.isToday?'text-indigo-400':'text-gray-400'" x-text="day.date"></div>
+                    </div>
+                </template>
+                <template x-for="slot in timeSlots" :key="slot.time">
+                    <div class="contents">
+                        <div class="text-[9px] font-mono pr-2 text-right flex items-start pt-0.5 select-none" :class="slot.isHour?(dark?'border-b border-gray-700 text-gray-500':'border-b border-gray-300 text-gray-400'):(dark?'border-b border-gray-800':'border-b border-gray-100')" style="min-height:28px" x-text="slot.isHour?slot.label:''"></div>
+                        <template x-for="dayCol in getWeekDays()" :key="slot.time+dayCol.isoDate">
+                            <div class="border-l relative cal-cell" :class="slot.isHour?(dark?'border-b border-gray-700 border-l-gray-700':'border-b border-gray-300'):(dark?'border-b border-gray-800 border-l-gray-700':'border-b border-gray-100 border-l-gray-200')"
+                                @dragover.prevent="$el.classList.add(dark?'bg-indigo-900/20':'bg-indigo-50')" @dragleave="$el.classList.remove(dark?'bg-indigo-900/20':'bg-indigo-50')"
+                                @drop.prevent="dropOnSlot(dayCol.isoDate,slot.time,$el)" @click="quickAddEvent(dayCol.isoDate,slot.time)"></div>
+                        </template>
                     </div>
                 </template>
             </div>
-            <button @click="showWrapUp = false" class="mt-4 w-full py-3 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200">Close</button>
+            <template x-for="evt in getWeekEvents()" :key="evt.id">
+                <div class="cal-evt group" :class="[getEvtClass(evt.type), evt.completed?'opacity-50':'']" :style="getEvtStyle(evt)">
+                    <div class="flex items-start gap-1 h-full">
+                        <input type="checkbox" :checked="evt.completed" @click.stop="completeCalEvent(evt)" class="mt-0.5 cursor-pointer flex-shrink-0">
+                        <div class="flex-1 min-w-0 cursor-pointer" @click.stop="editEvent(evt)">
+                            <div class="font-bold truncate text-[10px] leading-tight" :class="evt.completed?'line-through':''" x-text="evt.title"></div>
+                            <div class="text-[9px] opacity-75" x-text="(evt.startTime||'')+ ' ('+evt.duration+'m)'"></div>
+                        </div>
+                    </div>
+                    <div class="absolute top-0.5 right-1 opacity-0 group-hover:opacity-100 flex gap-1"><button @click.stop="deleteEvent(evt.id)" class="text-white/60 hover:text-white"><i class="fas fa-times text-[8px]"></i></button></div>
+                </div>
+            </template>
         </div>
     </div>
+</div>
+
+<!-- DASHBOARD -->
+<div x-show="view==='dashboard'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-6xl mx-auto space-y-5">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="card p-4" :class="dark?'card-dark':''"><div class="chip-sm bg-indigo-100 text-indigo-700 mb-2">Active</div><div class="text-2xl font-bold" :class="dark?'text-gray-100':''" x-text="projects.filter(p=>p.status!=='Completed').length"></div></div>
+            <div class="card p-4" :class="dark?'card-dark':''"><div class="chip-sm bg-amber-100 text-amber-700 mb-2">Tasks</div><div class="text-2xl font-bold" :class="dark?'text-gray-100':''" x-text="todos.filter(t=>!t.completed).length"></div></div>
+            <div class="card p-4" :class="dark?'card-dark':''"><div class="chip-sm bg-emerald-100 text-emerald-700 mb-2">Evidence</div><div class="text-2xl font-bold" :class="dark?'text-gray-100':''" x-text="projects.reduce((s,p)=>s+(p.updates||[]).length,0)"></div></div>
+            <div class="card p-4" :class="dark?'card-dark':''"><div class="chip-sm bg-purple-100 text-purple-700 mb-2">Completion</div><div class="text-2xl font-bold" :class="dark?'text-gray-100':''" x-text="getOverallCompletion()+'%'"></div></div>
+        </div>
+        <div x-show="getQualityWarnings().length>0" class="card p-4 border-l-4 border-amber-400" :class="dark?'bg-amber-900/20 card-dark':'bg-amber-50'"><h4 class="text-xs font-bold text-amber-700 uppercase mb-2"><i class="fas fa-exclamation-triangle mr-1"></i>Quality Checks</h4><div class="space-y-1"><template x-for="w in getQualityWarnings()" :key="w.id"><div class="text-xs text-amber-700 flex items-center gap-2"><i class="fas fa-arrow-right text-[9px]"></i><span x-text="w.message"></span><button x-show="w.projectId" @click="editProject(projects.find(p=>p.id===w.projectId))" class="text-indigo-600 hover:underline text-[10px] font-bold">Fix →</button></div></template></div></div>
+        <template x-for="card in stakeholderPushCards" :key="card.id"><div class="card p-4 border-l-4 border-blue-400 flex items-center gap-3" :class="dark?'bg-blue-900/20 card-dark':'bg-blue-50'"><i class="fas fa-user-plus text-blue-500"></i><div class="flex-1"><span class="text-xs font-bold text-blue-800">New contact: </span><span class="text-xs text-blue-700" x-text="card.name"></span></div><button @click="acceptStakeholder(card)" class="btn-p text-[10px]">Add</button><button @click="dismissStakeholderCard(card.id)" class="text-gray-400 hover:text-red-400 text-xs"><i class="fas fa-times"></i></button></div></template>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="card p-5" :class="dark?'card-dark':''"><div class="flex justify-between items-center mb-3"><h4 class="sec-title">Distribution</h4><div class="pill-group"><button @click="dashboardMode='strategy';updateCharts()" class="pill" :class="dashboardMode==='strategy'?'pill-on':''">Pillar</button><button @click="dashboardMode='governance';updateCharts()" class="pill" :class="dashboardMode==='governance'?'pill-on':''">KPI</button></div></div><div class="h-48"><canvas id="priorityChart"></canvas></div></div><div class="card p-5" :class="dark?'card-dark':''"><h4 class="sec-title mb-3">Pipeline</h4><div class="h-48"><canvas id="pipelineChart"></canvas></div></div></div>
+        <div class="card p-5" :class="dark?'card-dark':''"><h4 class="sec-title mb-3">Upcoming Due</h4><div class="space-y-1.5"><template x-for="task in getAllDueTasks()" :key="task.id"><div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 text-xs cursor-pointer" @click="editProject(projects.find(p=>p.id===task.projectId))"><span class="chip-sm font-mono" :class="getDueClass(task.dueDate)" x-text="formatDateShort(task.dueDate)"></span><span class="font-medium flex-1" :class="dark?'text-gray-200':''" x-text="task.title"></span><span class="text-gray-400 text-[10px] truncate max-w-[150px]" x-text="task.projectName"></span></div></template></div></div>
+    </div>
+</div>
+
+<!-- DAILY UPDATE -->
+<div x-show="view==='daily'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
+            <div><h2 class="text-lg font-bold" :class="dark?'text-gray-100':''">Daily Update</h2><p class="text-xs text-gray-500">Reflect, log evidence, capture impact.</p></div>
+            <div class="flex gap-2 items-center flex-wrap"><input type="date" x-model="dailyDate" class="inp" @change="loadDailyUpdate()"><div class="pill-group"><template x-for="g in ['time','project','pillar']" :key="g"><button @click="dailyGroupBy=g" class="pill capitalize" :class="dailyGroupBy===g?'pill-on':''" x-text="g"></button></template></div><button @click="saveDailyUpdate()" class="btn-p text-xs"><i class="fas fa-save mr-1"></i>Save</button><button @click="exportDailyReport('pdf')" class="btn-g text-xs"><i class="fas fa-file-pdf mr-1"></i></button><button @click="exportDailyReport('word')" class="btn-g text-xs"><i class="fas fa-file-word mr-1"></i></button></div>
+        </div>
+        <div class="card overflow-x-auto" :class="dark?'card-dark':''">
+            <table class="w-full text-xs min-w-[900px]"><thead><tr class="border-b" :class="dark?'bg-gray-800 border-gray-700':'bg-gray-50'"><th class="text-left p-3 sec-title w-[18%]">Event / Task</th><th class="text-left p-3 sec-title w-[15%]">Link To</th><th class="text-left p-3 sec-title w-[22%]">Comments</th><th class="text-left p-3 sec-title w-[22%]">Evidence</th><th class="text-left p-3 sec-title w-[23%]">Impact</th></tr></thead>
+            <tbody><template x-for="(item,idx) in dailyItems" :key="idx">
+                <tr class="border-b" :class="dark?'border-gray-700 hover:bg-gray-800':'border-gray-100 hover:bg-gray-50'">
+                    <td class="p-3"><div class="font-medium" :class="dark?'text-gray-200':''" x-text="item.title"></div><div class="flex gap-1.5 mt-0.5"><span x-show="item.time" class="font-mono text-[10px] text-gray-400" x-text="item.time"></span><span class="chip-sm" :class="getTypeColor(item.type)" x-text="item.type"></span></div></td>
+                    <td class="p-3"><select x-model="item.linkType" class="inp w-full mb-1 text-[10px]"><option value="">None</option><option value="project">Project</option><option value="pillar">Pillar</option><option value="tlam">TLAM</option><option value="area">Area</option><option value="staff">Staff</option><option value="other">Other</option></select><select x-show="item.linkType==='project'" x-model="item.linkedProjectId" class="inp w-full text-[10px]"><option value="">—</option><optgroup label="Strategy"><template x-for="p in projects.filter(x=>x.type==='Strategy')" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></optgroup><optgroup label="Other"><template x-for="p in projects.filter(x=>x.type!=='Strategy')" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></optgroup></select><select x-show="item.linkType==='pillar'" x-model="item.linkedPillarId" class="inp w-full text-[10px]"><option value="">—</option><template x-for="p in getPillars()" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select><input x-show="item.linkType==='tlam'||item.linkType==='staff'" x-model="item.linkName" class="inp w-full text-[10px]" placeholder="Name..."><input x-show="item.linkType==='area'" x-model="item.linkArea" class="inp w-full text-[10px]" list="areaList" placeholder="Area..."><input x-show="item.linkType==='other'" x-model="item.linkOther" class="inp w-full text-[10px]" placeholder="Title..."></td>
+                    <td class="p-3"><textarea x-model="item.comments" class="inp w-full h-16 resize-none" placeholder="What happened?"></textarea></td>
+                    <td class="p-3"><input x-model="item.evidenceLink" class="inp w-full mb-1" placeholder="OneDrive URL..."><input x-model="item.evidenceName" class="inp w-full" placeholder="Label"></td>
+                    <td class="p-3"><textarea x-model="item.impactStatement" class="inp w-full h-16 resize-none" placeholder="What was the impact?"></textarea></td>
+                </tr>
+            </template></tbody></table>
+        </div>
+        <button @click="addDailyItem()" class="mt-3 w-full py-2 border border-dashed rounded-lg text-xs font-medium" :class="dark?'border-gray-700 text-gray-400':'border-gray-300 text-gray-500'">+ Add Manual Entry</button>
+    </div>
+</div>
+
+<!-- WEEKLY REVIEW -->
+<div x-show="view==='weekly'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
+            <div><h2 class="text-lg font-bold" :class="dark?'text-gray-100':''">Weekly Review</h2><p class="text-xs text-gray-500">Auto-compiled from your week.</p></div>
+            <div class="flex gap-2 items-center"><button @click="weeklyOffset--" class="btn-g text-[10px] px-2 py-1"><i class="fas fa-chevron-left"></i></button><span class="text-xs font-mono font-bold" :class="dark?'text-gray-400':''" x-text="getWeeklyLabel()"></span><button @click="weeklyOffset=0" class="btn-g text-[10px] px-2 py-1">This Week</button><button @click="weeklyOffset++" class="btn-g text-[10px] px-2 py-1"><i class="fas fa-chevron-right"></i></button><button @click="exportWeeklyReport('pdf')" class="btn-p text-xs"><i class="fas fa-file-pdf mr-1"></i>PDF</button><button @click="exportWeeklyReport('word')" class="btn-g text-xs"><i class="fas fa-file-word mr-1"></i>Word</button></div>
+        </div>
+        <div id="weeklyReportContent" class="card p-6 space-y-5" :class="dark?'card-dark':''">
+            <div class="text-center border-b pb-3" :class="dark?'border-gray-700':''"><h3 class="text-lg font-bold" :class="dark?'text-gray-100':''">Weekly Summary</h3><p class="text-xs text-gray-500" x-text="getWeeklyLabel()"></p></div>
+            <div><h4 class="rpt-h">📊 Overview</h4><div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs"><div class="bg-indigo-50 p-3 rounded-lg text-center"><div class="text-xl font-bold text-indigo-700" x-text="getWeeklyStats().eventsCount"></div><div class="text-gray-500">Events</div></div><div class="bg-emerald-50 p-3 rounded-lg text-center"><div class="text-xl font-bold text-emerald-700" x-text="getWeeklyStats().tasksCompleted"></div><div class="text-gray-500">Tasks Done</div></div><div class="bg-amber-50 p-3 rounded-lg text-center"><div class="text-xl font-bold text-amber-700" x-text="getWeeklyStats().evidenceLogged"></div><div class="text-gray-500">Evidence</div></div><div class="bg-purple-50 p-3 rounded-lg text-center"><div class="text-xl font-bold text-purple-700" x-text="getWeeklyStats().meetingsHeld"></div><div class="text-gray-500">Meetings</div></div></div></div>
+            <div x-show="getWeeklyDailyUpdates().length>0"><h4 class="rpt-h">📝 Daily Logs</h4><template x-for="du in getWeeklyDailyUpdates()" :key="du.date"><div class="mb-3 p-3 rounded-lg border" :class="dark?'bg-gray-800 border-gray-700':'bg-gray-50'"><div class="font-bold text-xs mb-1" :class="dark?'text-gray-200':''" x-text="formatDate(du.date)"></div><template x-for="item in du.items" :key="item.title"><div class="text-[11px] ml-3 mb-1"><span class="font-medium" :class="dark?'text-gray-300':''" x-text="item.title"></span><span x-show="item.comments" class="text-gray-500" x-text="' — '+item.comments"></span><span x-show="item.impactStatement" class="text-emerald-600 italic" x-text="' [Impact: '+item.impactStatement+']'"></span></div></template></div></template></div>
+            <div x-show="getWeeklyCompletedTasks().length>0"><h4 class="rpt-h">✅ Completed Tasks</h4><template x-for="t in getWeeklyCompletedTasks()" :key="t.title"><div class="text-xs ml-3 mb-1"><span class="text-emerald-600">✓</span> <span x-text="t.title"></span><span class="text-gray-400 text-[10px] ml-1" x-text="'('+t.project+')'"></span></div></template></div>
+            <div x-show="getWeeklyMeetings().length>0"><h4 class="rpt-h">🤝 Meetings</h4><template x-for="m in getWeeklyMeetings()" :key="m.id"><div class="text-xs p-2 mb-1 rounded" :class="dark?'bg-gray-800':'bg-gray-50'"><span class="font-bold" x-text="m.title||'Untitled'"></span><span class="text-gray-400 ml-2 font-mono" x-text="formatDate(m.date)"></span></div></template></div>
+        </div>
+    </div>
+</div>
+
+<!-- STRATEGY -->
+<div x-show="view==='strategy'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold" :class="dark?'text-gray-100':''">Strategic Pillars</h2><div class="flex gap-2"><button @click="printStrategyDossier()" class="btn-g text-xs"><i class="fas fa-print mr-1"></i>Dossier</button><button @click="addPillar()" class="btn-p text-xs"><i class="fas fa-plus mr-1"></i>Pillar</button></div></div>
+        <div class="flex gap-1 border-b mb-5 overflow-x-auto" :class="dark?'border-gray-700':''"><template x-for="(pillar,idx) in getPillars()" :key="pillar.id"><button @click="activeStrategyTab=idx" class="px-4 py-2 text-xs font-medium transition whitespace-nowrap border-b-2" :class="activeStrategyTab===idx?'border-indigo-600 text-indigo-700 font-bold':'border-transparent text-gray-500'"><span class="inline-block w-2 h-2 rounded-full mr-1.5" :style="'background:'+(pillar.color||'#6c757d')"></span><span x-text="pillar.title"></span></button></template></div>
+        <template x-if="getPillars()[activeStrategyTab]">
+            <div class="space-y-4">
+                <div class="card p-5" :class="dark?'card-dark':''"><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"><div><label class="lbl">Title</label><input x-model="getPillars()[activeStrategyTab].title" class="inp w-full mt-1"></div><div><label class="lbl">Colour</label><input type="color" x-model="getPillars()[activeStrategyTab].color" class="mt-1 h-9 w-16 rounded border cursor-pointer"></div><div class="flex items-end"><button @click="saveToFile();showToast('Saved')" class="btn-p text-xs w-full">Save</button></div></div><div><label class="lbl">Intent</label><textarea x-model="getPillars()[activeStrategyTab].intent" class="inp w-full mt-1 h-20 resize-none"></textarea></div><div class="mt-3"><label class="lbl">Impact Statement</label><textarea x-model="getPillars()[activeStrategyTab].impactStatement" class="inp w-full mt-1 h-16 resize-none"></textarea></div></div>
+                <div class="card p-5" :class="dark?'card-dark':''"><div class="flex justify-between items-center mb-3"><h4 class="sec-title">Linked Projects</h4><span class="chip-sm bg-indigo-50 text-indigo-600" x-text="getProjectsForPillar(getPillars()[activeStrategyTab].id).length+' projects'"></span></div><div class="space-y-2"><template x-for="proj in getProjectsForPillar(getPillars()[activeStrategyTab].id)" :key="proj.id"><div class="flex items-center gap-3 p-3 rounded-lg border hover:border-indigo-200 cursor-pointer group relative" :class="dark?'border-gray-700':'border-gray-100'" @click="editProject(proj)"><div x-show="proj.status==='Completed'" class="completed-stamp">COMPLETED</div><div class="flex-1 min-w-0"><div class="font-medium text-sm group-hover:text-indigo-600 truncate" :class="dark?'text-gray-200':''" x-text="proj.title"></div><div class="text-[10px] text-gray-400 mt-0.5 flex gap-2"><span x-text="proj.milestoneLink||''"></span><span x-show="proj.kpi" class="chip-sm bg-purple-50 text-purple-600" x-text="proj.kpi"></span></div></div><div class="flex items-center gap-2 text-xs"><span class="w-2 h-2 rounded-full" :class="getRagDot(proj.endDate)"></span><div class="w-16 bg-gray-100 rounded-full h-1.5"><div class="h-full bg-indigo-500 rounded-full" :style="'width:'+calculateProgress(proj)+'%'"></div></div><span class="font-mono text-[10px]" x-text="calculateProgress(proj)+'%'"></span></div></div></template></div></div>
+            </div>
+        </template>
+    </div>
+</div>
+
+<!-- PROJECTS -->
+<div x-show="view==='projects'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-6xl mx-auto">
+        <div class="card p-4 mb-5 flex flex-wrap gap-3 items-center" :class="dark?'card-dark':''"><div class="relative flex-1 min-w-[160px]"><i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i><input x-model="searchQuery" placeholder="Search..." class="inp pl-8 w-full"></div><select x-model="filterPillar" class="inp"><option value="">All Pillars</option><template x-for="p in getPillars()" :key="p.id"><option :value="p.id" x-text="p.title"></option></template><option value="standalone">Stand-alone</option></select><select x-model="filterKpi" class="inp text-purple-700 font-medium"><option value="">All KPIs</option><template x-for="k in settings.kpis"><option :value="k" x-text="k"></option></template></select><select x-model="filterRag" class="inp"><option value="">All RAG</option><option value="red">🔴 Overdue</option><option value="amber">🟠 Due Soon</option><option value="green">🟢 On Track</option></select><select x-model="filterStatus" class="inp"><option value="">All Status</option><option value="Active">Active</option><option value="Completed">Completed</option></select><button x-show="searchQuery||filterPillar||filterKpi||filterRag||filterStatus" @click="resetFilters()" class="text-xs text-red-500 hover:underline">Clear</button><div x-show="selectedProjects.length>0" class="flex gap-2 items-center border-l pl-3 ml-1"><span class="text-[10px] font-bold text-gray-500" x-text="selectedProjects.length+' selected'"></span><button @click="batchSetPillar()" class="btn-g text-[10px]">Set Pillar</button><button @click="batchComplete()" class="btn-g text-[10px]">Complete</button><button @click="selectedProjects=[]" class="text-[10px] text-red-500">✕</button></div><button @click="startNewProject()" class="btn-p text-xs"><i class="fas fa-plus mr-1"></i>New</button></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"><template x-for="project in filteredProjects" :key="project.id"><div class="card hover:shadow-md transition cursor-pointer group relative overflow-hidden" :class="[dark?'card-dark':'',selectedProjects.includes(project.id)?'ring-2 ring-indigo-400':'']" @click="editProject(project)" @click.ctrl.prevent="toggleSelectProject(project.id)"><div class="absolute left-0 top-0 bottom-0 w-1" :style="'background:'+getPillarColor(project.priorityId||project.pillarId)"></div><div x-show="project.status==='Completed'" class="completed-stamp">COMPLETED</div><div x-show="project.status==='Completed'" class="absolute bottom-3 left-5 z-10"><span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">✓ Done</span></div><div class="p-4 pl-5"><div class="flex justify-between items-start mb-1.5"><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full flex-shrink-0" :class="getRagDot(project.endDate)"></span><span class="text-[9px] font-bold uppercase tracking-wider text-gray-400" x-text="project.type"></span></div><span x-show="project.kpi" class="chip-sm bg-purple-50 text-purple-600 border border-purple-100 truncate max-w-[100px]" x-text="project.kpi"></span></div><h3 class="font-bold text-sm leading-tight mb-1.5 group-hover:text-indigo-600" :class="project.status==='Completed'?'line-through text-gray-400':(dark?'text-gray-200':'')" x-text="project.title"></h3><p class="text-[11px] line-clamp-2 mb-3 text-gray-500" x-text="project.objective||''"></p><div class="flex gap-1.5 mb-2 flex-wrap"><span x-show="project.status==='Completed'" class="chip-sm bg-emerald-100 text-emerald-700 border border-emerald-200">✓ Done</span><span x-show="project.deptCode" class="chip-sm bg-gray-100 text-gray-600" x-text="project.deptCode"></span><span x-show="project.staff||project.tlam" class="chip-sm bg-amber-50 text-amber-700 border border-amber-100" x-text="project.staff||project.tlam"></span></div><div class="flex items-center gap-2 text-xs"><div class="flex-1 bg-gray-100 rounded-full h-1.5"><div class="h-full rounded-full" :class="project.status==='Completed'?'bg-emerald-500':'bg-indigo-500'" :style="'width:'+calculateProgress(project)+'%'"></div></div><span class="font-mono text-[10px] font-bold" x-text="calculateProgress(project)+'%'"></span></div></div></div></template></div>
+    </div>
+</div>
+
+<!-- MEETINGS -->
+<div x-show="view==='meetings'" class="h-full flex fade-in" :class="dark?'bg-gray-900':'bg-white'">
+    <div class="w-48 border-r flex flex-col flex-shrink-0 max-lg:hidden" :class="dark?'bg-gray-800 border-gray-700':'bg-gray-50'"><div class="p-3 border-b" :class="dark?'border-gray-700':''"><h3 class="sec-title">Notebooks</h3></div><div class="flex-1 overflow-y-auto p-2 space-y-0.5"><template x-for="cat in settings.meetingCategories" :key="cat"><button @click="activeMeetingCategory=cat;currentMeeting=null" class="w-full text-left px-3 py-2 rounded-md text-xs font-medium transition flex justify-between items-center" :class="activeMeetingCategory===cat?(dark?'bg-gray-700 text-indigo-400':'bg-white shadow-sm text-indigo-700'):'text-gray-500 hover:bg-gray-100'"><span class="truncate" x-text="cat"></span><span class="text-[9px] px-1.5 py-0.5 rounded-full font-mono bg-gray-200 text-gray-500" x-text="meetingNotes.filter(n=>n.category===cat).length"></span></button></template></div><button @click="addNewMeetingCategory()" class="m-2 p-2 text-xs text-indigo-600 font-bold border border-dashed border-indigo-200 rounded-md hover:bg-indigo-50">+ Add</button></div>
+    <div class="w-60 border-r flex flex-col flex-shrink-0" :class="dark?'bg-gray-800 border-gray-700':''"><div class="p-3 border-b flex justify-between items-center h-12" :class="dark?'border-gray-700':''"><span class="font-bold text-xs truncate" :class="dark?'text-gray-200':''" x-text="activeMeetingCategory"></span><button @click="createNewMeeting()" class="btn-p text-[10px] px-2 py-1"><i class="fas fa-plus mr-1"></i>New</button></div><div class="flex-1 overflow-y-auto p-2 space-y-1.5"><template x-for="note in filteredMeetings" :key="note.id"><div @click="currentMeeting=note" class="p-3 rounded-lg border cursor-pointer transition" :class="currentMeeting&&currentMeeting.id===note.id?'border-indigo-500 ring-1 ring-indigo-200':'border-gray-200 hover:border-indigo-300'"><div class="font-bold text-xs truncate" :class="dark?'text-gray-200':''" x-text="note.title||'Untitled'"></div><div class="text-[10px] text-gray-400 font-mono mt-0.5" x-text="formatDate(note.date)"></div></div></template></div></div>
+    <div class="flex-1 flex flex-col relative max-lg:hidden" :class="dark?'bg-gray-900':''">
+        <template x-if="!currentMeeting"><div class="flex items-center justify-center h-full text-gray-400 flex-col"><i class="far fa-file-alt text-4xl mb-3"></i><p class="text-sm">Select a note</p></div></template>
+        <template x-if="currentMeeting"><div class="flex flex-col h-full">
+            <div class="p-5 border-b" :class="dark?'border-gray-700':''"><input x-model="currentMeeting.title" class="text-xl font-bold w-full outline-none bg-transparent" :class="dark?'text-gray-100':''" placeholder="Meeting Subject"><div class="flex gap-4 mt-3 text-xs text-gray-500"><div class="flex items-center gap-1.5"><i class="far fa-calendar text-[11px]"></i><input type="date" x-model="currentMeeting.date" class="outline-none bg-transparent"></div><div class="flex items-center gap-1.5 flex-1"><i class="far fa-user text-[11px]"></i><input x-model="currentMeeting.attendees" class="w-full outline-none bg-transparent" placeholder="Attendees..."></div></div>
+                <div class="mt-3 flex gap-2 items-center flex-wrap"><select x-model="currentMeeting.linkedProjectId" class="inp flex-1"><option value="">— No Link —</option><optgroup label="📌 Pillars"><template x-for="p in getPillars()" :key="p.id"><option :value="'prio:'+p.id" x-text="p.title"></option></template></optgroup><optgroup label="🎯 Strategy"><template x-for="p in projects.filter(x=>x.type==='Strategy')" :key="p.id"><option :value="'proj:'+p.id" x-text="p.title"></option></template></optgroup><optgroup label="📂 Other"><template x-for="p in projects.filter(x=>x.type!=='Strategy')" :key="p.id"><option :value="'proj:'+p.id" x-text="p.title"></option></template></optgroup></select><button @click="quickLinkEvidence()" class="btn-g text-[10px]"><i class="fas fa-link mr-1"></i>Push</button><button @click="deleteMeeting()" class="text-red-400 hover:text-red-600 text-xs px-2"><i class="fas fa-trash"></i></button><button @click="saveToFile();showToast('Saved')" class="btn-p text-xs">Save</button></div></div>
+            <div class="px-5 pt-3 pb-2 border-b" :class="dark?'bg-gray-800 border-gray-700':'bg-gray-50'"><div class="text-[9px] font-bold text-gray-400 uppercase mb-1.5">Attachments</div><div class="flex flex-wrap gap-1.5 mb-2"><template x-for="(link,lIdx) in currentMeeting.links" :key="lIdx"><div class="text-[11px] border px-2 py-1 rounded flex items-center gap-1.5" :class="dark?'bg-gray-700 border-gray-600':'bg-white'"><a :href="link.url" target="_blank" class="text-indigo-600 hover:underline" x-text="link.name"></a><button @click="currentMeeting.links.splice(lIdx,1)" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-[9px]"></i></button></div></template></div><div class="flex gap-1.5"><input x-model="newLinkName" placeholder="Label" class="inp w-28"><input x-model="newLinkUrl" placeholder="URL..." class="inp flex-1"><button @click="addLinkToMeeting()" class="btn-g text-xs">Add</button></div></div>
+            <textarea x-model="currentMeeting.content" class="flex-1 w-full p-6 outline-none resize-none leading-relaxed text-sm bg-transparent" :class="dark?'text-gray-200':''" placeholder="Notes..."></textarea>
+            <div class="p-3 border-t flex gap-2 items-center" :class="dark?'bg-gray-800 border-gray-700':'bg-gray-50'"><span class="text-[10px] font-bold text-gray-400 uppercase">Quick Action:</span><input x-model="quickActionText" class="inp flex-1" placeholder="Task..."><input type="date" x-model="quickActionDate" class="inp w-32"><button @click="pushActionToDashboard()" class="btn-p text-xs px-3">Add</button></div>
+        </div></template>
+    </div>
+</div>
+
+<!-- STAKEHOLDERS -->
+<div x-show="view==='stakeholders'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-5xl mx-auto"><div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold" :class="dark?'text-gray-100':''">Stakeholder Tracker</h2><button @click="addStakeholder()" class="btn-p text-xs"><i class="fas fa-user-plus mr-1"></i>Add</button></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"><template x-for="sh in stakeholders" :key="sh.id"><div class="card p-4 hover:shadow-md transition cursor-pointer" :class="dark?'card-dark':''" @click="showContactDetail=sh"><div class="flex items-start gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0" :style="'background:'+getAvatarColor(sh.name)+';color:white'" x-text="getInitials(sh.name)"></div><div class="flex-1 min-w-0"><input x-model="sh.name" class="font-bold text-sm w-full outline-none bg-transparent" :class="dark?'text-gray-100':''" placeholder="Name" @click.stop><input x-model="sh.role" class="text-xs w-full outline-none bg-transparent mt-0.5 text-gray-500" placeholder="Role / Title" @click.stop><input x-model="sh.area" class="text-[11px] w-full outline-none bg-transparent mt-0.5 text-gray-400" placeholder="Area" @click.stop><div class="text-[10px] text-gray-400 mt-2" x-text="'Linked: '+getContactProjects(sh.name).length+' projects, '+getContactMeetings(sh.name).length+' meetings'"></div></div><button @click.stop="removeStakeholder(sh.id)" class="text-gray-300 hover:text-red-400"><i class="fas fa-times text-xs"></i></button></div></div></template></div>
+    </div>
+</div>
+
+<!-- RISK REGISTER -->
+<!-- Contact Detail Panel -->
+<div x-show="showContactDetail" class="fixed inset-0 z-50 overflow-hidden" x-cloak>
+    <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" @click="showContactDetail=null"></div>
+    <div class="absolute inset-y-0 right-0 max-w-lg w-full bg-white shadow-2xl flex flex-col animate-slide-in" :class="dark?'bg-gray-800':''">
+        <div class="p-5 border-b flex justify-between items-center" :class="dark?'border-gray-700':''">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg" :style="'background:'+getAvatarColor(showContactDetail?.name)+';color:white'" x-text="getInitials(showContactDetail?.name)"></div>
+                <div><div class="font-bold text-lg" :class="dark?'text-gray-100':''" x-text="showContactDetail?.name"></div><div class="text-xs text-gray-500" x-text="(showContactDetail?.role||'')+(showContactDetail?.area?' — '+showContactDetail.area:'')"></div></div>
+            </div>
+            <button @click="showContactDetail=null" class="text-gray-400 hover:text-gray-600 text-lg"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+            <!-- Pillars -->
+            <div><h4 class="sec-title mb-2"><i class="fas fa-chess text-purple-400 mr-1"></i> PILLARS</h4>
+            <template x-for="pil in getContactPillars(showContactDetail?.name)" :key="pil.id"><div class="flex items-center gap-2 py-1"><span class="w-2 h-2 rounded-full" :style="'background:'+pil.color"></span><span class="text-sm font-medium" x-text="pil.title"></span></div></template>
+            <div x-show="getContactPillars(showContactDetail?.name).length===0" class="text-xs text-gray-400 italic">None found</div></div>
+            <!-- Projects -->
+            <div><h4 class="sec-title mb-2"><i class="fas fa-folder-open text-blue-400 mr-1"></i> PROJECTS</h4>
+            <template x-for="p in getContactProjects(showContactDetail?.name)" :key="p.id"><div class="p-2 rounded border mb-1 text-sm cursor-pointer hover:bg-gray-50" :class="dark?'border-gray-600 hover:bg-gray-700':''" @click="editProject(p);showContactDetail=null"><div class="font-medium" x-text="p.title"></div><div class="text-[10px] text-gray-500" x-text="p.type+' · '+calculateProgress(p)+'%'"></div></div></template>
+            <div x-show="getContactProjects(showContactDetail?.name).length===0" class="text-xs text-gray-400 italic">None found</div></div>
+            <!-- Meetings -->
+            <div><h4 class="sec-title mb-2"><i class="fas fa-users text-amber-400 mr-1"></i> MEETINGS</h4>
+            <template x-for="m in getContactMeetings(showContactDetail?.name)" :key="m.id"><div class="p-2 rounded border mb-1 text-sm cursor-pointer hover:bg-gray-50" :class="dark?'border-gray-600 hover:bg-gray-700':''" @click="activeMeetingCategory=m.category;currentMeeting=m;view='meetings';showContactDetail=null"><div class="font-medium" x-text="m.title||'Untitled'"></div><div class="text-[10px] text-gray-500" x-text="formatDate(m.date)+' · '+m.category"></div></div></template>
+            <div x-show="getContactMeetings(showContactDetail?.name).length===0" class="text-xs text-gray-400 italic">None found</div></div>
+            <!-- Tasks -->
+            <div><h4 class="sec-title mb-2"><i class="fas fa-tasks text-emerald-400 mr-1"></i> TASKS</h4>
+            <template x-for="t in getContactTasks(showContactDetail?.name)" :key="t.id"><div class="p-2 rounded border mb-1 text-sm" :class="dark?'border-gray-600':''"><span :class="t.completed?'line-through text-gray-400':''" x-text="t.text"></span></div></template>
+            <div x-show="getContactTasks(showContactDetail?.name).length===0" class="text-xs text-gray-400 italic">None found</div></div>
+        </div>
+    </div>
+</div>
+<div x-show="view==='risks'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold" :class="dark?'text-gray-100':''">Risk Register</h2><div class="flex gap-2"><button @click="showRiskHelp=!showRiskHelp" class="btn-g text-xs"><i class="fas fa-question-circle mr-1"></i>Guide</button><button @click="addRisk()" class="btn-p text-xs"><i class="fas fa-plus mr-1"></i>Add</button></div></div>
+        <div x-show="showRiskHelp" class="card p-5 mb-4 border-l-4 border-indigo-400" :class="dark?'card-dark bg-indigo-900/10':'bg-indigo-50'" x-cloak><h4 class="font-bold text-sm text-indigo-800 mb-2"><i class="fas fa-lightbulb mr-1"></i>Risk Register Guide</h4><div class="text-xs space-y-2 text-indigo-900/80"><p><strong>What is a risk?</strong> Anything that might prevent projects from achieving their impact. In FE/Quality, think about risks to learner outcomes, teaching quality, Ofsted readiness, and digital infrastructure.</p><p><strong>Likelihood</strong> (1-5): 1=Very Unlikely, 5=Almost Certain</p><p><strong>Impact</strong> (1-5): 1=Negligible, 5=Critical (e.g. Ofsted finding, safeguarding issue)</p><p><strong>Risk Score</strong> = Likelihood × Impact. <span class="text-red-600 font-bold">Red (15-25)</span>, <span class="text-amber-600 font-bold">Amber (8-14)</span>, <span class="text-emerald-600 font-bold">Green (1-7)</span></p><p><strong>Categories</strong> are editable — click any to rename. Defaults reflect FE/Digital/Ofsted priorities.</p><p><strong>Mitigation</strong>: What actions reduce likelihood or impact? Review and update regularly.</p></div></div>
+        <div class="card p-5 mb-4" :class="dark?'card-dark':''"><h4 class="sec-title mb-3">Risk Matrix</h4><div class="grid grid-cols-6 gap-0.5 text-[10px] text-center font-bold" style="max-width:360px"><div class="p-1 text-gray-400 text-[8px]">Impact↓ / Likely→</div><template x-for="n in [1,2,3,4,5]"><div class="p-1 text-gray-500" x-text="n"></div></template><template x-for="row in [5,4,3,2,1]" :key="'mr'+row"><div class="contents"><div class="p-1 text-gray-500 flex items-center justify-center" x-text="row"></div><template x-for="col in [1,2,3,4,5]" :key="'mc'+col"><div class="p-1 rounded-sm flex items-center justify-center h-8" :class="getRiskMatrixColor(row*col)"><span x-text="risks.filter(r=>r.likelihood==col&&r.impact==row).length||''" class="text-white font-bold text-[9px]"></span></div></template></div></template></div></div>
+        <div class="card p-4 mb-4 flex flex-wrap gap-2 items-center" :class="dark?'card-dark':''"><span class="sec-title mr-2">Categories:</span><template x-for="(cat,idx) in riskCategories" :key="idx"><span class="chip-sm bg-gray-100 text-gray-700 cursor-pointer hover:bg-indigo-50 group" @click="editRiskCategory(idx)"><span x-text="cat"></span><i class="fas fa-pen text-[7px] ml-1 opacity-0 group-hover:opacity-100 text-gray-400"></i></span></template><button @click="riskCategories.push('New Category');saveToFile()" class="text-[10px] text-indigo-600 hover:underline">+</button></div>
+        <div class="space-y-3"><template x-for="risk in risks" :key="risk.id"><div class="card p-4" :class="dark?'card-dark':''"><div class="flex gap-4 flex-wrap"><div class="flex-1 min-w-[200px]"><input x-model="risk.title" class="font-bold text-sm w-full outline-none bg-transparent mb-1" :class="dark?'text-gray-100':''" placeholder="Risk description"><div class="flex gap-2 flex-wrap"><select x-model="risk.category" class="inp text-[10px]"><template x-for="c in riskCategories"><option :value="c" x-text="c"></option></template></select><select x-model="risk.linkedTo" class="inp text-[10px]"><option value="">— Link —</option><optgroup label="📌 Pillars"><template x-for="p in getPillars()" :key="p.id"><option :value="'pillar:'+p.id" x-text="p.title"></option></template></optgroup><template x-for="pil in getPillars()" :key="'rg'+pil.id"><optgroup :label="'🎯 '+pil.title"><template x-for="p in projects.filter(x=>(x.priorityId==pil.id||x.pillarId==pil.id)&&x.type==='Strategy')" :key="p.id"><option :value="'proj:'+p.id" x-text="p.title"></option></template></optgroup></template><optgroup label="📂 Stand-alone"><template x-for="p in projects.filter(x=>!x.priorityId&&!x.pillarId)" :key="p.id"><option :value="'proj:'+p.id" x-text="p.title"></option></template></optgroup></select></div></div><div class="flex gap-2 items-start"><div class="text-center"><label class="lbl">Likely</label><select x-model.number="risk.likelihood" class="inp w-14 mt-1 text-center"><template x-for="n in [1,2,3,4,5]"><option :value="n" x-text="n"></option></template></select></div><div class="text-center"><label class="lbl">Impact</label><select x-model.number="risk.impact" class="inp w-14 mt-1 text-center"><template x-for="n in [1,2,3,4,5]"><option :value="n" x-text="n"></option></template></select></div><div class="text-center"><label class="lbl">Score</label><div class="mt-1 w-10 h-9 rounded flex items-center justify-center font-bold text-sm text-white" :class="getRiskMatrixColor(risk.likelihood*risk.impact)" x-text="risk.likelihood*risk.impact"></div></div><button @click="removeRisk(risk.id)" class="text-gray-300 hover:text-red-400 mt-5"><i class="fas fa-times"></i></button></div></div><div class="mt-2"><textarea x-model="risk.mitigation" class="inp w-full h-12 resize-none text-[11px]" placeholder="Mitigation..."></textarea></div></div></template></div>
+    </div>
+</div>
+
+<!-- RAID LOG -->
+<div x-show="view==='raid'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold" :class="dark?'text-gray-100':''">RAID Log</h2><div class="flex gap-2"><button @click="showRaidHelp=!showRaidHelp" class="btn-g text-xs"><i class="fas fa-question-circle mr-1"></i>Help</button><button @click="addRaidItem()" class="btn-p text-xs"><i class="fas fa-plus mr-1"></i>Add</button></div></div>
+        <div x-show="showRaidHelp" class="card p-5 mb-4 border-l-4 border-emerald-400" :class="dark?'card-dark bg-emerald-900/10':'bg-emerald-50'" x-cloak><h4 class="font-bold text-sm text-emerald-800 mb-2"><i class="fas fa-book-open mr-1"></i>RAID Log Help</h4><div class="text-xs space-y-3 text-emerald-900/80"><div><strong>R — Risks:</strong> Things that might go wrong. Use the Risk Register for detailed scoring.</div><div><strong>A — Assumptions:</strong> Things taken as true. "All staff have MS Teams." If wrong → becomes a risk/issue.</div><div><strong>I — Issues:</strong> Risks that have happened. Need active resolution.</div><div><strong>D — Dependencies:</strong> Must happen before something else can start. Track to avoid bottlenecks.</div><p class="mt-2 font-medium">💡 Review weekly. Move resolved to "Closed". Update as situations change. Flag new dependencies when planning.</p></div></div>
+        <div class="flex gap-1 mb-4"><template x-for="t in ['Risk','Assumption','Issue','Dependency']" :key="t"><button @click="raidFilter=t" class="pill" :class="raidFilter===t?'pill-on':''" x-text="t"></button></template><button @click="raidFilter=''" class="pill" :class="raidFilter===''?'pill-on':''">All</button></div>
+        <div class="space-y-2"><template x-for="item in getFilteredRaid()" :key="item.id"><div class="card p-4 flex gap-3 items-start" :class="dark?'card-dark':''"><span class="chip-sm font-bold flex-shrink-0" :class="getRaidColor(item.type)" x-text="item.type[0]"></span><div class="flex-1"><input x-model="item.title" class="font-medium text-sm w-full outline-none bg-transparent" :class="dark?'text-gray-200':''" placeholder="Description"><div class="flex gap-2 mt-1 flex-wrap"><select x-model="item.status" class="inp text-[10px]"><option>Open</option><option>In Progress</option><option>Closed</option></select><select x-model="item.linkedTo" class="inp text-[10px]"><option value="">— Link —</option><template x-for="p in projects" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select><input x-model="item.notes" class="inp flex-1 text-[10px]" placeholder="Notes..."></div></div><button @click="removeRaidItem(item.id)" class="text-gray-300 hover:text-red-400"><i class="fas fa-times"></i></button></div></template></div>
+    </div>
+</div>
+
+<!-- TIMELINE -->
+<div x-show="view==='gantt'" class="h-full flex flex-col p-5 fade-in">
+    <div class="card p-3 mb-4 flex flex-wrap justify-between items-center gap-2" :class="dark?'card-dark':''"><div class="flex items-center gap-3"><h2 class="font-bold text-sm" :class="dark?'text-gray-200':''">Timeline</h2><div class="pill-group"><button @click="timelineMode='year'" class="pill" :class="timelineMode==='year'?'pill-on':''">Year</button><button @click="timelineMode='3m'" class="pill" :class="timelineMode==='3m'?'pill-on':''">Quarter</button></div></div><select x-model="timelineTab" class="inp"><option value="all">All</option><template x-for="p in getPillars()" :key="p.id"><option :value="p.id" x-text="p.title"></option></template><option value="standalone">Stand-alone</option></select></div>
+    <div class="card flex-1 overflow-auto" :class="dark?'card-dark':''"><div class="gantt-grid" :style="getTimelineGridStyle()"><div class="gantt-row"><div class="gantt-sticky-col px-3 sec-title border-b border-gray-300" :class="dark?'bg-gray-800 border-gray-600':'bg-gray-50'" style="min-width:200px">Project</div><template x-for="(col,idx) in timelineColumns" :key="idx"><div class="gantt-header" :class="dark?'bg-gray-800 border-gray-600':''"><div x-text="col.label"></div><div class="text-[9px] font-normal font-mono text-gray-400" x-text="col.sub"></div></div></template></div><template x-for="(p,idx) in timelineProjects" :key="p.id"><div class="gantt-row group"><div class="gantt-sticky-col px-3 text-[11px] font-medium truncate cursor-pointer hover:text-indigo-600" :class="dark?'bg-gray-800 text-gray-300':'group-hover:bg-gray-50'" :style="'grid-row:'+(idx+2)+';grid-column:1;min-width:200px'" @click="editProject(p)"><span class="inline-block w-2 h-2 rounded-full mr-1" :style="'background:'+getPillarColor(p.priorityId||p.pillarId)"></span><span x-text="p.title" :class="p.status==='Completed'?'line-through text-gray-400':''"></span></div><template x-for="c in timelineColumns"><div class="gantt-cell" :class="dark?'bg-gray-800 border-gray-700':'group-hover:bg-gray-50'" :style="'grid-row:'+(idx+2)"></div></template><div x-show="hasDates(p)&&isProjectVisibleInTimeline(p)" class="rounded-full text-[9px] text-white flex items-center px-2.5 shadow-sm cursor-pointer hover:opacity-90 overflow-hidden z-10 h-5" :style="getDynamicGanttBarStyle(p,idx)+';background:'+getPillarColor(p.priorityId||p.pillarId)" @click="editProject(p)"><span class="truncate font-medium" x-text="formatDateShort(p.startDate)+' → '+formatDateShort(p.endDate)"></span></div></div></template></div></div>
+</div>
+
+<!-- REPORTS -->
+<div x-show="view==='reports'" class="h-full overflow-y-auto p-5 fade-in">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h2 class="text-lg font-bold" :class="dark?'text-gray-100':''">Reports</h2><div class="flex gap-2"><button @click="generateReport('pdf')" class="btn-p text-xs"><i class="fas fa-file-pdf mr-1"></i>PDF</button><button @click="generateReport('word')" class="btn-g text-xs"><i class="fas fa-file-word mr-1"></i>Word</button></div></div>
+        <div class="card p-4 mb-4 flex flex-wrap gap-3 items-center" :class="dark?'card-dark':''"><select x-model="reportPillar" class="inp"><option value="">All Pillars</option><template x-for="p in getPillars()" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select><select x-model="reportProject" class="inp"><option value="">All Projects</option><template x-for="p in projects" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select><input type="date" x-model="reportDateFrom" class="inp"><input type="date" x-model="reportDateTo" class="inp"><button @click="reportPillar='';reportProject='';reportDateFrom='';reportDateTo=''" class="text-xs text-red-500 hover:underline">Clear</button></div>
+        <div id="reportContent" class="card p-6 space-y-6" :class="dark?'card-dark':''"><div class="text-center border-b pb-4" :class="dark?'border-gray-700':''"><h3 class="text-xl font-bold" :class="dark?'text-gray-100':''">Progress Report</h3><p class="text-xs text-gray-500">Generated: <span x-text="new Date().toLocaleDateString('en-GB')"></span></p></div><div><h4 class="rpt-h">Executive Summary</h4><div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs"><div class="p-3 rounded-lg text-center" :class="dark?'bg-indigo-900/30':'bg-indigo-50'"><div class="text-xl font-bold" :class="dark?'text-indigo-300':'text-indigo-700'" x-text="getReportProjects().length"></div><div :class="dark?'text-gray-400':'text-gray-500'">Projects</div></div><div class="p-3 rounded-lg text-center" :class="dark?'bg-emerald-900/30':'bg-emerald-50'"><div class="text-xl font-bold" :class="dark?'text-emerald-300':'text-emerald-700'" x-text="getReportProjects().reduce((s,p)=>s+(p.milestones||[]).filter(m=>m.completed).length,0)"></div><div :class="dark?'text-gray-400':'text-gray-500'">Tasks Done</div></div><div class="p-3 rounded-lg text-center" :class="dark?'bg-amber-900/30':'bg-amber-50'"><div class="text-xl font-bold" :class="dark?'text-amber-300':'text-amber-700'" x-text="getReportProjects().reduce((s,p)=>s+(p.updates||[]).length,0)"></div><div :class="dark?'text-gray-400':'text-gray-500'">Evidence</div></div><div class="p-3 rounded-lg text-center" :class="dark?'bg-purple-900/30':'bg-purple-50'"><div class="text-xl font-bold" :class="dark?'text-purple-300':'text-purple-700'" x-text="getReportMeetings().length"></div><div :class="dark?'text-gray-400':'text-gray-500'">Meetings</div></div></div></div><div><h4 class="rpt-h">Progress by Pillar</h4><template x-for="pillar in getReportPillars()" :key="pillar.id"><div class="mb-4 p-4 rounded-lg border-l-4" :class="dark?'bg-gray-800':'bg-gray-50'" :style="'border-color:'+pillar.color"><span class="font-bold text-sm" :class="dark?'text-gray-200':''" x-text="pillar.title"></span><template x-for="proj in getReportProjectsForPillar(pillar.id)" :key="proj.id"><div class="ml-4 mb-2 p-3 rounded border" :class="dark?'bg-gray-700 border-gray-600':'bg-white'"><div class="flex justify-between"><div class="font-medium text-xs" :class="dark?'text-gray-200':''" x-text="proj.title"></div><span class="font-mono text-[10px]" x-text="calculateProgress(proj)+'%'"></span></div><div x-show="(proj.milestones||[]).length>0" class="mt-2 space-y-0.5"><template x-for="m in proj.milestones" :key="m.uuid"><div class="text-[11px] flex items-center gap-1.5"><span x-text="m.completed?'✅':'⬜'"></span><span :class="m.completed?'line-through text-gray-400':''" x-text="m.title"></span></div></template></div><div x-show="getFilteredUpdates(proj).length>0" class="mt-2 space-y-1 border-t pt-2" :class="dark?'border-gray-600':''"><template x-for="u in getFilteredUpdates(proj)"><div class="text-[11px] flex gap-2" :class="dark?'text-gray-300':'text-gray-600'"><span class="font-mono flex-shrink-0" :class="dark?'text-gray-500':'text-gray-400'" x-text="formatDate(u.date)"></span><span x-text="u.text"></span></div></template></div></div></template></div></template></div></div>
+    </div>
+</div>
+
+</div><!-- end fileHandle -->
+</main>
+
+<!-- PROJECT MODAL -->
+<div x-show="showModal" class="fixed inset-0 z-50" x-cloak><div class="absolute inset-0 bg-black/20 backdrop-blur-sm" @click="showModal=false"></div><div class="absolute inset-y-0 right-0 max-w-2xl w-full" x-show="showModal" x-transition:enter="transition transform duration-300 ease-out" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition transform duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"><div class="h-full w-full shadow-2xl flex flex-col" :class="dark?'bg-gray-800':'bg-white'"><div class="px-5 py-3 border-b flex justify-between items-center flex-shrink-0" :class="dark?'border-gray-700':''"><h2 class="text-sm font-bold" :class="dark?'text-gray-200':''">Project Details</h2><div class="flex gap-2"><button x-show="currentProject.status!=='Completed'" @click="markProjectComplete()" class="btn-g text-xs text-emerald-600"><i class="fas fa-check mr-1"></i>Complete</button><button @click="showModal=false" class="btn-g text-xs">Cancel</button><button @click="saveProject();showToast('Saved')" class="btn-p text-xs">Save</button></div></div>
+<div class="flex-1 overflow-y-auto p-6 relative" :class="dark?'bg-gray-900':'bg-gray-50'"><div x-show="currentProject.status==='Completed'" class="completed-stamp-lg">COMPLETED</div><input x-model="currentProject.title" class="w-full text-xl font-bold bg-transparent outline-none mb-5" :class="dark?'text-gray-100':''" placeholder="Title"><div class="card p-5 mb-5" :class="dark?'card-dark':''"><h4 class="lbl border-b pb-2 mb-3" :class="dark?'border-gray-700':''">Metadata</h4><div class="grid grid-cols-2 gap-3"><div><label class="lbl">Pillar</label><select x-model="currentProject.priorityId" class="inp w-full mt-1"><option value="">Stand-alone</option><template x-for="p in getPillars()" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></select></div><div><label class="lbl">Type</label><select x-model="currentProject.type" class="inp w-full mt-1"><option value="coaching">Coaching</option><option value="project">Project</option><option value="Strategy">Strategy</option></select></div><div><label class="lbl">Dept</label><input x-model="currentProject.deptCode" class="inp w-full mt-1" list="areaList"></div><div><label class="lbl">Lead</label><input x-model="currentProject.staff" class="inp w-full mt-1" list="staffList"></div><div><label class="lbl">KPI</label><select x-model="currentProject.kpi" class="inp w-full mt-1"><option value="">—</option><template x-for="k in settings.kpis"><option :value="k" x-text="k"></option></template></select></div><div><label class="lbl">QA Source</label><select x-model="currentProject.qaLink" class="inp w-full mt-1"><option value="">—</option><template x-for="s in settings.qaSources"><option :value="s" x-text="s"></option></template></select></div></div><div class="mt-3"><label class="lbl">Dates</label><div class="flex gap-2 mt-1"><input type="date" x-model="currentProject.startDate" class="inp flex-1"><input type="date" x-model="currentProject.endDate" class="inp flex-1"></div></div><div class="mt-3"><label class="lbl">Objective</label><textarea x-model="currentProject.objective" class="inp w-full mt-1 h-16 resize-none"></textarea></div><div class="mt-3"><label class="lbl">Impact Statement</label><textarea x-model="currentProject.impactStatement" class="inp w-full mt-1 h-16 resize-none" placeholder="Impact achieved?"></textarea></div><div class="mt-3"><label class="lbl">Status</label><select x-model="currentProject.status" class="inp w-full mt-1"><option value="Active">Active</option><option value="On Hold">On Hold</option><option value="Completed">Completed</option></select></div></div>
+<div class="card overflow-hidden" :class="dark?'card-dark':''"><div class="flex border-b" :class="dark?'border-gray-700':''"><button @click="modalTab='tasks'" class="flex-1 py-2.5 text-xs font-medium border-b-2" :class="modalTab==='tasks'?'border-indigo-600 text-indigo-700 font-bold':'border-transparent text-gray-500'">Tasks</button><button @click="modalTab='updates'" class="flex-1 py-2.5 text-xs font-medium border-b-2" :class="modalTab==='updates'?'border-indigo-600 text-indigo-700 font-bold':'border-transparent text-gray-500'">Evidence</button></div><div class="p-5 min-h-[200px]"><div x-show="modalTab==='tasks'"><div class="space-y-1.5 mb-3"><template x-for="(m,idx) in currentProject.milestones" :key="idx"><div class="flex items-center gap-2 p-2 rounded-lg border hover:bg-gray-50 group" :class="dark?'border-gray-600':'border-gray-100'"><input type="checkbox" x-model="m.completed" @change="syncFromProject(m,currentProject)" class="w-4 h-4 text-indigo-500 rounded"><input x-model="m.title" class="flex-1 bg-transparent text-xs outline-none" :class="m.completed?'line-through text-gray-400':(dark?'text-gray-200':'')"><input type="date" x-model="m.dueDate" class="text-[10px] text-gray-400 bg-transparent outline-none w-24"><button @click="currentProject.milestones.splice(idx,1)" class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-times text-[10px]"></i></button></div></template></div><button @click="addMilestone()" class="w-full py-2 border border-dashed rounded-lg text-xs" :class="dark?'border-gray-600 text-gray-400':'border-gray-300 text-gray-500'">+ Add</button></div><div x-show="modalTab==='updates'"><div class="mb-4 space-y-2"><textarea x-model="newUpdateText" class="inp w-full h-16 resize-none" placeholder="Evidence..."></textarea><div class="flex gap-2"><select x-model="newUpdateSource" class="inp flex-1"><option value="">— Source —</option><template x-for="s in settings.qaSources"><option :value="s" x-text="s"></option></template></select><input x-model="newUpdateLink" class="inp flex-1" placeholder="URL..."></div><button @click="addUpdate()" class="btn-p w-full text-xs">Log Evidence</button></div><div class="space-y-2"><template x-for="(u,idx) in currentProject.updates" :key="idx"><div class="p-3 rounded-lg border text-xs" :class="dark?'bg-gray-700 border-gray-600':'bg-gray-50'"><div class="flex justify-between text-gray-400 text-[10px] mb-1"><span class="font-mono" x-text="formatDate(u.date)"></span><span class="chip-sm bg-white border" x-text="u.source||'General'"></span></div><div class="whitespace-pre-line" :class="dark?'text-gray-200':''" x-text="u.text"></div><a x-show="u.link" :href="u.link" target="_blank" class="text-indigo-600 text-[11px] mt-1 block hover:underline" x-text="u.link"></a></div></template></div></div></div></div></div></div></div></div>
+
+<!-- ADD TASK MODAL -->
+<div x-show="addTaskModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" x-cloak><div class="card shadow-xl w-96 p-5" :class="dark?'card-dark':''" @click.away="addTaskModal=false"><h3 class="font-bold text-sm mb-3" :class="dark?'text-gray-200':''">Add Task</h3><input x-model="newTaskText" class="inp w-full mb-2" placeholder="Task..." @keydown.enter="addTodo();addTaskModal=false"><div class="flex gap-2 mb-3"><input type="date" x-model="newTaskDate" class="inp flex-1"><select x-model="newTaskProject" class="inp flex-1"><option value="">— Link —</option><optgroup label="Strategy"><template x-for="p in projects.filter(x=>x.type==='Strategy')" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></optgroup><optgroup label="Other"><template x-for="p in projects.filter(x=>x.type!=='Strategy')" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></optgroup></select></div><div class="flex justify-end gap-2"><button @click="addTaskModal=false" class="btn-g text-xs">Cancel</button><button @click="addTodo();addTaskModal=false" class="btn-p text-xs">Add</button></div></div></div>
+
+<!-- CALENDAR EVENT MODAL -->
+<div x-show="showCalendarModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" x-cloak><div class="card shadow-xl w-96 p-5" :class="dark?'card-dark':''" @click.away="showCalendarModal=false"><h3 class="font-bold text-sm mb-3" :class="dark?'text-gray-200':''">Schedule Event</h3><input x-model="newEvent.title" class="inp w-full mb-2" placeholder="Title"><div class="flex gap-2 mb-2"><input type="date" x-model="newEvent.date" class="inp flex-1"><input x-model="newEvent.startTime" type="time" class="inp flex-1"></div><div class="flex gap-2 mb-2"><select x-model="newEvent.type" class="inp flex-1"><option value="work">Work Block</option><option value="meeting">Meeting</option><option value="strategy">Strategy</option><option value="activity">Activity</option></select><select x-model="newEvent.duration" class="inp flex-1"><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">1hr</option><option value="90">1.5hr</option><option value="120">2hr</option></select></div><select x-model="newEvent.linkedProjectId" class="inp w-full mb-3"><option value="">— Link —</option><optgroup label="Strategy"><template x-for="p in projects.filter(x=>x.type==='Strategy')" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></optgroup><optgroup label="Other"><template x-for="p in projects.filter(x=>x.type!=='Strategy')" :key="p.id"><option :value="p.id" x-text="p.title"></option></template></optgroup></select><div class="flex justify-end gap-2"><button @click="showCalendarModal=false" class="btn-g text-xs">Cancel</button><button @click="saveCalendarEvent()" class="btn-p text-xs">Save</button></div></div></div>
+
+<!-- TOAST -->
+<div class="fixed bottom-5 right-5 z-[200] flex flex-col gap-2"><template x-for="toast in toasts" :key="toast.id"><div class="bg-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 text-xs font-medium text-gray-700 animate-slide-in" style="border-left:3px solid #4f46e5"><i class="fas fa-check-circle text-indigo-500"></i><span x-text="toast.message"></span></div></template></div>
+
+<!-- DATALISTS -->
+<datalist id="areaList"><option value="AGF"><option value="HAC"><option value="MAT"><option value="ENG"><option value="SMS"><option value="PRE"><option value="BUS"><option value="HSC"><option value="ART"><option value="SCI"><option value="SWSC"><option value="HALSC"></datalist>
+<datalist id="staffList"><template x-for="sh in stakeholders" :key="sh.id"><option :value="sh.name"></option></template></datalist>
 
     <script>
-        function appData() {
-            return {
-                view: 'planner',
-                fileHandle: null,
-                showWrapUp: false,
-                modals: { project: false },
-                activeProject: {},
-                newTodo: '',
-                newUpdate: '',
-                draggedItem: null,
-                
-                // Data Stores
-                projects: [],
-                todos: [],
-                calendarEvents: [],
-                
-                // Config
-                tabs: [
-                    { id: 'planner', label: 'Planner', icon: 'fas fa-calendar-alt' },
-                    { id: 'projects', label: 'Projects', icon: 'fas fa-folder-open' },
-                    { id: 'reports', label: 'Reports', icon: 'fas fa-chart-pie' }
-                ],
-                pillars: ['Digital Ecosystem', 'Pedagogy & AI', 'Inclusion (SEND)', 'Capacity & QA'],
-                metadata: {
-                    tlams: ['Cassie', 'Ben', 'Neil', 'Richard'],
-                    areas: ['AGF', 'HAC', 'MAT', 'ENG', 'SCI', 'ARTS']
-                },
-                filters: { pillar: '', tlam: '', area: '' },
+    function appData() {
+        return {
+// === STATE ===
+view:'planner',fileHandle:null,showModal:false,showCalendarModal:false,addTaskModal:false,showTaskDetail:null,showContactDetail:null,
+modalTab:'tasks',activeStrategyTab:0,dashboardMode:'strategy',dark:localStorage.getItem('dh-dark')==='true',
+searchQuery:'',filterPillar:'',filterKpi:'',filterRag:'',filterStatus:'',taskSearch:'',
+calFilter:'All',calWeekOffset:0,timelineMode:'year',timelineTab:'all',
+newEvent:{},newUpdateText:'',newUpdateLink:'',newUpdateSource:'',
+activeMeetingCategory:'',currentMeeting:null,currentProject:{},
+quickActionText:'',quickActionDate:'',newLinkName:'',newLinkUrl:'',
+newTaskText:'',newTaskDate:'',newTaskProject:'',
+dailyDate:new Date().toISOString().split('T')[0],dailyGroupBy:'time',dailyItems:[],
+weeklyOffset:0,reportPillar:'',reportProject:'',reportDateFrom:'',reportDateTo:'',
+dragTask:null,selectedProjects:[],streakCount:0,
+stakeholders:[],stakeholderPushCards:[],
+risks:[],riskCategories:['Learner Outcomes','Teaching Quality','Ofsted Readiness','Digital Infrastructure','Staff Capacity','Data & Compliance','Safeguarding','Resource & Budget'],
+raidItems:[],raidFilter:'',showRaidHelp:false,showRiskHelp:false,
+projects:[],todos:[],meetingNotes:[],calendarEvents:[],savedDailyUpdates:{},toasts:[],
+settings:{pillars:[],priorities:[],kpis:[],qaSources:[],meetingCategories:[]},charts:{},
+navItems:[
+{id:'planner',label:'Planner',icon:'fas fa-calendar-check'},{id:'dashboard',label:'Dashboard',icon:'fas fa-chart-line'},
+{id:'daily',label:'Daily',icon:'fas fa-clipboard-check'},{id:'weekly',label:'Weekly',icon:'fas fa-calendar-week'},
+{id:'strategy',label:'Strategy',icon:'fas fa-chess'},{id:'projects',label:'Projects',icon:'fas fa-folder-open'},
+{id:'meetings',label:'Meetings',icon:'fas fa-users'},{id:'stakeholders',label:'Contacts',icon:'fas fa-address-book'},
+{id:'risks',label:'Risks',icon:'fas fa-shield-alt'},{id:'raid',label:'RAID',icon:'fas fa-clipboard-list'},
+{id:'gantt',label:'Timeline',icon:'fas fa-stream'},{id:'reports',label:'Reports',icon:'fas fa-file-alt'},
+],
+// Pillar consolidation map: old orphan/misplaced IDs → canonical pillar ID
+// This merges 8 pillars down to 4 enduring strategic principles
+_pillarConsolidate:{
+    // Orphan → Canonical
+    '1770297373233':1,    // Digital Landscape → Pillar 1: Ecosystem & Standards
+    '1770198688520':4,    // Digital Champions Re:Launch → Pillar 4: Capacity Building & QA
+    '1770395343946':3,    // SEND Accessibility → Pillar 3: Inclusion & Accessibility
+    '1770395559864':4,    // TLA QA/QI Processes → Pillar 4: Capacity Building & QA
+},
+// Projects currently under Pillar 3 (Digital Modelling) that belong in Pillar 2 (Pedagogy)
+_pillar3ToPillar2:true, // flag: move ALL current pillar 3 projects to pillar 2
+// Then Pillar 3 gets the SEND/Accessibility projects + Accessibility Toolkit
+// Meeting category merge map: old→canonical
+_catMerge:{'Heads of Area (HoA)':'HoAs','Digital Champions':'Champions','1:1 Line Manager (Neil Davies)':'1:1 Line Manager'},
+// Strategy pillar intents & impact statements (the 4 canonical pillars)
+_pillarIntents:{
+1:{intent:'To establish a consistent, college-wide digital baseline. This pillar focuses on the infrastructure of learning — ensuring that the digital environment (Teams), the resources (Equipment), and the planning (Digital Hours) are standardised, equitable, and Health Checked to remove barriers before teaching even begins. It also encompasses the college-wide audit of digital provision across all areas.',impactStatement:'Standardised digital environments across all campuses with Health Check compliance, equitable equipment provision, a clear evidence-based picture of digital provision in every area, and minimum expectations for Digital Hours in Business Plans.'},
+2:{intent:'To drive high-impact teaching and learning. This pillar moves beyond using tools to improving pedagogy. It combines the efficiency of AI and automated assessment with the pedagogical depth of modelling (Visualisers/Inking) and 21st Century Design frameworks to create autonomous learners and reduce staff workload.',impactStatement:'Measurable reduction in marking workload through AI/PA efficiencies, increased staff confidence in digital pedagogy, evidence of improved learner autonomy through Digital Autonomy frameworks, and targeted interventions in Maths and Sixth Form.'},
+3:{intent:'To ensure digital learning is accessible by design. Instead of treating SEND as a separate project, this pillar focuses on the universal application of Assistive Technology and Accessibility tools, ensuring every digital intervention works for the most vulnerable learners first. It includes the Accessibility Toolkit and stakeholder engagement with specialist staff.',impactStatement:'An Accessibility Toolkit available to all staff and learners, trained Digital Leads embedding assistive technology practice, observable improvements in SEND learner access to digital learning, and comprehensive understanding of assistive technology needs.'},
+4:{intent:'To sustain impact through people and governance. This pillar bridges the gap between specific digital interventions and the wider Quality Team. It uses the Digital Champions network to deliver training while Quality Processes (Learning Walks, QIPs, LRAs, Dev Obs) measure the impact. It also ensures digital standards are embedded in Business Plans and QA frameworks.',impactStatement:'A relaunched Digital Champions network with defined CPD pathways, digital standards embedded within Quality frameworks (LRAs, Dev Obs, QRAs), Business Plans reflecting minimum digital expectations, and a sustainable peer-coaching model driving college-wide capability.'}
+},
 
-                init() {
-                    console.log('OS v33.0 Initialized');
-                },
+// === INIT ===
+async init(){
+    this.settings.kpis=['Teaching Quality Indicators','QIP Traction','Staff Capability','Staff Confidence','Student Experience','Retention Proxy','Value for Money','Digital Champions'];
+    this.settings.qaSources=['Learning Walk Data','TLA Profile','QIP Review','Coaching Record','Staff Survey','Learner Voice','Exit Interview','Teams Analytics','Other'];
+    this.settings.meetingCategories=['1:1 Line Manager','Wider Leadership','HoAs','Digital Leads','Champions','TLAMs','Quality Team','External','Other'];
+    this.activeMeetingCategory=this.settings.meetingCategories[0];
+    this.loadDailyUpdate();this.calculateStreak();
+},
 
-                // --- DATA HANDLING ---
-                async openFile() {
-                    try {
-                        const [handle] = await window.showOpenFilePicker();
-                        this.fileHandle = handle;
-                        const file = await handle.getFile();
-                        const text = await file.text();
-                        if (text) {
-                            const data = JSON.parse(text);
-                            this.projects = data.projects || [];
-                            this.todos = data.todos || [];
-                            this.calendarEvents = data.calendarEvents || [];
-                            // Migration logic ensuring fields exist
-                            this.projects.forEach(p => {
-                                if(!p.milestones) p.milestones = [];
-                                if(!p.updates) p.updates = [];
-                            });
-                            alert('Connected Successfully');
-                        }
-                    } catch(e) { console.error(e); }
-                },
-                async saveToFile() {
-                    if (!this.fileHandle) return;
-                    const writable = await this.fileHandle.createWritable();
-                    await writable.write(JSON.stringify({
-                        projects: this.projects,
-                        todos: this.todos,
-                        calendarEvents: this.calendarEvents
-                    }));
-                    await writable.close();
-                    alert('Saved');
-                },
-
-                // --- PLANNER LOGIC ---
-                addTodo() {
-                    if(!this.newTodo) return;
-                    this.todos.push({ id: Date.now(), text: this.newTodo, completed: false });
-                    this.newTodo = '';
-                },
-                dragStart(item) {
-                    this.draggedItem = item;
-                },
-                dragOver(el) {
-                    el.classList.add('drag-over');
-                },
-                dragLeave(el) {
-                    el.classList.remove('drag-over');
-                },
-                dropEvent(day, slot, el) {
-                    el.classList.remove('drag-over');
-                    if (this.draggedItem) {
-                        this.calendarEvents.push({
-                            id: Date.now(),
-                            title: this.draggedItem.text,
-                            day: day,
-                            startSlot: slot,
-                            duration: 4, // 1 hour default (4x15m)
-                            type: 'work',
-                            projectTitle: this.draggedItem.projectTitle,
-                            projectId: this.draggedItem.projectId
-                        });
-                        // Optional: Remove from hopper? 
-                        // this.todos = this.todos.filter(t => t.id !== this.draggedItem.id);
-                        this.draggedItem = null;
-                        this.saveToFile();
-                    }
-                },
-                getTimeLabel(slot) {
-                    const startMin = (slot * 15) + 480; // 480 = 8:00 AM in mins
-                    const h = Math.floor(startMin / 60);
-                    const m = startMin % 60;
-                    return `${h}:${m === 0 ? '00' : m}`;
-                },
-                getEventColor(type) {
-                    return type === 'meeting' ? 'bg-amber-100 border-amber-500 text-amber-900' : 'bg-indigo-100 border-indigo-500 text-indigo-900';
-                },
-                editEvent(evt) {
-                    const newTitle = prompt("Edit Event Title:", evt.title);
-                    if(newTitle) evt.title = newTitle;
-                    if(confirm("Delete this event?")) {
-                        this.calendarEvents = this.calendarEvents.filter(e => e.id !== evt.id);
-                    }
-                    this.saveToFile();
-                },
-
-                // --- PROJECT LOGIC ---
-                createProject() {
-                    this.activeProject = { id: Date.now(), title: '', milestones: [], updates: [], pillar: '', tlam: '', area: '', lead: '' };
-                    this.modals.project = true;
-                },
-                editProject(p) {
-                    this.activeProject = JSON.parse(JSON.stringify(p));
-                    this.modals.project = true;
-                },
-                saveProject() {
-                    const idx = this.projects.findIndex(p => p.id === this.activeProject.id);
-                    if(idx > -1) this.projects[idx] = this.activeProject;
-                    else this.projects.push(this.activeProject);
-                    this.modals.project = false;
-                    this.saveToFile();
-                },
-                deleteProject() {
-                    if(confirm('Delete project?')) {
-                        this.projects = this.projects.filter(p => p.id !== this.activeProject.id);
-                        this.modals.project = false;
-                        this.saveToFile();
-                    }
-                },
-                addTaskToProject() {
-                    this.activeProject.milestones.push({ title: 'New Task', completed: false });
-                },
-                addUpdateToProject() {
-                    if(this.newUpdate) {
-                        this.activeProject.updates.push({ date: new Date().toISOString(), text: this.newUpdate });
-                        this.newUpdate = '';
-                    }
-                },
-                calcProgress(p) {
-                    if(!p.milestones || p.milestones.length === 0) return 0;
-                    return Math.round((p.milestones.filter(m => m.completed).length / p.milestones.length) * 100);
-                },
-
-                // --- REPORTING LOGIC ---
-                get filteredData() {
-                    return this.projects.filter(p => {
-                        const mPillar = !this.filters.pillar || p.pillar === this.filters.pillar;
-                        const mTlam = !this.filters.tlam || p.tlam === this.filters.tlam;
-                        const mArea = !this.filters.area || p.area === this.filters.area;
-                        return mPillar && mTlam && mArea;
-                    });
-                },
-                resetFilters() {
-                    this.filters = { pillar: '', tlam: '', area: '' };
-                },
-                getLatestUpdate(p) {
-                    if(!p.updates || p.updates.length === 0) return 'No impact logged.';
-                    return p.updates[p.updates.length - 1].text;
-                },
-                getStatusColor(p) {
-                    return this.calcProgress(p) === 100 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
-                },
-                getRagColor(d) {
-                    if(!d) return 'bg-slate-300';
-                    const diff = (new Date(d) - new Date()) / (1000*60*60*24);
-                    return diff < 0 ? 'bg-red-500' : diff < 14 ? 'bg-amber-500' : 'bg-green-500';
-                },
-                downloadPDF() {
-                    const element = document.getElementById('print-area');
-                    html2pdf().from(element).save('Strategy_Dossier_v33.pdf');
-                },
-                
-                // --- SYNC LOGIC ---
-                syncImpact(evt) {
-                    if(!evt.linkedProjectId || !evt.impact) { alert("Select Project & Enter Impact"); return; }
-                    const proj = this.projects.find(p => p.id == evt.linkedProjectId);
-                    if(proj) {
-                        if(!proj.updates) proj.updates = [];
-                        proj.updates.push({ date: new Date().toISOString(), text: `[Calendar Sync]: ${evt.impact}` });
-                        alert("Synced to Project Evidence!");
-                        this.saveToFile();
+// === FILE I/O ===
+async openFile(){
+    try{
+        const[handle]=await window.showOpenFilePicker({types:[{description:'JSON',accept:{'application/json':['.json']}}]});
+        this.fileHandle=handle;const file=await handle.getFile();const text=await file.text();
+        if(text.trim()){
+            const data=JSON.parse(text);
+            this.projects=(data.projects||[]).map(p=>{
+                let proj={...p,milestones:(p.milestones||[]).map(m=>({...m,uuid:m.uuid||Date.now()+Math.random()})),updates:p.updates||[],meetings:p.meetings||[],deptCode:p.deptCode||'',tlam:p.tlam||'',staff:p.staff||'',kpi:p.kpi||'',qaLink:p.qaLink||'',isQip:p.isQip||false,impactStatement:p.impactStatement||'',status:p.status||'Active',objective:p.objective||'',priorityId:p.priorityId||p.pillarId||''};
+                const pid=String(proj.priorityId);
+                // STEP 1: Move original Pillar 3 projects (Digital Modelling) → Pillar 2 (Pedagogy)
+                // EXCEPT anything with "accessibility" or "assistive" in title
+                if(pid==='3'){
+                    const isAccessibility=(proj.title||'').toLowerCase().includes('accessibility')||(proj.title||'').toLowerCase().includes('assistive');
+                    if(!isAccessibility){
+                        proj.priorityId=2;
+                        proj.pillarId=2;
                     }
                 }
+                // STEP 2: Consolidate orphan pillars into canonical 4
+                const pid2=String(proj.priorityId);
+                if(this._pillarConsolidate[pid2]!==undefined){
+                    proj.priorityId=this._pillarConsolidate[pid2];
+                    proj.pillarId=this._pillarConsolidate[pid2];
+                }
+                // STEP 3: Move Accessibility Toolkit from Pillar 1 to Pillar 3
+                if(String(proj.priorityId)==='1' && (proj.title||'').toLowerCase().includes('accessibility toolkit')){
+                    proj.priorityId=3;
+                    proj.pillarId=3;
+                }
+                return proj;
+            });
+            this.todos=(data.todos||[]).map(t=>({...t,id:t.id||Date.now()+Math.random(),completed:t.completed||false,text:t.text||t.title||'',notes:t.notes||'',impactStatement:t.impactStatement||''}));
+            // Merge meeting categories BEFORE loading notes
+            this.meetingNotes=(data.meetingNotes||[]).map(n=>{
+                let cat=n.category||'Other';
+                if(this._catMerge[cat])cat=this._catMerge[cat];
+                return{...n,category:cat,id:n.id||Date.now()+Math.random(),links:n.links||[]};
+            });
+            this.calendarEvents=(data.calendarEvents||[]).map(e=>{
+                if(e.date&&e.date.includes('-'))return{...e,startTime:e.startTime||e.time||'09:00',duration:parseInt(e.duration)||60,completed:e.completed||false};
+                const dayMap={Mon:0,Tue:1,Wed:2,Thu:3,Fri:4};const mon=this.getWeekMonday();
+                const d=new Date(mon);d.setDate(mon.getDate()+(dayMap[e.day]||0));
+                return{...e,date:d.toISOString().split('T')[0],startTime:e.startTime||e.time||'09:00',duration:parseInt(e.duration)||60,completed:e.completed||false};
+            });
+            // PILLAR LOADING: Enforce 4 canonical pillars only
+            const canonicalPillars=[
+                {id:1,title:'Digital Ecosystem & Standards',color:'#0891b2'},
+                {id:2,title:'Pedagogy, Assessment & Innovation',color:'#7c3aed'},
+                {id:3,title:'Inclusion & Accessibility',color:'#059669'},
+                {id:4,title:'Capacity Building & QA',color:'#ea580c'}
+            ];
+            // Merge saved data into canonical structure
+            const savedPillars=[...(data.settings?.pillars||[]),...(data.settings?.priorities||[])];
+            this.settings.pillars=canonicalPillars.map(cp=>{
+                const saved=savedPillars.find(sp=>String(sp.id)===String(cp.id));
+                const pi=this._pillarIntents[cp.id]||{};
+                return{
+                    ...cp,
+                    title:saved?.title||cp.title,
+                    intent:saved?.intent||pi.intent||'',
+                    color:saved?.color||cp.color,
+                    impactStatement:saved?.impactStatement||pi.impactStatement||'',
+                    strategicMilestones:saved?.strategicMilestones||[],
+                    tasks:saved?.tasks||[]
+                };
+            });
+            // Meeting categories from settings, no auto-add needed now since we merged
+            if(data.settings?.meetingCategories){
+                let cats=[...data.settings.meetingCategories];
+                // Remove old merged categories
+                Object.keys(this._catMerge).forEach(old=>{const idx=cats.indexOf(old);if(idx>=0)cats.splice(idx,1);});
+                // Ensure canonical ones exist
+                Object.values(this._catMerge).forEach(canon=>{if(!cats.includes(canon))cats.push(canon);});
+                this.settings.meetingCategories=cats;
             }
+            if(data.settings?.kpis)this.settings.kpis=data.settings.kpis;
+            if(data.settings?.qaSources)this.settings.qaSources=data.settings.qaSources;
+            this.activeMeetingCategory=this.settings.meetingCategories[0];
+            this.stakeholders=data.stakeholders||[];
+            this.risks=data.risks||[];
+            if(data.riskCategories)this.riskCategories=data.riskCategories;
+            this.raidItems=data.raidItems||[];
+            this.savedDailyUpdates=data.dailyUpdates||{};
+            this.loadDailyUpdate();this.calculateStreak();this.detectNewStakeholders();
+            this.showToast('OS Loaded');
         }
+    }catch(err){console.error(err);}
+},
+async saveToFile(){
+    if(!this.fileHandle)return;
+    try{
+        const w=await this.fileHandle.createWritable();
+        await w.write(JSON.stringify({
+            projects:this.projects,
+            settings:{pillars:this.settings.pillars,priorities:this.settings.pillars,kpis:this.settings.kpis,qaSources:this.settings.qaSources,meetingCategories:this.settings.meetingCategories},
+            todos:this.todos,meetingNotes:this.meetingNotes,calendarEvents:this.calendarEvents,
+            stakeholders:this.stakeholders,risks:this.risks,riskCategories:this.riskCategories,
+            raidItems:this.raidItems,dailyUpdates:this.savedDailyUpdates
+        },null,2));
+        await w.close();
+    }catch(err){console.error('Save failed',err);}
+},
+
+// === HELPERS ===
+showToast(msg){const id=Date.now();this.toasts.push({id,message:msg});setTimeout(()=>{this.toasts=this.toasts.filter(t=>t.id!==id);},3000);},
+switchView(v){this.view=v;if(v==='dashboard')setTimeout(()=>this.updateCharts(),100);},
+formatDate(d){return d?new Date(d).toLocaleDateString('en-GB'):'-';},
+formatDateShort(d){return d?new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit'}):'-';},
+hasDates(p){return p.startDate&&p.endDate;},
+getPillars(){return this.settings.pillars;},
+getPillarTitle(pId){if(!pId)return'Stand-alone';const p=this.settings.pillars.find(x=>String(x.id)===String(pId));return p?p.title:'';},
+getPillarColor(pId){if(!pId)return'#94a3b8';const p=this.settings.pillars.find(x=>String(x.id)===String(pId));return p&&p.color?p.color:'#94a3b8';},
+getProjectsForPillar(pId){return this.projects.filter(p=>String(p.priorityId)===String(pId)||String(p.pillarId)===String(pId));},
+calculateProgress(p){return!p.milestones?.length?0:Math.round((p.milestones.filter(m=>m.completed).length/p.milestones.length)*100);},
+getOverallCompletion(){const allM=this.projects.flatMap(p=>p.milestones||[]);return allM.length?Math.round((allM.filter(m=>m.completed).length/allM.length)*100):0;},
+resetFilters(){this.searchQuery='';this.filterPillar='';this.filterKpi='';this.filterRag='';this.filterStatus='';},
+get filteredProjects(){return this.projects.filter(p=>{if(!p.title.toLowerCase().includes(this.searchQuery.toLowerCase()))return false;if(this.filterPillar){if(this.filterPillar==='standalone'){if(p.priorityId||p.pillarId)return false;}else if(String(p.priorityId)!==String(this.filterPillar)&&String(p.pillarId)!==String(this.filterPillar))return false;}if(this.filterKpi&&p.kpi!==this.filterKpi)return false;if(this.filterStatus&&p.status!==this.filterStatus)return false;if(this.filterRag){const r=this.getRagLevel(p.endDate);if(this.filterRag!==r)return false;}return true;});},
+get filteredMeetings(){if(!this.activeMeetingCategory)return[];return this.meetingNotes.filter(n=>n.category===this.activeMeetingCategory).sort((a,b)=>new Date(b.date)-new Date(a.date));},
+
+// === PLANNER CORE (Week grid) ===
+getWeekMonday(){const t=new Date();const dow=t.getDay()||7;t.setDate(t.getDate()-dow+1+(this.calWeekOffset*7));t.setHours(0,0,0,0);return t;},
+getWeekDays(){const mon=this.getWeekMonday();const today=new Date().toISOString().split('T')[0];const shorts=['Mon','Tue','Wed','Thu','Fri'];return Array.from({length:5},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);const iso=d.toISOString().split('T')[0];return{key:iso,short:shorts[i],date:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),isoDate:iso,isToday:iso===today};});},
+getWeekLabel(){const days=this.getWeekDays();if(!days.length)return'';return days[0].date+' — '+days[4].date;},
+getWeekEvents(){const days=this.getWeekDays();const dates=days.map(d=>d.isoDate);let evts=this.calendarEvents.filter(e=>dates.includes(e.date));if(this.calFilter!=='All')evts=evts.filter(e=>(e.type||'work').toLowerCase()===this.calFilter.toLowerCase());return evts;},
+get timeSlots(){const slots=[];for(let h=8;h<18;h++){for(let m=0;m<60;m+=15){const hh=String(h).padStart(2,'0');const mm=String(m).padStart(2,'0');slots.push({time:hh+':'+mm,label:hh+':'+mm,isHour:m===0});}}return slots;},
+
+// === RAG ===
+getRagLevel(dateStr){if(!dateStr)return'none';const t=new Date();t.setHours(0,0,0,0);const d=new Date(dateStr);const diff=Math.ceil((d-t)/(864e5));if(diff<0)return'red';if(diff<=7)return'red';if(diff<=14)return'amber';return'green';},
+getRagDot(d){const r=this.getRagLevel(d);return{'red':'bg-red-500','amber':'bg-amber-400','green':'bg-emerald-500','none':'bg-gray-300'}[r];},
+getDueClass(d){if(!d)return'';const diff=Math.ceil((new Date(d)-new Date())/(864e5));if(diff<0)return'bg-red-100 text-red-600';if(diff<3)return'bg-amber-100 text-amber-700';return'bg-emerald-100 text-emerald-700';},
+getTypeColor(t){const m={'strategy':'bg-purple-100 text-purple-700','meeting':'bg-amber-100 text-amber-700','activity':'bg-blue-100 text-blue-700','work':'bg-blue-100 text-blue-700','coaching':'bg-cyan-100 text-cyan-700','manual':'bg-gray-100 text-gray-600'};return m[(t||'').toLowerCase()]||'bg-gray-100 text-gray-600';},
+
+// === CALENDAR ===
+getEvtClass(t){return{'meeting':'cal-evt-amber','strategy':'cal-evt-purple','activity':'cal-evt-green','work':'cal-evt-blue'}[(t||'').toLowerCase()]||'cal-evt-blue';},
+getEvtStyle(evt){const days=this.getWeekDays();const di=days.findIndex(d=>d.isoDate===evt.date);if(di<0)return'display:none';
+const grid=document.getElementById('calGrid');if(!grid||grid.offsetWidth<100)return'display:none';
+const cellW=(grid.offsetWidth-52)/5;const st=evt.startTime||'09:00';const[h,m]=st.split(':').map(Number);
+const slotIdx=(h-8)*4+Math.floor(m/15);const dur=parseInt(evt.duration)||60;const slots=Math.max(1,Math.ceil(dur/15));
+const top=56+(slotIdx*28);const height=slots*28-2;const left=52+(di*cellW)+2;const width=cellW-4;
+return`position:absolute;top:${top}px;left:${left}px;width:${width}px;height:${height}px;z-index:10;overflow:hidden;`;},
+addCalendarEvent(){const days=this.getWeekDays();this.newEvent={id:Date.now(),title:'',date:days.find(d=>d.isToday)?.isoDate||days[0].isoDate,startTime:'09:00',type:'work',duration:'60',linkedProjectId:''};this.showCalendarModal=true;},
+quickAddEvent(isoDate,time){this.newEvent={id:Date.now(),title:'',date:isoDate,startTime:time,type:'work',duration:'60',linkedProjectId:''};this.showCalendarModal=true;},
+editEvent(evt){this.newEvent={...evt};this.showCalendarModal=true;},
+saveCalendarEvent(){
+    const idx=this.calendarEvents.findIndex(e=>e.id===this.newEvent.id);
+    const ev={...this.newEvent,duration:parseInt(this.newEvent.duration)||60,completed:this.newEvent.completed||false};
+    if(idx>=0)this.calendarEvents.splice(idx,1,ev);else this.calendarEvents.push(ev);
+    // Auto-create todo for event
+    if(!this.todos.find(t=>t.calEventId===ev.id)){
+        const proj=ev.linkedProjectId?this.projects.find(p=>p.id==ev.linkedProjectId):null;
+        this.todos.push({id:Date.now()+Math.random(),text:ev.title,completed:false,projectTitle:proj?proj.title:'Event',dueDate:ev.date,calEventId:ev.id,linkedProjectId:ev.linkedProjectId||'',notes:'',impactStatement:''});
+    }
+    // Auto-create milestone in linked project
+    if(ev.linkedProjectId){
+        const proj=this.projects.find(p=>p.id==ev.linkedProjectId);
+        if(proj&&!proj.milestones.find(m=>m.calEventId===ev.id)){
+            proj.milestones.push({title:ev.title,completed:false,completedDate:null,uuid:Date.now()+Math.random().toString(16).slice(2),dueDate:ev.date,calEventId:ev.id});
+        }
+    }
+    // Auto-create meeting note if meeting type
+    if(ev.type==='meeting'&&!this.meetingNotes.find(m=>m.calEventId===ev.id)){
+        this.meetingNotes.unshift({id:Date.now(),title:ev.title,date:ev.date,category:'Other',content:'',attendees:'',linkedProjectId:ev.linkedProjectId?'proj:'+ev.linkedProjectId:'',links:[],calEventId:ev.id});
+    }
+    this.showCalendarModal=false;this.saveToFile();this.showToast('Event saved');
+},
+deleteEvent(id){if(confirm('Remove event?')){this.calendarEvents=this.calendarEvents.filter(e=>e.id!==id);this.saveToFile();}},
+completeCalEvent(evt){evt.completed=!evt.completed;
+    // Sync to todo
+    const todo=this.todos.find(t=>t.calEventId===evt.id);if(todo){todo.completed=evt.completed;todo.completedDate=evt.completed?new Date().toISOString():null;}
+    // Sync to project milestone
+    if(evt.linkedProjectId){const proj=this.projects.find(p=>p.id==evt.linkedProjectId);if(proj){const m=proj.milestones.find(x=>x.calEventId===evt.id);if(m){m.completed=evt.completed;m.completedDate=evt.completed?new Date().toISOString():null;}}}
+    if(evt.completed)this.doConfetti();
+    this.saveToFile();
+},
+dropOnSlot(isoDate,time,el){el.classList.remove('bg-indigo-50','bg-indigo-900/20');if(!this.dragTask)return;
+const ev={id:Date.now(),title:this.dragTask.text,date:isoDate,startTime:time,type:'work',duration:60,linkedProjectId:this.dragTask.linkedProjectId||'',completed:false};
+this.calendarEvents.push(ev);this.dragTask.dueDate=isoDate;this.dragTask.calEventId=ev.id;this.dragTask=null;this.saveToFile();this.showToast('Scheduled');},
+
+// === TASKS ===
+getSortedTasks(){let t=this.todos.filter(t=>!t.completed);if(this.taskSearch)t=t.filter(x=>x.text.toLowerCase().includes(this.taskSearch.toLowerCase()));return t.sort((a,b)=>(a.dueDate||'9').localeCompare(b.dueDate||'9'));},
+completeTask(task){if(task.completed){task.completedDate=new Date().toISOString();this.doConfetti();this.syncTaskToProject(task);
+    // Sync to calendar event
+    const evt=this.calendarEvents.find(e=>e.id===task.calEventId);if(evt)evt.completed=true;
+}else{task.completedDate=null;const evt=this.calendarEvents.find(e=>e.id===task.calEventId);if(evt)evt.completed=false;}this.saveToFile();},
+deleteTodoById(id){this.todos=this.todos.filter(t=>t.id!==id);this.saveToFile();},
+addTodo(){if(this.newTaskText){const proj=this.newTaskProject?this.projects.find(p=>p.id==this.newTaskProject):null;this.todos.push({id:Date.now(),text:this.newTaskText,completed:false,projectTitle:proj?proj.title:'Manual',dueDate:this.newTaskDate,linkedProjectId:this.newTaskProject||'',notes:'',impactStatement:''});this.newTaskText='';this.newTaskDate='';this.newTaskProject='';this.saveToFile();}},
+syncTaskToProject(task){if(task.originalId){const proj=this.projects.find(p=>p.id===task.projectId);if(proj){const m=proj.milestones.find(x=>x.uuid===task.originalId);if(m){m.completed=task.completed;m.completedDate=task.completedDate;}}}},
+saveTaskDetail(task){
+    // Push notes/impact to daily update items if today
+    const today=new Date().toISOString().split('T')[0];
+    if(task.dueDate===today||!task.dueDate){
+        const existing=this.dailyItems.find(di=>di.calEventId===task.calEventId||di.title===task.text);
+        if(existing){if(task.notes)existing.comments=task.notes;if(task.impactStatement)existing.impactStatement=task.impactStatement;}
+    }
+    this.showTaskDetail=null;this.saveToFile();this.showToast('Task updated');
+},
+pushActionToDashboard(){if(!this.quickActionText)return;this.todos.push({id:Date.now(),text:this.quickActionText,completed:false,projectTitle:'Meeting Action',dueDate:this.quickActionDate,notes:'',impactStatement:''});this.quickActionText='';this.quickActionDate='';this.saveToFile();this.showToast('Action added');},
+
+// === PROJECTS ===
+get timelineProjects(){const all=this.filteredProjects;if(this.timelineTab==='all')return all;if(this.timelineTab==='standalone')return all.filter(p=>!p.priorityId&&!p.pillarId);return all.filter(p=>String(p.priorityId)===String(this.timelineTab)||String(p.pillarId)===String(this.timelineTab));},
+startNewProject(){this.currentProject={id:Date.now()+Math.random(),title:'',priorityId:'',milestoneLink:'',type:'project',milestones:[],updates:[],status:'Active',deptCode:'',tlam:'',startDate:'',endDate:'',staff:'',kpi:'',qaLink:'',objective:'',impactStatement:'',meetings:[]};this.showModal=true;this.modalTab='tasks';},
+editProject(p){if(!p)return;this.currentProject=p;this.showModal=true;this.modalTab='tasks';},
+saveProject(){const idx=this.projects.findIndex(x=>x.id===this.currentProject.id);if(idx===-1)this.projects=[...this.projects,this.currentProject];else{this.projects[idx]=this.currentProject;this.projects=[...this.projects];}this.detectNewStakeholders();this.saveToFile();this.showModal=false;},
+markProjectComplete(){if(!this.currentProject.impactStatement){if(!confirm('No impact statement. Complete anyway?'))return;}this.currentProject.status='Completed';this.currentProject.completedDate=new Date().toISOString();this.doConfetti(200);this.saveToFile();this.showToast('Project completed!');},
+addMilestone(){if(!this.currentProject.milestones)this.currentProject.milestones=[];this.currentProject.milestones.push({title:'New Task',completed:false,completedDate:null,uuid:Date.now()+Math.random().toString(16).slice(2),dueDate:''});},
+addUpdate(){if(this.newUpdateText){this.currentProject.updates.push({date:new Date().toISOString(),text:this.newUpdateText,link:this.newUpdateLink,source:this.newUpdateSource});this.newUpdateText='';this.newUpdateLink='';this.newUpdateSource='';this.saveToFile();this.showToast('Evidence added');}},
+syncFromProject(m,proj){if(m.completed){m.completedDate=new Date().toISOString();this.doConfetti();}else m.completedDate=null;const todo=this.todos.find(t=>t.originalId===m.uuid);if(todo)todo.completed=m.completed;this.saveToFile();},
+toggleSelectProject(id){const idx=this.selectedProjects.indexOf(id);if(idx>=0)this.selectedProjects.splice(idx,1);else this.selectedProjects.push(id);},
+batchComplete(){if(!confirm(`Complete ${this.selectedProjects.length} projects?`))return;this.selectedProjects.forEach(id=>{const p=this.projects.find(x=>x.id===id);if(p){p.status='Completed';p.completedDate=new Date().toISOString();}});this.selectedProjects=[];this.doConfetti(200);this.saveToFile();},
+
+// === MEETINGS ===
+createNewMeeting(){const n={id:Date.now(),title:'',date:new Date().toISOString().split('T')[0],category:this.activeMeetingCategory,content:'',attendees:'',linkedProjectId:'',links:[]};this.meetingNotes.unshift(n);this.currentMeeting=n;this.saveToFile();},
+deleteMeeting(){if(this.currentMeeting&&confirm('Delete note?')){this.meetingNotes=this.meetingNotes.filter(n=>n.id!==this.currentMeeting.id);this.currentMeeting=null;this.saveToFile();}},
+addNewMeetingCategory(){const name=prompt("Category name:");if(name&&!this.settings.meetingCategories.includes(name)){this.settings.meetingCategories.push(name);this.activeMeetingCategory=name;this.saveToFile();}},
+addLinkToMeeting(){if(this.newLinkName&&this.newLinkUrl){if(!this.currentMeeting.links)this.currentMeeting.links=[];this.currentMeeting.links.push({name:this.newLinkName,url:this.newLinkUrl});this.newLinkName='';this.newLinkUrl='';}},
+quickLinkEvidence(){if(!this.currentMeeting)return;const link=this.currentMeeting.linkedProjectId;if(!link)return this.showToast('No project linked');let proj;if(link.startsWith('proj:'))proj=this.projects.find(p=>p.id==link.slice(5));if(proj){proj.updates.push({date:new Date().toISOString(),text:'From meeting: '+(this.currentMeeting.title||'Untitled')+'\n'+(this.currentMeeting.content||'').slice(0,200),link:'',source:'Coaching Record'});this.saveToFile();this.showToast('Evidence pushed');}},
+
+// === QUALITY CHECKS ===
+getQualityWarnings(){const w=[];this.projects.filter(p=>p.status!=='Completed').forEach(p=>{
+    if(this.getRagLevel(p.endDate)==='red')w.push({id:'rag-'+p.id,message:`"${p.title}" is overdue or due soon`,projectId:p.id});
+    if(!p.impactStatement&&this.calculateProgress(p)>=80)w.push({id:'imp-'+p.id,message:`"${p.title}" is ${this.calculateProgress(p)}% — add impact statement`,projectId:p.id});
+    if(!p.endDate&&p.startDate)w.push({id:'end-'+p.id,message:`"${p.title}" has no end date`,projectId:p.id});
+});return w.slice(0,10);},
+
+// === DAILY UPDATES ===
+loadDailyUpdate(){
+    const saved=this.savedDailyUpdates[this.dailyDate];
+    if(saved&&saved.length>0){this.dailyItems=JSON.parse(JSON.stringify(saved));return;}
+    const evts=this.calendarEvents.filter(e=>e.date===this.dailyDate);
+    this.dailyItems=evts.map(e=>({title:e.title||'Untitled',time:e.startTime||'',type:e.type||'work',comments:'',evidenceLink:'',evidenceName:'',impactStatement:'',linkType:e.linkedProjectId?'project':'',linkedProjectId:e.linkedProjectId||'',linkedPillarId:'',linkName:'',linkArea:'',linkOther:'',calEventId:e.id}));
+},
+addDailyItem(){this.dailyItems.push({title:'Manual entry',time:'',type:'manual',comments:'',evidenceLink:'',evidenceName:'',impactStatement:'',linkType:'',linkedProjectId:'',linkedPillarId:'',linkName:'',linkArea:'',linkOther:''});},
+saveDailyUpdate(){
+    this.savedDailyUpdates[this.dailyDate]=JSON.parse(JSON.stringify(this.dailyItems));
+    // Push evidence to linked projects
+    this.dailyItems.forEach(item=>{
+        if((item.comments||item.impactStatement||item.evidenceLink)&&item.linkedProjectId){
+            // Direct project link
+            const proj=this.projects.find(p=>String(p.id)===String(item.linkedProjectId));
+            if(proj){const ref=this.dailyDate+'::'+item.title;
+            if(!proj.updates.find(u=>u.dailyRef===ref)){
+                proj.updates.push({date:new Date().toISOString(),text:(item.comments||'')+(item.impactStatement?' [Impact: '+item.impactStatement+']':''),link:item.evidenceLink||'',source:'Daily Update',dailyRef:ref});
+            }}
+        } else if((item.comments||item.impactStatement||item.evidenceLink)&&item.linkType==='pillar'&&item.linkedPillarId){
+            // Pillar link — push to ALL active projects under this pillar (or first one)
+            const pillarProjects=this.projects.filter(p=>String(p.priorityId)===String(item.linkedPillarId)&&p.status!=='Completed');
+            if(pillarProjects.length>0){const proj=pillarProjects[0];const ref=this.dailyDate+'::'+item.title;
+            if(!proj.updates.find(u=>u.dailyRef===ref)){
+                proj.updates.push({date:new Date().toISOString(),text:'[Pillar: '+this.getPillarTitle(item.linkedPillarId)+'] '+(item.comments||'')+(item.impactStatement?' [Impact: '+item.impactStatement+']':''),link:item.evidenceLink||'',source:'Daily Update',dailyRef:ref});
+            }}
+        }
+    });
+    this.calculateStreak();this.saveToFile();this.showToast('Daily update saved');
+},
+exportDailyReport(fmt){const el=document.querySelector('.daily-content');if(el)this._printElement(el,'Daily Update - '+this.dailyDate,fmt);},
+
+// === WEEKLY ===
+getWeeklyMonday(){const t=new Date();const d=t.getDay()||7;t.setDate(t.getDate()-d+1+(this.weeklyOffset*7));return t;},
+getWeeklyLabel(){const m=this.getWeeklyMonday();const f=new Date(m);f.setDate(m.getDate()+4);return m.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' — '+f.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});},
+getWeeklyDates(){const m=this.getWeeklyMonday();return Array.from({length:5},(_,i)=>{const d=new Date(m);d.setDate(m.getDate()+i);return d.toISOString().split('T')[0];});},
+getWeeklyStats(){const dates=this.getWeeklyDates();return{eventsCount:this.calendarEvents.filter(e=>dates.includes(e.date)).length,tasksCompleted:this.projects.flatMap(p=>p.milestones||[]).filter(m=>m.completedDate&&dates.includes(m.completedDate.split('T')[0])).length+this.todos.filter(t=>t.completedDate&&dates.includes(t.completedDate.split('T')[0])).length,evidenceLogged:this.projects.flatMap(p=>p.updates||[]).filter(u=>dates.includes((u.date||'').split('T')[0])).length,meetingsHeld:this.calendarEvents.filter(e=>dates.includes(e.date)&&e.type==='meeting').length};},
+getWeeklyDailyUpdates(){const dates=this.getWeeklyDates();return dates.filter(d=>this.savedDailyUpdates[d]&&this.savedDailyUpdates[d].length>0).map(d=>({date:d,items:this.savedDailyUpdates[d]}));},
+getWeeklyCompletedTasks(){const dates=this.getWeeklyDates();const tasks=[];this.projects.forEach(p=>(p.milestones||[]).forEach(m=>{if(m.completed&&m.completedDate&&dates.includes(m.completedDate.split('T')[0]))tasks.push({title:m.title,project:p.title});}));return tasks;},
+getWeeklyMeetings(){const dates=this.getWeeklyDates();return this.meetingNotes.filter(m=>dates.includes(m.date));},
+exportWeeklyReport(fmt){const el=document.getElementById('weeklyReportContent');if(el)this._printElement(el,'Weekly Review - '+this.getWeeklyLabel(),fmt);},
+
+// === STAKEHOLDERS ===
+addStakeholder(){this.stakeholders.push({id:Date.now(),name:'',role:'',area:'',linkedProjects:[],tags:[]});this.saveToFile();},
+removeStakeholder(id){this.stakeholders=this.stakeholders.filter(s=>s.id!==id);this.saveToFile();},
+acceptStakeholder(card){this.stakeholders.push({id:Date.now(),name:card.name,role:'',area:'',linkedProjects:[],tags:[]});this.stakeholderPushCards=this.stakeholderPushCards.filter(c=>c.id!==card.id);this.saveToFile();this.showToast('Contact added');},
+dismissStakeholderCard(id){this.stakeholderPushCards=this.stakeholderPushCards.filter(c=>c.id!==id);},
+detectNewStakeholders(){
+    const known=new Set(this.stakeholders.map(s=>s.name.toLowerCase()));const names=new Set();
+    this.projects.forEach(p=>{if(p.staff&&!known.has(p.staff.toLowerCase()))names.add(p.staff);if(p.tlam&&!known.has(p.tlam.toLowerCase()))names.add(p.tlam);});
+    this.meetingNotes.forEach(m=>{(m.attendees||'').split(/[,;]/).forEach(a=>{const t=a.trim();if(t.length>2&&!known.has(t.toLowerCase())&&!/^[A-Z]{2,4}$/.test(t))names.add(t);});});
+    const existing=new Set(this.stakeholderPushCards.map(c=>c.name.toLowerCase()));
+    names.forEach(n=>{if(!existing.has(n.toLowerCase()))this.stakeholderPushCards.push({id:Date.now()+Math.random(),name:n});});
+},
+getInitials(name){return(name||'??').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);},
+getAvatarColor(name){const h=[...name||'X'].reduce((s,c)=>s+c.charCodeAt(0),0)%360;return`hsl(${h},55%,50%)`;},
+// Contact detail: find all projects, meetings, tasks mentioning this person
+getContactProjects(name){if(!name)return[];const n=name.toLowerCase();return this.projects.filter(p=>(p.staff||'').toLowerCase().includes(n)||(p.tlam||'').toLowerCase().includes(n)||(p.objective||'').toLowerCase().includes(n));},
+getContactMeetings(name){if(!name)return[];const n=name.toLowerCase();return this.meetingNotes.filter(m=>(m.attendees||'').toLowerCase().includes(n)||(m.content||'').toLowerCase().includes(n)||(m.title||'').toLowerCase().includes(n));},
+getContactTasks(name){if(!name)return[];const n=name.toLowerCase();return this.todos.filter(t=>(t.text||'').toLowerCase().includes(n));},
+getContactPillars(name){const projPillarIds=[...new Set(this.getContactProjects(name).map(p=>p.priorityId).filter(Boolean))];return this.settings.pillars.filter(p=>projPillarIds.includes(p.id)||projPillarIds.includes(String(p.id)));},
+
+// === RISKS ===
+addRisk(){this.risks.push({id:Date.now(),title:'',category:this.riskCategories[0],likelihood:2,impact:2,mitigation:'',linkedTo:''});this.saveToFile();},
+removeRisk(id){this.risks=this.risks.filter(r=>r.id!==id);this.saveToFile();},
+editRiskCategory(idx){const n=prompt('Rename category:',this.riskCategories[idx]);if(n){const old=this.riskCategories[idx];this.riskCategories[idx]=n;this.risks.forEach(r=>{if(r.category===old)r.category=n;});this.saveToFile();}},
+getRiskMatrixColor(score){if(score>=15)return'bg-red-500';if(score>=8)return'bg-amber-400';return'bg-emerald-500';},
+
+// === RAID ===
+addRaidItem(){this.raidItems.push({id:Date.now(),title:'',type:'Risk',status:'Open',linkedTo:'',notes:''});this.saveToFile();},
+removeRaidItem(id){this.raidItems=this.raidItems.filter(i=>i.id!==id);this.saveToFile();},
+getFilteredRaid(){return this.raidFilter?this.raidItems.filter(i=>i.type===this.raidFilter):this.raidItems;},
+getRaidColor(type){return{'Risk':'bg-red-100 text-red-700','Assumption':'bg-blue-100 text-blue-700','Issue':'bg-amber-100 text-amber-700','Dependency':'bg-purple-100 text-purple-700'}[type]||'bg-gray-100 text-gray-700';},
+
+// === TIMELINE (String comparison fix) ===
+get timelineColumns(){const today=new Date();const cols=[];if(this.timelineMode==='year'){const yr=today.getFullYear();for(let i=0;i<12;i++){const d=new Date(yr,i,1);cols.push({label:d.toLocaleString('default',{month:'short'}),sub:yr,start:d,end:new Date(yr,i+1,0)});}}else if(this.timelineMode==='3m'){const start=new Date(today);start.setDate(today.getDate()-today.getDay()+1);for(let i=0;i<12;i++){const w=new Date(start);w.setDate(start.getDate()+(i*7));const we=new Date(w);we.setDate(w.getDate()+6);cols.push({label:'W'+(i+1),sub:w.getDate()+'/'+(w.getMonth()+1),start:w,end:we});}}return cols;},
+getTimelineGridStyle(){return`grid-template-columns:200px repeat(${this.timelineColumns.length},minmax(50px,1fr));`;},
+getDynamicGanttBarStyle(p,idx){const ps=new Date(p.startDate),pe=new Date(p.endDate),cols=this.timelineColumns;if(!this.hasDates(p))return'display:none';let si=-1,ei=-1;for(let i=0;i<cols.length;i++){if(ps<=cols[i].end&&si===-1)si=i;if(pe>=cols[i].start)ei=i;}if(ei<0||si===-1||pe<cols[0].start||ps>cols[cols.length-1].end)return'display:none';const gs=Math.max(0,si)+2;const span=(Math.min(cols.length-1,ei)-Math.max(0,si))+1;return`grid-column:${gs}/span ${span};grid-row:${idx+2};align-self:center;`;},
+isProjectVisibleInTimeline(p){return!this.getDynamicGanttBarStyle(p,0).includes('display:none');},
+
+// === REPORTS ===
+getReportProjects(){let p=this.projects;if(this.reportPillar)p=p.filter(x=>String(x.priorityId)===String(this.reportPillar)||String(x.pillarId)===String(this.reportPillar));if(this.reportProject)p=p.filter(x=>String(x.id)===String(this.reportProject));return p;},
+getReportPillars(){const pillars=this.getPillars();return this.reportPillar?pillars.filter(p=>String(p.id)===String(this.reportPillar)):pillars;},
+getReportProjectsForPillar(pId){return this.getReportProjects().filter(p=>String(p.priorityId)===String(pId)||String(p.pillarId)===String(pId));},
+getReportMeetings(){let m=this.meetingNotes;if(this.reportDateFrom)m=m.filter(x=>x.date>=this.reportDateFrom);if(this.reportDateTo)m=m.filter(x=>x.date<=this.reportDateTo);return m;},
+getFilteredUpdates(proj){let u=proj.updates||[];if(this.reportDateFrom)u=u.filter(x=>(x.date||'').split('T')[0]>=this.reportDateFrom);if(this.reportDateTo)u=u.filter(x=>(x.date||'').split('T')[0]<=this.reportDateTo);return u;},
+getAllDueTasks(){let all=[];this.projects.filter(p=>p.status!=='Completed').forEach(p=>(p.milestones||[]).forEach(m=>{if(!m.completed&&m.dueDate)all.push({id:Math.random(),projectId:p.id,projectName:p.title,title:m.title,dueDate:m.dueDate});}));return all.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,20);},
+generateReport(fmt){const el=document.getElementById('reportContent');if(el)this._printElement(el,'Progress Report',fmt);},
+
+// === STRATEGY DOSSIER ===
+printStrategyDossier(){const pillar=this.getPillars()[this.activeStrategyTab];if(!pillar)return;const projs=this.getProjectsForPillar(pillar.id);
+let html=`<div style="font-family:system-ui;max-width:800px;margin:auto;padding:40px"><h1 style="color:${pillar.color};border-bottom:3px solid ${pillar.color};padding-bottom:10px">${pillar.title}</h1><p style="color:#666;font-style:italic">${pillar.intent||''}</p>`;
+projs.forEach(p=>{html+=`<div style="break-inside:avoid;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:12px 0"><h3>${p.title} <span style="color:#999;font-size:12px">[${this.calculateProgress(p)}%]</span></h3><p style="color:#666;font-size:13px">${p.startDate||''} — ${p.endDate||''} | Lead: ${p.staff||p.tlam||'N/A'}</p>`;
+if(p.milestones?.length){p.milestones.forEach(m=>{html+=`<div style="font-size:13px;margin:4px 0 4px 16px">${m.completed?'[X]':'[ ]'} ${m.title}</div>`;});}
+if(p.updates?.length){html+=`<div style="margin-top:10px;border-top:1px solid #eee;padding-top:8px"><strong style="font-size:11px;color:#888">Evidence Log:</strong>`;p.updates.forEach(u=>{html+=`<div style="font-size:12px;color:#555;margin:2px 0 2px 8px">${this.formatDate(u.date)} [${u.source||'General'}]: ${u.text}</div>`;});html+=`</div>`;}
+html+=`</div>`;});html+=`</div>`;
+const w=window.open('','_blank','width=900,height=700');w.document.write('<html><head><title>'+pillar.title+'</title></head><body>'+html+'</body></html>');w.document.close();w.print();},
+
+// === CHARTS ===
+initCharts(){const pc=document.getElementById('priorityChart')?.getContext('2d');const pp=document.getElementById('pipelineChart')?.getContext('2d');if(this.charts.p)this.charts.p.destroy();if(this.charts.pp)this.charts.pp.destroy();const pillars=this.getPillars();
+const isGov=this.dashboardMode==='governance';
+const labels=isGov?this.settings.kpis.map(k=>k.substring(0,18)):pillars.map(p=>(p.title||'').substring(0,18));
+const data=isGov?this.settings.kpis.map(k=>this.projects.filter(p=>p.kpi===k).length):pillars.map(p=>this.getProjectsForPillar(p.id).length);
+const colors=isGov?['#9333ea','#c084fc','#a855f7','#7e22ce','#6b21a8','#581c87','#3b0764','#d8b4fe']:pillars.map(p=>p.color||'#6c757d');
+if(pc)this.charts.p=new Chart(pc,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});
+if(pp)this.charts.pp=new Chart(pp,{type:'bar',data:{labels:['Active','Completed'],datasets:[{label:'Projects',data:[this.projects.filter(p=>p.status!=='Completed').length,this.projects.filter(p=>p.status==='Completed').length],backgroundColor:['#4f46e5','#10b981']}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+},
+updateCharts(){this.initCharts();},
+
+// === CONFETTI & STREAKS ===
+doConfetti(count){try{confetti({particleCount:count||80,spread:70,origin:{y:0.7},colors:['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6']});}catch(e){}},
+calculateStreak(){const today=new Date();let streak=0;for(let i=0;i<60;i++){const d=new Date(today);d.setDate(today.getDate()-i);const key=d.toISOString().split('T')[0];if(this.savedDailyUpdates[key]&&this.savedDailyUpdates[key].length>0)streak++;else if(i>0)break;}this.streakCount=streak;},
+
+// === PILLAR MANAGEMENT ===
+addPillar(){this.settings.pillars.push({id:Date.now(),title:'New Pillar',intent:'',color:'#6c757d',impactStatement:'',strategicMilestones:[]});this.activeStrategyTab=this.settings.pillars.length-1;this.saveToFile();},
+
+// === PRINT UTILITY ===
+_printElement(el,title,fmt){const w=window.open('','_blank','width=900,height=700');const html=el.innerHTML;w.document.write(`<html><head><title>${title}</title><style>body{font-family:system-ui;padding:30px;font-size:12px;color:#333}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:11px}th{background:#f5f5f5}.chip-sm{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px}h4{margin-top:16px;font-size:14px;border-bottom:1px solid #eee;padding-bottom:4px}</style></head><body>${html}</body></html>`);w.document.close();if(fmt==='pdf')w.print();},
+
+        }
+    }
     </script>
 </body>
 </html>
